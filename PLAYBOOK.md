@@ -249,7 +249,14 @@ serving pages, which is exactly why they get forgotten)
 
 ## 8. Verification — against the LIVE site, not localhost
 
-**Routing**
+**The routing/header items below marked ⚙ run automatically after every
+deploy** (`scripts/smoke-live.mjs`, last step of the deploy job) once
+`origin.mjs` carries the real domain. They stay listed because this section
+is also the launch-day manual checklist and the smoke test's specification —
+if the script and this list disagree, one of them is wrong. Unmarked items
+remain manual.
+
+**Routing** ⚙
 - [ ] `curl -sI https://DOMAIN/ | head -1` → 200
 - [ ] `curl -sI https://www.DOMAIN/` → 301 to apex ⚠
 - [ ] `curl -sI http://DOMAIN/` → https, same host
@@ -259,8 +266,8 @@ serving pages, which is exactly why they get forgotten)
       accepted)
 - [ ] `curl -sI https://DOMAIN/definitely-not-a-page | head -1` → 404
 
-**Headers — on a page AND on a fingerprinted asset** ⚠ (the pairing catches
-header-scoping bugs)
+**Headers — on a page AND on a fingerprinted asset** ⚠⚙ (the pairing catches
+header-scoping bugs; the page half is automated, the asset half manual)
 - [ ] Security set present on both; `Cache-Control` 300 on pages,
       `immutable` on `/_astro/*`
 - [ ] Exactly one HSTS header

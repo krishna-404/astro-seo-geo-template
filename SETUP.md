@@ -82,7 +82,9 @@ Work top to bottom; later files read earlier ones.
 
 **Verify:** `npm ci && npm run build` is green (zod tells you exactly which
 frontmatter field it hates), `npm run check` passes, and the placeholder
-grep above is clean apart from the two stated exceptions.
+grep above is clean apart from the two stated exceptions. (`npm ci` also
+activates the git hooks — from here on, commits run the fast checks and
+pushes run the full battery automatically.)
 
 ## Phase 2 — generated surfaces (two-build rule)
 
@@ -100,8 +102,11 @@ generator reads, one to pick the result up.
       `worker/csp.generated.json` — the CSP hashes derive from your built
       inline scripts and CI diffs the committed copy).
 
-**Verify:** `git status` clean after a fresh `npm run build` — if a build
-dirties a committed generated file, commit it; that is the contract.
+**Verify:** `npm run verify` — the full local battery (build, invariants,
+worker smoke, HTML validity, contrast, axe). This is the same set CI runs
+and the same command the pre-push hook runs; green here means green there.
+Then `git status` clean after a fresh `npm run build` — if a build dirties a
+committed generated file, commit it; that is the contract.
 
 ## Phase 3 — first deploy + the dashboard
 

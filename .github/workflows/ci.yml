@@ -61,6 +61,16 @@ jobs:
       - name: Check content image references
         run: node scripts/check-content-images.mjs
 
+      # The "must change together" pairs (format↔html_handling, twin routes
+      # in three places, static↔worker security headers) and the repo-wide
+      # source bans (web storage, colour literals). Source-level and fast —
+      # the same checks the pre-commit hook runs, re-run here because hooks
+      # are advisory (--no-verify exists; CI does not).
+      - name: Check config parity and source rules
+        run: |
+          node scripts/check-parity.mjs
+          node scripts/check-source-rules.mjs
+
       # `npm run build` is `astro check && check:worker && sheets && llms &&
       # astro build && markdown-twins && search:index`, so this covers types,
       # the zod content schemas, the actual render and the search index in one
@@ -88,382 +98,21 @@ jobs:
           npm run lastmod
           node scripts/check-lastmod.mjs "$RUNNER_TEMP/lastmod.committed.json"
 
-      # Cheap guards for the rules that keep getting broken by hand.
-      #
-      # Deliberately no `set -e`. Two reasons, both learned the hard way:
-      #   1. grep exits 1 when it finds nothing, so `n=$(grep -o x f | wc -l)`
-      #      under `set -e -o pipefail` kills the script at the assignment — on
-      #      exactly the page the check exists to catch, with no message.
-      #   2. Collecting every failure beats stopping at the first.
-      # Every count is guarded with `|| n=0` so a no-match is data, not a crash.
+      # Every built-output invariant lives in ONE script shared with the
+      # local pre-push battery (npm run verify) — scripts/check-invariants.mjs
+      # — so CI and local runs can never drift. It collects every failure
+      # per run rather than stopping at the first.
       - name: Check site invariants
-        run: |
-          set -uo pipefail
-          fail=0
+        run: node scripts/check-invariants.mjs
 
-          echo "→ exactly one <h1> per page"
-          bad=0
-          while IFS= read -r f; do
-            n=$(grep -o '<h1' "$f" | wc -l) || n=0
-            if [ "$n" -ne 1 ]; then
-              echo "   FAIL: $f has $n <h1> (page templates render the frontmatter"
-              echo "         title as the h1 — start MDX bodies at ##)"
-              bad=1; fail=1
-            fi
-          done < <(find dist -name '*.html')
-          [ "$bad" -eq 0 ] && echo "   ok"
+      # The worker is the only code in the repo with logic, and tsc proves
+      # nothing about behavior. Runs it for real (wrangler dev against the
+      # built dist) and asserts every behavior it exists to provide: form 303,
+      # twin negotiation incl. HEAD + Vary, /hi rewrite + noindex, data-proxy
+      # 404s, security headers + committed CSP on worker responses.
+      - name: Worker behavioral smoke test
+        run: npm run smoke:worker
 
-          echo "→ every table wrapped in .table-scroll"
-          bad=0
-          while IFS= read -r f; do
-            t=$(grep -o '<table' "$f" | wc -l) || t=0
-            w=$(grep -o 'table-scroll' "$f" | wc -l) || w=0
-            if [ "$t" -gt "$w" ]; then
-              echo "   FAIL: $f has $t table(s) but $w wrapper(s) — a bare table"
-              echo "         scrolls the whole page sideways on a phone"
-              bad=1; fail=1
-            fi
-          done < <(grep -rl '<table' dist --include='*.html' || true)
-          [ "$bad" -eq 0 ] && echo "   ok"
-
-          echo "→ <title> at most 60 characters"
-          # BaseLayout clamps every title via clampTitle(), so a failure here
-          # means the clamp was bypassed or has a bug — not an author's string.
-          if ! node -e '
-            const fs = require("fs");
-            let bad = 0;
-            for (const f of process.argv.slice(1)) {
-              const html = fs.readFileSync(f, "utf8");
-              const m = html.match(/<title>([^<]*)<\/title>/);
-              if (!m) continue;
-              if (m[1].length > 60) {
-                console.log(`   FAIL: ${f} — ${m[1].length} chars: "${m[1]}"`);
-                bad = 1;
-              }
-            }
-            process.exit(bad);
-          ' $(find dist -name '*.html'); then
-            fail=1
-          else
-            echo "   ok"
-          fi
-
-          echo "→ page titles are unique"
-          # Two pages sharing a <title> compete for the same query and look
-          # like duplicates in every crawler report — always a copy-paste bug.
-          if ! node -e '
-            const fs = require("fs");
-            const seen = new Map();
-            let bad = 0;
-            for (const f of process.argv.slice(1)) {
-              const m = fs.readFileSync(f, "utf8").match(/<title>([^<]*)<\/title>/);
-              if (!m) continue;
-              if (seen.has(m[1])) {
-                console.log(`   FAIL: ${f} and ${seen.get(m[1])} share the title "${m[1]}"`);
-                bad = 1;
-              } else seen.set(m[1], f);
-            }
-            process.exit(bad);
-          ' $(find dist -name '*.html'); then
-            fail=1
-          else
-            echo "   ok"
-          fi
-
-          echo "→ meta descriptions present, unique, 70–165 chars on indexable pages"
-          # Google rewrites vague ones and truncates past ~165; a missing one
-          # surrenders the snippet entirely. Bounds apply to indexable pages
-          # only — noindex pages (404, thanks) never render a snippet.
-          if ! node -e '
-            const fs = require("fs");
-            const seen = new Map();
-            let bad = 0;
-            for (const f of process.argv.slice(1)) {
-              const html = fs.readFileSync(f, "utf8");
-              const m = html.match(/<meta name="description" content="([^"]*)"/);
-              if (!m) {
-                console.log(`   FAIL: ${f} has no meta description`);
-                bad = 1; continue;
-              }
-              if (seen.has(m[1])) {
-                console.log(`   FAIL: ${f} and ${seen.get(m[1])} share a meta description`);
-                bad = 1;
-              } else seen.set(m[1], f);
-              const noindex = /name="robots" content="noindex/.test(html);
-              if (!noindex && (m[1].length < 70 || m[1].length > 165)) {
-                console.log(`   FAIL: ${f} description is ${m[1].length} chars (want 70–165): "${m[1].slice(0, 80)}…"`);
-                bad = 1;
-              }
-            }
-            process.exit(bad);
-          ' $(find dist -name '*.html'); then
-            fail=1
-          else
-            echo "   ok"
-          fi
-
-          echo "→ dist/_headers carries the generated CSP"
-          # The generator replaces a marker comment; if the marker survives,
-          # the build pipeline was reordered or the csp step was dropped — the
-          # site would ship without a CSP and nothing else would notice.
-          if grep -q '^  Content-Security-Policy: ' dist/_headers; then
-            echo "   ok"
-          else
-            echo "   FAIL: no Content-Security-Policy in dist/_headers — did scripts/generate-csp.mjs run?"
-            fail=1
-          fi
-
-          echo "→ no broken internal links"
-          # Every root-relative href must resolve to a file the deploy will
-          # actually serve. This is the in-repo half of the lesson "a redirect
-          # written in a doc is not a redirect" — anything that only exists as
-          # dashboard config or worker code is whitelisted explicitly, so the
-          # whitelist is also the inventory of off-repo routes.
-          if ! node -e '
-            const fs = require("fs"), path = require("path");
-            const WORKER_ROUTES = ["/api/", "/hi"];  // exist in worker/index.ts, not dist/
-            let bad = 0;
-            const files = process.argv.slice(1);
-            for (const f of files) {
-              const html = fs.readFileSync(f, "utf8");
-              for (const m of html.matchAll(/href="(\/[^"#?]*)/g)) {
-                const p = decodeURIComponent(m[1]);
-                if (WORKER_ROUTES.some((w) => p.startsWith(w))) continue;
-                const clean = p.replace(/\/$/, "") || "/index";
-                const candidates = [
-                  path.join("dist", clean),
-                  path.join("dist", clean + ".html"),
-                  path.join("dist", clean, "index.html"),
-                ];
-                if (!candidates.some((c) => fs.existsSync(c))) {
-                  console.log(`   FAIL: ${f} links to ${p} which nothing serves`);
-                  bad = 1;
-                }
-              }
-            }
-            process.exit(bad);
-          ' $(find dist -name '*.html'); then
-            fail=1
-          else
-            echo "   ok"
-          fi
-
-          echo "→ every CTA carries an analytics event"
-          # The rule: every conversion surface is measured, whichever analytics
-          # vendor is active. CTAs (.btn), tel: and mailto: links all leave the
-          # page — no pageview fires for them, so an unmarked one is invisible
-          # to analytics forever. data-umami-event is the vendor-neutral marker
-          # (Umami binds it natively; the consent banner forwards it to GA4).
-          if ! node -e '
-            const fs = require("fs");
-            let bad = 0;
-            for (const f of process.argv.slice(1)) {
-              const html = fs.readFileSync(f, "utf8");
-              for (const m of html.matchAll(/<a\s[^>]*>/g)) {
-                const tag = m[0];
-                const isCta = /class="[^"]*\bbtn\b[^"]*"/.test(tag);
-                const leaves = /href="(tel:|mailto:)/.test(tag);
-                if ((isCta || leaves) && !/data-umami-event=/.test(tag)) {
-                  console.log(`   FAIL: ${f} unmeasured CTA: ${tag.slice(0, 120)}`);
-                  bad = 1;
-                }
-              }
-            }
-            process.exit(bad);
-          ' $(find dist -name '*.html'); then
-            fail=1
-          else
-            echo "   ok"
-          fi
-
-          echo "→ every <img> has an alt attribute"
-          # Empty alt is fine (a decision: decorative); a MISSING alt is the
-          # forgotten case screen readers read as the filename.
-          if ! node -e '
-            const fs = require("fs");
-            let bad = 0;
-            for (const f of process.argv.slice(1)) {
-              const html = fs.readFileSync(f, "utf8");
-              for (const m of html.matchAll(/<img\s[^>]*>/g)) {
-                if (!/\salt\s*=/.test(m[0])) {
-                  console.log(`   FAIL: ${f} img without alt: ${m[0].slice(0, 100)}`);
-                  bad = 1;
-                }
-              }
-            }
-            process.exit(bad);
-          ' $(find dist -name '*.html'); then
-            fail=1
-          else
-            echo "   ok"
-          fi
-
-          echo "→ target=_blank links announce the new tab and carry noopener"
-          if ! node -e '
-            const fs = require("fs");
-            let bad = 0;
-            for (const f of process.argv.slice(1)) {
-              const html = fs.readFileSync(f, "utf8");
-              for (const m of html.matchAll(/<a\s[^>]*target="_blank"[^>]*>(.*?)<\/a>/gs)) {
-                const relOk = /rel="[^"]*noopener[^"]*"/.test(m[0]);
-                const announced = /new tab/i.test(m[1]);
-                if (!relOk || !announced) {
-                  console.log(`   FAIL: ${f} _blank link needs rel=noopener + "new tab" in its accessible name: ${m[0].slice(0, 120)}`);
-                  bad = 1;
-                }
-              }
-            }
-            process.exit(bad);
-          ' $(find dist -name '*.html'); then
-            fail=1
-          else
-            echo "   ok"
-          fi
-
-          echo "→ no noindex page in the sitemap"
-          # Mechanizes the iron rule (noindex ⇔ out of sitemap) that was
-          # previously enforced only by convention.
-          if ! node -e '
-            const fs = require("fs"), path = require("path");
-            let bad = 0;
-            const xml = fs.readFileSync("dist/sitemap-0.xml", "utf8");
-            for (const m of xml.matchAll(/<loc>([^<]+)<\/loc>/g)) {
-              const p = new URL(m[1]).pathname.replace(/\/$/, "") || "/";
-              const clean = p === "/" ? "/index" : p;
-              const file = [path.join("dist", clean + ".html"), path.join("dist", clean, "index.html")]
-                .find((c) => fs.existsSync(c));
-              if (!file) continue; // coverage is the lastmod check\x27s job
-              if (/name="robots" content="noindex/.test(fs.readFileSync(file, "utf8"))) {
-                console.log(`   FAIL: ${m[1]} is in the sitemap but renders noindex`);
-                bad = 1;
-              }
-            }
-            process.exit(bad);
-          '; then
-            fail=1
-          else
-            echo "   ok"
-          fi
-
-          echo "→ pagefind index exists and covers every data-pagefind-body page"
-          if ! node -e '
-            const fs = require("fs");
-            const entry = JSON.parse(fs.readFileSync("dist/pagefind/pagefind-entry.json", "utf8"));
-            const indexed = Object.values(entry.languages).reduce((n, l) => n + l.page_count, 0);
-            const expected = process.argv.slice(1).filter((f) =>
-              fs.readFileSync(f, "utf8").includes("data-pagefind-body")).length;
-            if (indexed !== expected) {
-              console.log(`   FAIL: pagefind indexed ${indexed} pages, but ${expected} pages carry data-pagefind-body`);
-              process.exit(1);
-            }
-          ' $(find dist -name '*.html'); then
-            fail=1
-          else
-            echo "   ok"
-          fi
-
-          echo "→ no orphan content pages (related links present)"
-          # Only enforced once a collection has >= 2 published entries — a
-          # site with one post cannot link it to a sibling.
-          if ! node -e '
-            const fs = require("fs");
-            let bad = 0;
-            for (const dir of ["blog", "glossary"]) {
-              const pages = fs.readdirSync(`dist/${dir}`).filter((f) => f.endsWith(".html"));
-              if (pages.length < 2) continue;
-              for (const p of pages) {
-                const html = fs.readFileSync(`dist/${dir}/${p}`, "utf8");
-                const rel = html.match(/<section class="related"[\s\S]*?<\/section>/);
-                if (!rel || !/href="\/(blog|glossary)\//.test(rel[0])) {
-                  console.log(`   FAIL: ${dir}/${p} has no related-content links — an orphan page`);
-                  bad = 1;
-                }
-              }
-            }
-            process.exit(bad);
-          '; then
-            fail=1
-          else
-            echo "   ok"
-          fi
-
-          echo "→ visible breadcrumbs mirror BreadcrumbList JSON-LD"
-          if ! node -e '
-            const fs = require("fs");
-            let bad = 0;
-            for (const f of process.argv.slice(1)) {
-              const html = fs.readFileSync(f, "utf8");
-              if (!html.includes("\"BreadcrumbList\"")) continue;
-              const ld = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
-              const graph = JSON.parse(ld[1].replaceAll("\\u003C", "<"));
-              const list = (graph["@graph"] ?? [graph]).find((n) => n["@type"] === "BreadcrumbList");
-              const nav = html.match(/<nav class="crumbs"[^>]*>[\s\S]*?<\/nav>/);
-              if (!nav) {
-                console.log(`   FAIL: ${f} emits BreadcrumbList but renders no visible trail`);
-                bad = 1; continue;
-              }
-              const lis = (nav[0].match(/<li[\s>]/g) ?? []).length;
-              if (lis !== list.itemListElement.length) {
-                console.log(`   FAIL: ${f} BreadcrumbList has ${list.itemListElement.length} items, visible trail has ${lis}`);
-                bad = 1; continue;
-              }
-              // Names appear in order. Compare against the DECODED nav text —
-              // Astro entity-escapes text nodes (e.g. apostrophe → &#39;).
-              const decoded = nav[0]
-                .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(n))
-                .replace(/&quot;/g, "\"").replace(/&lt;/g, "<")
-                .replace(/&gt;/g, ">").replace(/&amp;/g, "&");
-              let pos = 0;
-              for (const item of list.itemListElement) {
-                const at = decoded.indexOf(item.name, pos);
-                if (at === -1) {
-                  console.log(`   FAIL: ${f} breadcrumb "${item.name}" missing or out of order in the visible trail`);
-                  bad = 1; break;
-                }
-                pos = at;
-              }
-            }
-            process.exit(bad);
-          ' $(find dist -name '*.html'); then
-            fail=1
-          else
-            echo "   ok"
-          fi
-
-          echo "→ every .table-scroll wrapper is a labelled keyboard-scrollable region"
-          if ! node -e '
-            const fs = require("fs");
-            let bad = 0;
-            for (const f of process.argv.slice(1)) {
-              const html = fs.readFileSync(f, "utf8");
-              for (const m of html.matchAll(/<div[^>]*class="[^"]*table-scroll[^"]*"[^>]*>/g)) {
-                const tag = m[0];
-                if (!/tabindex="0"/.test(tag) || !/role="region"/.test(tag) || !/aria-label="[^"]+"/.test(tag)) {
-                  console.log(`   FAIL: ${f} table-scroll without tabindex/role/aria-label: ${tag.slice(0, 120)}`);
-                  bad = 1;
-                }
-              }
-            }
-            process.exit(bad);
-          ' $(find dist -name '*.html'); then
-            fail=1
-          else
-            echo "   ok"
-          fi
-
-          if [ "$fail" -ne 0 ]; then
-            echo "Invariant check failed."
-            exit 1
-          fi
-          echo "All invariants hold."
-
-      # WCAG AA contrast over every built page. An eye is not the instrument
-      # for this: the ancestor site's hand-picked brand colour measured 2.8:1
-      # and failed on 66 element pairs including its own primary CTA.
-      #
-      # Playwright is installed here rather than added to package.json on
-      # purpose: it is a CI/publish-time tool, and keeping it out of the
-      # manifest keeps a 300MB browser out of every `npm ci`.
       # Structural HTML validity over the built output: duplicate ids, invalid
       # nesting, malformed attributes — the classes browsers silently repair
       # and crawlers silently don't. Config in .htmlvalidate.json; the one
@@ -474,6 +123,9 @@ jobs:
           npm install --no-save html-validate
           npx html-validate "dist/**/*.html"
 
+      # Playwright is installed here rather than added to package.json on
+      # purpose: it is a CI/publish-time tool, and keeping it out of the
+      # manifest keeps a 300MB browser out of every `npm ci`.
       - name: Check colour contrast
         run: |
           npm install --no-save playwright
@@ -518,3 +170,12 @@ jobs:
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      # The automated subset of PLAYBOOK §8, against the LIVE site: zone
+      # redirects, HSTS single-emitter, CSP, /hi rewrite, twin negotiation,
+      # machine surfaces. Only post-deploy code can see this layer — the
+      # ancestor's www redirect served 404 for days with a green repo.
+      # Soft-skips (green) while origin.mjs still says example.com.
+      # Requests retry internally, so edge propagation doesn't cry wolf.
+      - name: Smoke test the live site
+        run: node scripts/smoke-live.mjs

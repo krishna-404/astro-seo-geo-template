@@ -9,6 +9,12 @@ phase-by-phase build/operate runbook; `README.md` is the quickstart.
 structure, config, or a third-party dashboard** — a setting nobody wrote down
 is indistinguishable from a setting nobody made.
 
+**Before you push: `npm run verify`** — the full CI battery locally (the
+pre-push hook runs it for you; hooks install automatically via `npm install`).
+The pre-commit hook runs the fast source tier. Most rules below are
+mechanized (parity checks, source bans, invariants, worker smoke) — a rule
+being checked is not a reason to ignore it here; the prose carries the WHY.
+
 ## The rules that get broken by hand (CI catches most, not all)
 
 1. **No number or claim is typed into markup.** Everything published lives in

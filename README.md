@@ -25,10 +25,11 @@ and CI battery of a site that learned everything the hard way.
 ## Quickstart
 
 ```bash
-npm install
+npm install          # also activates the git hooks (.githooks/)
 npm run dev          # local dev at localhost:4321
-npm run build        # typecheck + sheets + llms.txt + build + twins + search index
+npm run build        # typecheck + sheets + llms.txt + build + twins + search + CSP
 npm run preview      # wrangler dev — serves dist/ WITH the worker (forms, twins)
+npm run verify       # the FULL CI battery locally (pre-push runs this for you)
 ```
 
 Note `astro dev` serves pages only; `/api/*`, `/hi/*` and markdown negotiation
@@ -80,9 +81,11 @@ src/styles/      global.css — measured design tokens, mobile-first utilities
 worker/          index.ts — forms proxy, sheet data, /hi rewrites, md twins
 public/          _headers _redirects favicons .well-known/ (robots.txt is
                  generated — src/pages/robots.txt.ts derives it from origin.mjs)
-scripts/         CI-run: sheets, llms, twins, lastmod, csp, contrast, a11y,
-                 indexnow
+scripts/         CI-run: sheets, llms, twins, lastmod, csp, invariants,
+                 parity, worker/live smoke, contrast, a11y, verify, indexnow
 marketing/       human-run: favicon gen, OG cards, apps-script source
-.github/         ci.yml (checks + gated deploy) · indexnow.yml ·
+.githooks/       pre-commit (fast tier) · pre-push (npm run verify) —
+                 activated automatically by npm install
+.github/         ci.yml (checks + gated deploy + live smoke) · indexnow.yml ·
                  linkrot.yml (monthly external-link check)
 ```

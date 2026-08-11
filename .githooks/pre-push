@@ -1,0 +1,9 @@
+#!/bin/sh
+# The full battery before anything leaves the machine: build, CSP freshness,
+# every invariant, worker behavioral smoke, HTML validity, contrast sweep,
+# axe scan — the same checks CI runs, via the same scripts, so a red push
+# is caught here in minutes instead of in CI plus a round trip.
+#
+# Escape hatch: git push --no-verify (CI remains the backstop).
+
+exec npm run verify

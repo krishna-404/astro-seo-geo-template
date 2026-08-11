@@ -406,6 +406,19 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
 
 ## 9. CI invariants (every one exists because it broke somewhere)
 
+**The enforcement ladder, designed for LLM-generated changes**: plausible
+generated code drifts from prose rules it never read, so every rule that can
+be mechanized is. Three rungs, same scripts at every rung so they cannot
+disagree:
+- **pre-commit hook** (`.githooks/pre-commit`, ~4s): the source-level tier —
+  config parity, source bans, collection routes, image refs, eslint, worker
+  tsc. Installed automatically by the package.json `prepare` script
+  (`core.hooksPath`).
+- **pre-push hook** → **`npm run verify`** (`scripts/verify.mjs`, ~1–3 min):
+  the FULL battery below, locally, before anything leaves the machine.
+- **CI** (`.github/workflows/ci.yml`): the backstop — hooks are advisory
+  (`--no-verify` exists), CI is not.
+
 `.github/workflows/ci.yml`, in order:
 
 - ✅ Checkout with `fetch-depth: 0` (lastmod derives from `git log`; depth 1
@@ -417,6 +430,15 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
 - ✅ **Content image refs resolve to real files**
   (`scripts/check-content-images.mjs`) — a frontmatter `ogImage` string or
   markdown image is not an import; a typo ships a 404 OG card silently.
+- ✅ **Config parity + source rules** (`scripts/check-parity.mjs`,
+  `scripts/check-source-rules.mjs`) — mechanizes the "must change together"
+  pairs that were previously comments: `build.format` ↔ `html_handling`
+  (mismatch breaks every route), twin routes in all three places (worker
+  `TWIN_PREFIXES` / twins `COLLECTIONS` / `run_worker_first`), static ↔
+  worker security-header lockstep; plus the repo-wide bans — web storage
+  (AGENTS rule 5) and colour literals outside the token files (rule 6) —
+  the two rules statistically most likely to be violated by
+  plausible-looking generated code.
 - ✅ `npm run build` = types + zod schemas + render + search index + CSP
   generation in one step.
 - ✅ **Committed worker CSP is current** (`git diff` on
@@ -466,10 +488,40 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
 - ✅ WCAG AA contrast sweep of every built page (browser installed in-job),
   with all `<details>` force-opened first — closed FAQ answers are
   display:none and would otherwise never be measured.
-- ✅ Invariants run in ONE step with **no `set -e`** (grep exits 1 on
-  no-match — the guard would kill the script on exactly the page it exists
-  to catch) and collect every failure per run.
+- ✅ **All built-output invariants live in ONE script**
+  (`scripts/check-invariants.mjs`) shared verbatim by CI and
+  `npm run verify` — two copies of a check are two checks that drift. It
+  collects every failure per run rather than stopping at the first. (This
+  replaced the earlier inline-bash step; its "no `set -e`, grep exits 1 on
+  no-match" trap died with the bash.) Additions beyond the ones above:
+  **every JSON-LD block parses** (a malformed @graph costs rich results
+  with no symptom) · **every content page has its markdown twin** (the
+  worker falls back to HTML, so a broken generator degrades silently) ·
+  **script-src allowlist** (AGENTS rule 17 mechanized — a generated
+  "helper script" fails the build, not a review months later) ·
+  **canonicals self-consistent** (extensionless, no trailing slash,
+  resolving back to the very file that carries them) · **robots.txt has an
+  absolute Sitemap line, rss.xml well-formed**.
+- ✅ **Worker behavioral smoke test** (`scripts/smoke-worker.mjs`) — the
+  worker is the only code with logic and tsc proves nothing about behavior.
+  `wrangler dev` against the built dist, asserting every behavior it exists
+  to provide: form POST → 303 `/contact/thanks` with the secret unset
+  (empty-default rule), GET → 405, unknown data tab → 404, `/hi` rewrite +
+  header-level noindex + malformed-code fallthrough, twin negotiation for
+  GET **and HEAD** with `Vary: Accept` on both bodies, security set + the
+  committed CSP on every worker response. Deliberately not covered: the
+  Apps Script upstream (needs a live secret — stays a PLAYBOOK §8 launch
+  step) and the rate limiter (asserting on the local simulator tests the
+  simulator).
 - ✅ Deploy job runs only on green main (`needs: build`).
+- ✅ **Post-deploy live smoke** (`scripts/smoke-live.mjs`, runs after
+  `wrangler deploy`) — the automated subset of PLAYBOOK §8: zone redirects
+  (www→apex, http→https, trailing slash), real 404s, single HSTS emitter,
+  live CSP with hashes, `/hi` + twin negotiation at the edge, machine
+  surfaces all 200. Soft-skips green while `origin.mjs` is still
+  `example.com` (a red job on day one teaches people to ignore red);
+  requests retry so edge propagation doesn't cry wolf. The real form
+  submission stays manual — it emails humans.
 - ✅ **External link rot is checked monthly, never in CI**
   (`.github/workflows/linkrot.yml`, lychee over built HTML, external URLs
   only). Citations rot on someone else's schedule and a flaky third-party
@@ -507,6 +559,12 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   `Contact`, `Canonical` (RFC 9116 makes it assert which host the file
   belongs to) and `Expires` (~1 year out) for your domain. Static file,
   nothing generates it.
+- ✅ **Git hooks ship in-repo** (`.githooks/`, activated by the package.json
+  `prepare` script setting `core.hooksPath` on every install — no husky, no
+  dependency). pre-commit = the fast source tier (~4s); pre-push =
+  `npm run verify`, the full battery. `--no-verify` is the documented
+  escape hatch; CI remains the backstop precisely because hooks are
+  advisory.
 - ✅ Prettier (+ astro plugin) & `.editorconfig` committed.
 - ✅ **Verification tokens and analytics website IDs live in the repo**
   (public by design, next to their config so they can't drift); **API keys
