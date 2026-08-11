@@ -34,13 +34,35 @@ function run(title, cmd) {
 }
 
 /** Browser/validator tooling is deliberately not in package.json (CHECKLIST
- *  §6) — install on demand, --no-save, same as CI does. */
-function ensure(pkg) {
-  try {
-    require.resolve(pkg);
-  } catch {
-    console.log(`   (installing ${pkg} --no-save)`);
-    execSync(`npm install --no-save ${pkg}`, { stdio: 'inherit' });
+ *  §6) — install on demand, --no-save, same as CI does.
+ *
+ *  ONE install for everything missing, never one per package:
+ *  `npm install --no-save X` reconciles against the lockfile and PRUNES
+ *  previously --no-save-installed packages, so sequential installs remove
+ *  each other's tools (this took down the first real CI run). */
+function ensureAll(pkgs) {
+  const missing = (list) =>
+    list.filter((p) => {
+      try {
+        require.resolve(p);
+        return false;
+      } catch {
+        return true;
+      }
+    });
+  // Post-condition asserted, install retried once: npm has been observed to
+  // exit 0 from a --no-save batch with one package silently absent. Trust
+  // the filesystem, not the exit code.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const need = missing(pkgs);
+    if (!need.length) return;
+    console.log(`   (installing ${need.join(' ')} --no-save${attempt ? ', retry' : ''})`);
+    execSync(`npm install --no-save ${need.join(' ')}`, { stdio: 'inherit' });
+  }
+  const still = missing(pkgs);
+  if (still.length) {
+    console.error(`verify FAILED: ${still.join(', ')} still unresolvable after two installs — install manually and re-run`);
+    process.exit(1);
   }
 }
 
@@ -88,12 +110,10 @@ run('committed worker CSP is current', 'git diff --exit-code worker/csp.generate
 // ── built-output tier ──────────────────────────────────────────────────────
 run('site invariants (shared with CI)', 'node scripts/check-invariants.mjs');
 run('worker behavioral smoke test', 'npm run smoke:worker');
-ensure('html-validate');
+ensureAll(['html-validate', 'playwright', 'axe-core']);
 run('built HTML validates', 'npx html-validate "dist/**/*.html"');
-ensure('playwright');
 execSync('npx playwright install chromium', { stdio: 'ignore' }); // no-op when cached
 run('WCAG AA contrast sweep', 'npm run check:contrast');
-ensure('axe-core');
 run('axe-core accessibility scan', 'npm run check:a11y');
 
 console.log(`\nverify: all ${step} steps green in ${Math.round((Date.now() - t0) / 1000)}s.`);

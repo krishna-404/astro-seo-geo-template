@@ -137,10 +137,15 @@ jobs:
       # accessible-name computation, landmark structure. Fails on
       # serious/critical; axe's colour-contrast rule is disabled in the script
       # because the sweep above measures it properly (composited backgrounds).
-      # Reuses the browser the contrast step installed.
+      #
+      # ⚠ playwright is REINSTALLED here even though the contrast step just
+      # installed it: `npm install --no-save X` reconciles against the
+      # lockfile and PRUNES earlier --no-save packages, so installing
+      # axe-core alone silently removes playwright (bit the first real CI
+      # run). The browser binary survives — only the package is re-linked.
       - name: Accessibility scan (axe-core)
         run: |
-          npm install --no-save axe-core
+          npm install --no-save playwright axe-core
           npm run check:a11y
 
   deploy:
