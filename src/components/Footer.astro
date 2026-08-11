@@ -1,0 +1,139 @@
+---
+import Logo from './Logo.astro';
+import { SITE, CONTACT, FOOTER_NAV } from '../data/site';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="ftr">
+  <div class="wrap ftr__top">
+    <div class="ftr__brand">
+      <Logo size={22} />
+      <p class="ftr__tag">{SITE.tagline}</p>
+      <p class="ftr__contact">
+        <a href={CONTACT.whatsapp} rel="noopener" data-umami-event="whatsapp" data-umami-event-place="footer">WhatsApp</a>
+        <a href={CONTACT.phoneHref} class="mono" data-umami-event="phone" data-umami-event-place="footer">{CONTACT.phone}</a>
+      </p>
+    </div>
+
+    <!-- The header hides its text links on a phone, so this is the site's
+         real navigation there. Every content hub has to appear here. -->
+    {
+      FOOTER_NAV.map((group) => (
+        <nav class="ftr__col" aria-label={group.heading}>
+          <h2 class="ftr__head">{group.heading}</h2>
+          <ul>
+            {group.links.map((l) => (
+              <li>
+                <a href={l.href}>{l.label}</a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      ))
+    }
+  </div>
+
+  <div class="wrap ftr__legal">
+    <span>© {year} {SITE.name}</span>
+    <a href="/privacy-policy">Privacy</a>
+    {/* Withdrawing consent has to be as easy as giving it, so the banner is
+        re-openable from every page. A link, not a button, so it still reads as
+        navigation with JavaScript off — where there is nothing to consent to
+        anyway, since the tracker is script-injected. */}
+    <a href="/privacy-policy" data-consent-reopen>Cookie settings</a>
+    <a href="/rss.xml">RSS</a>
+    <a href="/llms.txt">llms.txt</a>
+  </div>
+</footer>
+
+<style>
+  .ftr {
+    background: var(--cream);
+    border-top: 1px solid var(--line);
+    padding-block: 2rem 1.5rem;
+  }
+
+  .ftr__top {
+    display: grid;
+    gap: 1.75rem;
+  }
+
+  .ftr__brand {
+    display: grid;
+    gap: 0.5rem;
+    justify-items: start;
+  }
+  .ftr__tag {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--ink-3);
+    max-width: 22em;
+  }
+  .ftr__contact {
+    display: flex;
+    gap: 1rem;
+    margin: 0.25rem 0 0;
+    font-size: 0.8125rem;
+  }
+  .ftr__contact a {
+    color: var(--ink-3);
+    text-decoration: none;
+  }
+  .ftr__contact a:hover {
+    color: var(--ink);
+  }
+
+  .ftr__head {
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+    margin: 0 0 0.625rem;
+  }
+
+  .ftr__col ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.375rem;
+  }
+  .ftr__col a {
+    display: inline-block;
+    padding: 0.2rem 0;
+    font-size: 0.875rem;
+    color: var(--ink-2);
+    text-decoration: none;
+  }
+  .ftr__col a:hover {
+    color: var(--orange-strong);
+  }
+
+  .ftr__legal {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+    font-size: 0.75rem;
+    color: var(--ink-4);
+  }
+  .ftr__legal a {
+    color: var(--ink-4);
+    text-decoration: none;
+  }
+  .ftr__legal a:hover {
+    color: var(--ink-2);
+  }
+
+  @media (min-width: 40rem) {
+    .ftr__top {
+      grid-template-columns: 1.6fr 1fr 1fr;
+      gap: 2rem;
+    }
+  }
+</style>

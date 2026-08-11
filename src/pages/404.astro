@@ -1,0 +1,31 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { CONTACT } from '../data/site';
+---
+
+<BaseLayout
+  title="Not found — Docket"
+  description="That page doesn't exist. Head back to the homepage or open the live demo."
+  noindex={true}
+>
+  <section class="band band--white nf">
+    <div class="wrap">
+      <p class="eyebrow">404</p>
+      <h1>That container went to the wrong port.</h1>
+      <p class="lede">
+        The page you're after doesn't exist. Nothing is on fire — try one of these.
+      </p>
+      <div class="btn-row">
+        <a class="btn btn--primary" href="/">Back to the homepage</a>
+        <a class="btn" href="/features">Features</a>
+        <a class="btn" href={CONTACT.demo}>Live demo</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .nf {
+    padding-block: 4rem 5rem;
+  }
+</style>

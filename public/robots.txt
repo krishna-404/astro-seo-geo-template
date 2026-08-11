@@ -1,0 +1,105 @@
+# dodocket.com
+#
+# Everything is open. The wildcard below already permits every crawler, so the
+# named groups that follow grant no extra access — they exist to document
+# intent, so nobody later "tightens" this file without knowing what it costs.
+#
+# The policy: the numbers on this site are sourced and checkable, and we would
+# rather be quoted correctly than not quoted at all. Being cited by an answer
+# engine is a distribution channel here, not a leak.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://dodocket.com/sitemap-index.xml
+
+
+# ─── Search indexes ───────────────────────────────────────────────────────────
+# Google's index also feeds AI Overviews; Bing's also feeds Copilot, DuckDuckGo
+# and Yahoo, and is a supply line into ChatGPT's search results.
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+
+# ─── OpenAI ───────────────────────────────────────────────────────────────────
+# Three crawlers, three different jobs. Blocking one does not block the others,
+# and the one that matters for being CITED is OAI-SearchBot, not GPTBot.
+
+# Training corpus.
+User-agent: GPTBot
+Allow: /
+
+# Builds the index behind ChatGPT search results. This is the citation path.
+User-agent: OAI-SearchBot
+Allow: /
+
+# Fetches a page live, in the moment a user asks about it.
+User-agent: ChatGPT-User
+Allow: /
+
+
+# ─── Anthropic ────────────────────────────────────────────────────────────────
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+
+# ─── Perplexity ───────────────────────────────────────────────────────────────
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+
+# ─── Google Gemini ────────────────────────────────────────────────────────────
+# Google-Extended governs Gemini training and grounding ONLY. It has no effect
+# on Search ranking — blocking it does not remove you from Google, and allowing
+# it does not help you rank. It is purely about being usable as an AI source.
+
+User-agent: Google-Extended
+Allow: /
+
+
+# ─── Apple ────────────────────────────────────────────────────────────────────
+# Applebot serves Siri and Spotlight; Applebot-Extended governs Apple
+# Intelligence training.
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+
+# ─── Common Crawl ─────────────────────────────────────────────────────────────
+# Open corpus, resold to and reused by many downstream AI labs. Named for the
+# same reason as everything else here: reviewability, not extra access.
+
+User-agent: CCBot
+Allow: /
+
+
+# ─── Meta ─────────────────────────────────────────────────────────────────────
+# meta-externalagent covers both training and Meta AI's search/assistant index.
+
+User-agent: meta-externalagent
+Allow: /
+
+
+# ─── ByteDance ────────────────────────────────────────────────────────────────
+# Bytespider — TikTok / Doubao's crawler.
+
+User-agent: Bytespider
+Allow: /

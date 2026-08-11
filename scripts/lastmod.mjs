@@ -1,0 +1,146 @@
+#!/usr/bin/env node
+/**
+ * Writes src/data/lastmod.json — the commit date of each page's source.
+ *
+ *   npm run lastmod
+ *
+ * WHY THIS FILE EXISTS AT ALL. The sitemap's <lastmod> is derived from git, so
+ * that it reflects when a page actually changed rather than when the site was
+ * last deployed. But the production build runs inside Docker, and
+ * `.dockerignore` excludes `.git` — so the build container has no history and
+ * every lookup came back empty. The feature degraded exactly as designed
+ * (omit rather than invent a date) and therefore did nothing at all in
+ * production: 0 of 43 URLs carried a lastmod.
+ *
+ * Handing `.git` to the Docker context would not fix it either. Dokploy's
+ * checkout may be shallow, and with depth 1 every file's "last commit" is HEAD
+ * — which would stamp every URL with the deploy date. That is precisely the
+ * misleading signal the git derivation exists to avoid, wearing a better
+ * disguise.
+ *
+ * So the dates are resolved HERE, where full history exists, and committed.
+ * The build then reads a plain JSON file and needs no git at all.
+ *
+ * The cost is that the file can go stale by one commit. CI regenerates it and
+ * fails if the result differs from what is committed, so it cannot drift
+ * silently — the same treatment the other site invariants get.
+ */
+import { execFileSync } from 'node:child_process';
+import { writeFileSync, readdirSync, existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve, join } from 'node:path';
+
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+
+/** Last commit touching any of these paths, ISO-8601, or undefined. */
+function newestCommit(files) {
+  const times = files
+    .filter((f) => existsSync(resolve(root, f)))
+    .map((f) => {
+      try {
+        return execFileSync('git', ['log', '-1', '--format=%cI', '--', f], {
+          cwd: root,
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore'],
+        }).trim();
+      } catch {
+        return '';
+      }
+    })
+    .filter(Boolean)
+    .map((d) => new Date(d).getTime())
+    .sort((a, b) => a - b);
+  const newest = times.at(-1);
+  return newest ? new Date(newest).toISOString() : undefined;
+}
+
+const map = {};
+
+// Collection entries: the content file is what changed.
+const COLLECTIONS = {
+  blog: 'blog',
+  glossary: 'glossary',
+  'hs-code': 'hs-code',
+  solutions: 'solution',
+};
+for (const [route, folder] of Object.entries(COLLECTIONS)) {
+  const dir = resolve(root, 'src/content', folder);
+  if (!existsSync(dir)) continue;
+  for (const file of readdirSync(dir).filter((f) => /\.mdx?$/.test(f))) {
+    const slug = file.replace(/\.mdx?$/, '');
+    const date = newestCommit([join('src/content', folder, file)]);
+    if (date) map[`/${route}/${slug}`] = date;
+  }
+}
+
+// Plain pages, DISCOVERED rather than listed.
+//
+// This was a hand-maintained map until 10 Aug 2026, and /contact shipped
+// without a lastmod because nobody remembered to add it. Nothing caught that:
+// check-lastmod.mjs compares the committed map against a freshly generated one,
+// and both were missing the same route, so they agreed. A list you have to
+// remember to update is not an invariant. Walking src/pages means a new page
+// cannot ship uncovered.
+//
+// EXTRA_SOURCES names the non-obvious inputs — pages whose content comes from
+// data as well as markup, where editing only the JSON should still move the
+// date. /vs/<slug> is generated from site.ts, so that counts as its source
+// alongside the template.
+const EXTRA_SOURCES = {
+  '/ops-cost-calculator': ['src/data/assumptions.json'],
+  '/privacy-policy': ['src/data/privacy.json'],
+  '/vs': ['src/data/site.ts'],
+};
+
+/** 404 is not a page anyone links to, and it is not in the sitemap. */
+const SKIP = new Set(['/404']);
+
+/** route → the .astro file that renders it, for every static page. */
+function discoverPages() {
+  const found = {};
+  const pagesDir = resolve(root, 'src/pages');
+  for (const entry of readdirSync(pagesDir, { withFileTypes: true })) {
+    if (entry.isFile() && entry.name.endsWith('.astro')) {
+      const base = entry.name.replace(/\.astro$/, '');
+      // A bracketed filename is a dynamic route; its slugs come from data and
+      // are handled below, not from the filename.
+      if (base.includes('[')) continue;
+      found[base === 'index' ? '/' : `/${base}`] = `src/pages/${entry.name}`;
+    } else if (entry.isDirectory()) {
+      const index = join('src/pages', entry.name, 'index.astro');
+      if (existsSync(resolve(root, index))) found[`/${entry.name}`] = index;
+    }
+  }
+  return found;
+}
+
+for (const [route, file] of Object.entries(discoverPages())) {
+  if (SKIP.has(route)) continue;
+  const date = newestCommit([file, ...(EXTRA_SOURCES[route] ?? [])]);
+  if (date) map[route] = date;
+}
+
+const site = resolve(root, 'src/data/site.ts');
+for (const [, slug] of [
+  ...execFileSync('cat', [site], { encoding: 'utf8' }).matchAll(
+    /^\s*slug: '([^']+)',\n\s*strength:/gm
+  ),
+].map((m) => [m[0], m[1]])) {
+  const date = newestCommit(['src/pages/vs/[slug].astro', 'src/data/site.ts']);
+  if (date) map[`/vs/${slug}`] = date;
+}
+
+const sorted = Object.fromEntries(Object.entries(map).sort(([a], [b]) => a.localeCompare(b)));
+writeFileSync(
+  resolve(root, 'src/data/lastmod.json'),
+  JSON.stringify(
+    {
+      $comment:
+        'Generated by scripts/lastmod.mjs — do not hand-edit. Route → commit date of that page’s source, used for <lastmod> in the sitemap. Regenerate with `npm run lastmod` when content changes; CI fails if this file is stale.',
+      routes: sorted,
+    },
+    null,
+    2
+  ) + '\n'
+);
+console.log(`${Object.keys(sorted).length} routes written to src/data/lastmod.json`);

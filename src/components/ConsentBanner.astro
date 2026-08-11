@@ -1,0 +1,234 @@
+---
+import { LEADFEEDER, CONSENT } from '../data/site';
+
+/**
+ * Cookie consent gate.
+ *
+ * The site sets exactly one non-essential cookie — Leadfeeder's `_lfa` — so this
+ * is a two-button banner, not a preference centre with toggles nobody reads.
+ * Building a category matrix for a single vendor would be theatre.
+ *
+ * WHAT IS GATED AND WHAT IS NOT:
+ *   - Leadfeeder      gated. Does not load at all until "Accept" is clicked.
+ *   - Umami           NOT gated. Self-hosted, sets no cookie, stores nothing on
+ *                     the device. ePrivacy consent attaches to storage access on
+ *                     the visitor's device, and there is none to consent to.
+ *   - Consent cookie  NOT gated. Recording a refusal is what makes the refusal
+ *                     stick; a banner that needs consent to remember "no" is
+ *                     broken by construction.
+ *
+ * CONSENT IS PRIOR, NOT RETROACTIVE. The tracker is injected by this script on
+ * click, never rendered into the page and disabled afterwards. If you ever move
+ * the Leadfeeder tag back into BaseLayout's head, this banner becomes decoration
+ * and the compliance story is gone.
+ *
+ * STORED IN A COOKIE, NOT localStorage — CLAUDE.md forbids web storage outright,
+ * and a consent record is the textbook "strictly necessary" cookie anyway.
+ */
+
+const script = `
+(function () {
+  var NAME = ${JSON.stringify(CONSENT.cookieName)};
+  var DAYS = ${CONSENT.maxAgeDays};
+
+  function read(name) {
+    var hit = document.cookie.split('; ').find(function (row) {
+      return row.indexOf(name + '=') === 0;
+    });
+    return hit ? hit.split('=')[1] : null;
+  }
+
+  function write(name, value, days) {
+    document.cookie =
+      name + '=' + value + ';path=/;max-age=' + 60 * 60 * 24 * days +
+      ';SameSite=Lax' + (location.protocol === 'https:' ? ';Secure' : '');
+  }
+
+  /**
+   * Vendor snippet, verbatim, wrapped so it runs on consent rather than on load.
+   * Guarded because "Accept" can be clicked again from the footer re-open.
+   */
+  var loaded = false;
+  function loadTracker() {
+    if (loaded) return;
+    loaded = true;
+    ${LEADFEEDER.snippet(LEADFEEDER.trackerId)}
+  }
+
+  /**
+   * Withdrawing consent has to actually remove what was set, or "Reject" is a
+   * lie the second time someone clicks it. The page cannot see HttpOnly cookies
+   * and cannot touch the vendor's own domain, so this clears what is reachable:
+   * the first-party _lfa cookie, on this host and on the dot-domain variant.
+   */
+  function clearTrackerCookies() {
+    var host = location.hostname;
+    var domains = ['', ';domain=' + host, ';domain=.' + host.replace(/^www\\./, '')];
+    ${JSON.stringify(CONSENT.trackerCookies)}.forEach(function (name) {
+      domains.forEach(function (d) {
+        document.cookie = name + '=;path=/;max-age=0' + d;
+      });
+    });
+  }
+
+  var banner = document.getElementById('consent');
+  function show() { if (banner) banner.hidden = false; }
+  function hide() { if (banner) banner.hidden = true; }
+
+  function decide(value) {
+    write(NAME, value, DAYS);
+    if (value === 'granted') loadTracker();
+    else clearTrackerCookies();
+    hide();
+  }
+
+  var current = read(NAME);
+  if (current === 'granted') loadTracker();
+  else if (current !== 'denied') show();
+
+  if (banner) {
+    banner.querySelector('[data-consent="accept"]').addEventListener('click', function () {
+      decide('granted');
+    });
+    banner.querySelector('[data-consent="reject"]').addEventListener('click', function () {
+      decide('denied');
+    });
+  }
+
+  // Footer entry point, so a decision can be changed without clearing cookies
+  // by hand. Withdrawal has to be as easy as giving it.
+  document.querySelectorAll('[data-consent-reopen]').forEach(function (el) {
+    el.addEventListener('click', function (e) {
+      e.preventDefault();
+      show();
+      var accept = banner && banner.querySelector('[data-consent="accept"]');
+      if (accept) accept.focus();
+    });
+  });
+})();
+`;
+---
+
+{/* Rendered for every visitor and revealed by script, so the markup is in the
+    HTML for assistive tech before any decision is made. `hidden` keeps it out
+    of the layout until it is needed. */}
+<div
+  id="consent"
+  class="consent"
+  role="dialog"
+  aria-labelledby="consent-title"
+  aria-describedby="consent-body"
+  hidden
+>
+  <div class="consent__card">
+    <p id="consent-title" class="consent__title">Cookies</p>
+    {/* Kept to two lines at 375px on purpose. Every extra line makes the banner
+        taller, and a tall fixed banner covers the hero CTA — measured at 667px
+        height, where the button ends around y=460. Detail lives on /privacy-policy. */}
+    <p id="consent-body" class="consent__body">
+      One cookie, to see which <em>companies</em> visit — never who you are. Our page
+      analytics use none. <a href="/privacy-policy#cookies">What we set</a>.
+    </p>
+    <div class="consent__actions">
+      <button type="button" class="btn btn--primary" data-consent="accept">Accept</button>
+      <button type="button" class="btn" data-consent="reject">Reject</button>
+    </div>
+  </div>
+</div>
+
+<script is:inline set:html={script} />
+
+<style>
+  /* Fixed, not sticky: CLAUDE.md requires the ship inside the first fold on a
+     phone, and a banner in flow would push the hero up. This floats over it. */
+  .consent {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 60;
+    padding: 0.75rem;
+    /* Clears the home indicator on iOS rather than sitting under it. */
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+  .consent[hidden] {
+    display: none;
+  }
+
+  /* Height is the constraint, not width: this floats over a hero whose CTA sits
+     near the bottom of a 667px screen. Padding and gaps are deliberately tight
+     — see the copy note in the markup before loosening them. */
+  .consent__card {
+    max-width: 60rem;
+    margin-inline: auto;
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg, var(--shadow-sm));
+    padding: 0.75rem 0.875rem;
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .consent__title {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+  }
+
+  .consent__body {
+    margin: 0;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--ink-2);
+  }
+  .consent__body a {
+    color: var(--orange-strong);
+  }
+
+  /* nowrap: wrapping would stack the buttons and add ~50px of banner height,
+     which is exactly what pushes it over the hero CTA. */
+  .consent__actions {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+  }
+  /* ≥44px touch targets on touch widths, per CLAUDE.md. */
+  .consent__actions .btn {
+    flex: 1 1 0;
+    min-height: 44px;
+    justify-content: center;
+    white-space: nowrap;
+  }
+
+  @media (min-width: 40rem) {
+    .consent {
+      padding: 1rem;
+    }
+    .consent__card {
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 1.25rem;
+      padding: 1rem 1.25rem;
+    }
+    .consent__title {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    .consent__body {
+      grid-column: 1;
+      grid-row: 2;
+    }
+    .consent__actions {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      flex-wrap: nowrap;
+    }
+    .consent__actions .btn {
+      flex: 0 0 auto;
+    }
+  }
+</style>

@@ -1,0 +1,67 @@
+name: IndexNow
+
+# Ping Bing, Yandex and Seznam the moment new pages are live, instead of waiting
+# days to be crawled. Google does not participate in IndexNow — it still finds
+# pages through the sitemap, which is why this is a supplement, not a
+# replacement.
+#
+# Separate from ci.yml on purpose. CI must stay a fast, deterministic gate on
+# every pull request; this job spends minutes waiting on a deploy that is
+# outside GitHub's control, and it runs only after main has already moved.
+on:
+  push:
+    branches: [main]
+  # Manual re-run, for when a deploy landed but the ping did not — e.g. Dokploy
+  # took longer than the wait window, or the endpoint rate-limited us.
+  workflow_dispatch:
+
+# A newer push supersedes an older one: the sitemap it submits is a superset,
+# so cancelling the in-flight wait loses nothing and saves the runner minutes.
+concurrency:
+  group: indexnow
+  cancel-in-progress: true
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    # The script polls for up to 20 × 15s waiting for Dokploy, twice over (key
+    # file, then sitemap). 25 gives that room without hanging a runner all day.
+    timeout-minutes: 25
+    steps:
+      # Kept in step with ci.yml — see the note there for why v7 is safe for
+      # these triggers. This workflow runs on `push` and `workflow_dispatch`.
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Built here purely to learn how many URLs this commit *should* produce.
+      # Nothing from dist/ is submitted — the script reads the live sitemap.
+      - run: npm run build:ci
+
+      # This number is what closes the deploy race. GitHub fires on push;
+      # Dokploy needs a minute or two to rebuild and swap the container. Without
+      # it, a run started seconds after a merge reads the OLD sitemap, submits
+      # the OLD URL list, and the page we just added is never pinged at all.
+      #
+      # Known gap: a commit that REMOVES pages lowers this count, so the stale
+      # sitemap already satisfies it and the run can submit a URL that is about
+      # to 404. Rare, self-correcting on the next push, and a re-run via
+      # workflow_dispatch fixes it immediately. Not worth a second heuristic.
+      - name: Count URLs in the built sitemap
+        id: expected
+        run: |
+          set -uo pipefail
+          n=$(grep -o '<loc>' dist/sitemap-0.xml | wc -l) || n=0
+          echo "count=$n" >> "$GITHUB_OUTPUT"
+          echo "This commit builds $n URLs; waiting for the live sitemap to match."
+
+      # Waits for the key file to be live, then for the live sitemap to reach
+      # that count, then submits. Every URL it sends came from production, so it
+      # can never submit a 404.
+      - name: Submit to IndexNow
+        run: node scripts/indexnow.mjs --min-urls "${{ steps.expected.outputs.count }}"

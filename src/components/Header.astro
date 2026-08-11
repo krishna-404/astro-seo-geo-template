@@ -1,0 +1,111 @@
+---
+import Logo from './Logo.astro';
+import { NAV, CONTACT } from '../data/site';
+---
+
+<header class="hdr">
+  <div class="wrap hdr__in">
+    <!-- No aria-label: the visible wordmark is the accessible name, so a
+         voice-control user can say "Docket" and hit the link. An aria-label
+         that does not start with the visible text breaks that. -->
+    <a href="/" class="hdr__brand">
+      <Logo />
+    </a>
+
+    <nav class="hdr__nav" aria-label="Main">
+      {
+        NAV.map((item) => (
+          // Contact survives the mobile collapse; the rest do not. It is the
+          // only nav item that is an ACTION rather than a destination, and on a
+          // phone the footer is a long scroll away from someone who has just
+          // decided they want to talk to a person.
+          <a href={item.href} class={item.href === '/contact' ? 'hdr__keep' : undefined}>
+            {item.label}
+          </a>
+        ))
+      }
+      <a href={CONTACT.demo} class="btn hdr__cta" data-umami-event="demo" data-umami-event-place="header">Live demo</a>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .hdr {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid transparent;
+  }
+
+  .hdr__in {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 60px;
+  }
+
+  .hdr__brand {
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+
+  .hdr__nav {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /*
+   * Three destinations plus two actions — a hamburger would be more chrome than
+   * content. Below the breakpoint the destinations drop; both actions survive,
+   * because a header that offers no way to reach a person sends anyone who has
+   * decided to talk on a full-page scroll to the footer.
+   */
+  .hdr__nav a:not(.hdr__cta) {
+    display: none;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--ink-2);
+    text-decoration: none;
+    border-radius: 8px;
+  }
+  .hdr__nav a:not(.hdr__cta):hover {
+    color: var(--ink);
+    background: var(--cream);
+  }
+
+  /* Full 44px target on touch widths; tightened once there's a pointer. */
+  .hdr__cta {
+    min-height: 44px;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.875rem;
+  }
+
+  /* Contact is exempt from the collapse — see the note above. Tightened on
+     phones so the logo, it and the demo button all fit at 320px. */
+  .hdr__nav a.hdr__keep {
+    display: inline-block;
+    padding-inline: 0.4rem;
+  }
+
+  /* The destinations return once there is room. Measured: four links plus the
+     CTA fit from 46rem with no overflow at any width up to 1280. */
+  @media (min-width: 46rem) {
+    .hdr__nav a:not(.hdr__cta) {
+      display: inline-block;
+    }
+    .hdr__nav a.hdr__keep {
+      padding-inline: 0.75rem;
+    }
+  }
+
+  @media (min-width: 48rem) {
+    .hdr__cta {
+      min-height: 38px;
+    }
+  }
+</style>

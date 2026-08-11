@@ -1,0 +1,60 @@
+---
+/**
+ * Where /api/contact lands after a successful post.
+ *
+ * A real page rather than a JavaScript state swap, which is what lets the form
+ * work with JS off — and it gives Umami a conversion URL for nothing. Excluded
+ * from the sitemap and marked noindex: it is a confirmation, it says nothing a
+ * searcher wants, and an indexed thank-you page is a classic way to get a
+ * confusing result for your own brand name.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { CONTACT } from '../../data/site';
+
+const title = 'Thanks — we have got it';
+const description = 'Your enquiry reached us. We usually reply the same working day.';
+---
+
+<BaseLayout title={title} description={description} noindex>
+  <section class="band band--white">
+    <div class="wrap ty">
+      <p class="eyebrow">Contact</p>
+      <h1>Got it. Thank you.</h1>
+      <p class="lede">
+        That landed with {CONTACT.founder} directly — not a queue. You will normally hear
+        back the same working day, and always within two.
+      </p>
+
+      <p class="ty__p">
+        If it is urgent, or you would rather just talk it through,
+        <a href={CONTACT.whatsappPrefilled} rel="noopener">WhatsApp</a> gets a faster answer
+        than email will.
+      </p>
+
+      <div class="btn-row ty__btns">
+        <a class="btn btn--primary" href={CONTACT.demo}>Open the live demo →</a>
+        <a class="btn" href="/ops-cost-calculator">Work out your desk cost</a>
+      </div>
+
+      <p class="fine ty__note">
+        While you wait: the demo runs a real import SOP end to end, and the calculator will
+        tell you what your own desk is spending on the work Docket takes over.
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .ty {
+    max-width: 44rem;
+  }
+  .ty__p {
+    color: var(--ink-3);
+  }
+  .ty__btns {
+    margin-top: 1.5rem;
+  }
+  .ty__note {
+    margin-top: 1.25rem;
+  }
+</style>

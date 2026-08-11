@@ -1,0 +1,22 @@
+---
+/**
+ * Emits a JSON-LD block. Pass one schema object or an array of them.
+ *
+ * Schema priority per CLAUDE.md: Article/BlogPosting with a real author +
+ * sameAs, dateModified, FAQPage, Organization, BreadcrumbList.
+ */
+interface Props {
+  schema: Record<string, unknown> | Record<string, unknown>[];
+}
+
+const { schema } = Astro.props;
+
+const payload = Array.isArray(schema)
+  ? { '@context': 'https://schema.org', '@graph': schema }
+  : { '@context': 'https://schema.org', ...schema };
+
+// </script> inside a JSON string would close the tag early.
+const json = JSON.stringify(payload).replace(/</g, '\\u003c');
+---
+
+<script type="application/ld+json" is:inline set:html={json} />

@@ -1,0 +1,9 @@
+# dodocket.com — RFC 9116
+#
+# There is no bug-bounty programme. This exists so a researcher who finds
+# something has an obvious, correct address to send it to, instead of
+# guessing at hello@ or opening a public GitHub issue on a security finding.
+Contact: mailto:hello@dodocket.com
+Expires: 2027-08-10T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://dodocket.com/.well-known/security.txt

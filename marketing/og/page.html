@@ -1,0 +1,64 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Docket per-page OG card</title>
+<!--
+  Template for the per-page social cards in public/og/<collection>/<slug>.jpg.
+  Rendered at exactly 1200x630 — the size LinkedIn, WhatsApp, Slack and X crop
+  from. `render-pages.mjs` fills the hooks below; open this file directly to see
+  the layout with its sample content.
+
+  Same rules as default.html, and they matter more here because the headline is
+  a page title rather than one hand-tuned line:
+
+  - Nothing smaller than 24px. A card is viewed at ~500px wide in a feed.
+  - Everything important stays inside the 72px margin. Clients crop the edges
+    differently, and a headline running to the margin loses words.
+  - The screenshot is the bottom band, bleeding off the bottom edge. It is
+    texture and proof at this size, not something anyone reads — so it never
+    carries meaning the headline doesn't already state.
+
+  Regenerate:  node marketing/og/render-pages.mjs
+-->
+<style>
+  :root {
+    --orange:#c2410c; --ink:#101828; --ink-3:#576170; --line:#eaecf0;
+    --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html,body { width:1200px; height:630px; }
+  body {
+    font-family:var(--font);
+    background:linear-gradient(180deg,#fff 0%,#f5f8fe 100%);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  .top { padding:44px 72px 0; }
+  .brand { display:flex; align-items:center; gap:14px; margin-bottom:22px; }
+  .brand span { font-size:30px; font-weight:800; letter-spacing:-.02em; color:var(--ink); }
+  .eyebrow {
+    font-family:var(--mono); font-size:20px; font-weight:600; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--orange); margin-bottom:14px;
+  }
+  /* Set by the renderer — a long title steps down rather than wrapping to four
+     lines and pushing the screenshot off the card. */
+  h1 {
+    font-size:54px; line-height:1.08; letter-spacing:-.03em; font-weight:800;
+    color:var(--ink); max-width:1040px;
+  }
+  .shot {
+    margin:auto 72px 0; line-height:0;
+    border:1px solid var(--line); border-top-left-radius:14px; border-top-right-radius:14px;
+    overflow:hidden;
+    box-shadow:0 -2px 4px rgba(16,24,40,.03), 0 12px 40px rgba(16,24,40,.10);
+  }
+  .shot img { width:100%; display:block; }
+</style>
+<div class="top">
+  <div class="brand">
+    <svg width="42" height="42" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#c2410c"/><g fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="9" r="2"/><path d="M16 11.5V24"/><path d="M11.5 14h9"/><path d="M8 19a8 8 0 0 0 16 0"/></g></svg>
+    <span>Docket</span>
+  </div>
+  <p class="eyebrow" id="eyebrow">Blog</p>
+  <h1 id="headline">Why am I paying demurrage when the ship arrived on time?</h1>
+</div>
+<div class="shot"><img id="shot" alt=""></div>
