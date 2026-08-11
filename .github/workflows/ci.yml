@@ -154,25 +154,46 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      # Soft-skip (green) while the deploy secret is unset: a template repo
+      # has nothing to deploy, and a permanently red deploy job teaches
+      # people to ignore red — same principle as smoke-live's origin gate.
+      # A gate STEP because GitHub does not expose `secrets` to job-level
+      # `if`; every later step conditions on its output.
+      - name: Check deploy is configured
+        id: gate
+        run: |
+          if [ -n "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "CLOUDFLARE_API_TOKEN is not set — nothing to deploy; skipping (green)."
+            echo "To arm deploys: add the repo secret (scoped: Edit Workers) — README § A new site."
+          fi
+
       - uses: actions/checkout@v7
+        if: steps.gate.outputs.configured == 'true'
         with:
           fetch-depth: 0
 
       - uses: actions/setup-node@v7
+        if: steps.gate.outputs.configured == 'true'
         with:
           node-version: 22
           cache: npm
 
       - run: npm ci
+        if: steps.gate.outputs.configured == 'true'
 
       # build:ci skips `astro check` — types already gated the build job; the
       # deploy job only needs the artifact.
       - run: npm run build:ci
+        if: steps.gate.outputs.configured == 'true'
 
       # Needs one repo secret: CLOUDFLARE_API_TOKEN, scoped to "Edit Workers"
       # on this account only — never a Global API Key. Create at
       # dash.cloudflare.com → My Profile → API Tokens.
       - uses: cloudflare/wrangler-action@v3
+        if: steps.gate.outputs.configured == 'true'
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
@@ -183,4 +204,5 @@ jobs:
       # Soft-skips (green) while origin.mjs still says example.com.
       # Requests retry internally, so edge propagation doesn't cry wolf.
       - name: Smoke test the live site
+        if: steps.gate.outputs.configured == 'true'
         run: node scripts/smoke-live.mjs
