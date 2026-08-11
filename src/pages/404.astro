@@ -1,24 +1,35 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { CONTACT } from '../data/site';
+import { SITE } from '../data/site';
 ---
 
 <BaseLayout
-  title="Not found — Docket"
-  description="That page doesn't exist. Head back to the homepage or open the live demo."
+  title={`Not found — ${SITE.name}`}
+  description="That page doesn't exist. Head back to the homepage, browse the blog, or get in touch."
   noindex={true}
 >
   <section class="band band--white nf">
     <div class="wrap">
       <p class="eyebrow">404</p>
-      <h1>That container went to the wrong port.</h1>
+      <h1>That page doesn't exist.</h1>
       <p class="lede">
-        The page you're after doesn't exist. Nothing is on fire — try one of these.
+        The address may have been mistyped, or the page has moved. Nothing is on fire —
+        try one of these.
       </p>
       <div class="btn-row">
-        <a class="btn btn--primary" href="/">Back to the homepage</a>
-        <a class="btn" href="/features">Features</a>
-        <a class="btn" href={CONTACT.demo}>Live demo</a>
+        <a
+          class="btn btn--primary"
+          href="/"
+          data-umami-event="cta-home"
+          data-umami-event-place="404">Back to the homepage</a
+        >
+        <a class="btn" href="/blog" data-umami-event="cta-blog" data-umami-event-place="404">Blog</a>
+        <a
+          class="btn"
+          href="/contact"
+          data-umami-event="cta-contact"
+          data-umami-event-place="404">Contact</a
+        >
       </div>
     </div>
   </section>

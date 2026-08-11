@@ -5,17 +5,20 @@ name: IndexNow
 # pages through the sitemap, which is why this is a supplement, not a
 # replacement.
 #
-# Separate from ci.yml on purpose. CI must stay a fast, deterministic gate on
-# every pull request; this job spends minutes waiting on a deploy that is
-# outside GitHub's control, and it runs only after main has already moved.
+# Triggers when the CI workflow (which contains the deploy job) has finished
+# successfully on main — NOT on push. On push it would race the deploy and read
+# the OLD live sitemap, submitting a URL list that misses exactly the page the
+# commit added. The workflow_run trigger plus the script's own live-sitemap
+# poll closes that race from both ends.
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
-  # Manual re-run, for when a deploy landed but the ping did not — e.g. Dokploy
-  # took longer than the wait window, or the endpoint rate-limited us.
+  # Manual re-run, for when a deploy landed but the ping did not.
   workflow_dispatch:
 
-# A newer push supersedes an older one: the sitemap it submits is a superset,
+# A newer run supersedes an older one: the sitemap it submits is a superset,
 # so cancelling the in-flight wait loses nothing and saves the runner minutes.
 concurrency:
   group: indexnow
@@ -23,13 +26,13 @@ concurrency:
 
 jobs:
   submit:
+    # workflow_run fires on failure too — only proceed after a green CI.
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    # The script polls for up to 20 × 15s waiting for Dokploy, twice over (key
-    # file, then sitemap). 25 gives that room without hanging a runner all day.
-    timeout-minutes: 25
+    # Cloudflare deploys land in seconds, so the script's poll window is short;
+    # 10 minutes is generous headroom for the build step here.
+    timeout-minutes: 10
     steps:
-      # Kept in step with ci.yml — see the note there for why v7 is safe for
-      # these triggers. This workflow runs on `push` and `workflow_dispatch`.
       - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v7
@@ -43,15 +46,14 @@ jobs:
       # Nothing from dist/ is submitted — the script reads the live sitemap.
       - run: npm run build:ci
 
-      # This number is what closes the deploy race. GitHub fires on push;
-      # Dokploy needs a minute or two to rebuild and swap the container. Without
-      # it, a run started seconds after a merge reads the OLD sitemap, submits
-      # the OLD URL list, and the page we just added is never pinged at all.
+      # This count is the second half of the deploy-race guard: the script
+      # waits until the LIVE sitemap carries at least this many URLs before
+      # submitting, so it can never ping a list that predates this commit.
       #
-      # Known gap: a commit that REMOVES pages lowers this count, so the stale
-      # sitemap already satisfies it and the run can submit a URL that is about
-      # to 404. Rare, self-correcting on the next push, and a re-run via
-      # workflow_dispatch fixes it immediately. Not worth a second heuristic.
+      # Known gap: a commit that REMOVES pages lowers this count, so a stale
+      # sitemap already satisfies it. Rare, self-correcting on the next push,
+      # and workflow_dispatch fixes it immediately. Not worth a second
+      # heuristic.
       - name: Count URLs in the built sitemap
         id: expected
         run: |

@@ -12,13 +12,13 @@
  *
  * It resolves the *effective* background by walking ancestors until it finds a
  * non-transparent one, which is what makes it usable on a site whose sections
- * sit on five different band colours — a token that passes on white can fail on
- * .band--blue, and nothing but measurement will tell you which.
+ * sit on several different band colours — a token that passes on white can
+ * fail on a tinted band, and nothing but measurement will tell you which.
  *
  * KNOWN LIMITS, stated so nobody trusts it further than it goes: it does not
- * model background images, gradients, opacity on ancestors, or text over the
- * harbour SVG. Those are hand-checked. A pass here means "no flat-colour text
- * fails", not "the page is accessible".
+ * model background images, gradients, opacity on ancestors, or text over
+ * decorative SVG art. Those are hand-checked. A pass here means "no
+ * flat-colour text fails", not "the page is accessible".
  */
 import { readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';

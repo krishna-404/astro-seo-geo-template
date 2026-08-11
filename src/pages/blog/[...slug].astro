@@ -1,0 +1,282 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { SITE } from '../../data/site';
+
+/**
+ * Blog post template.
+ *
+ * BaseLayout already emits a site-wide Person node at `#founder` — pages that
+ * the founder authors should reference that `@id` rather than restating the
+ * profile. The BlogPosting node here deliberately restates its own author
+ * instead: a post carries its author in frontmatter precisely so a guest post
+ * attributes to the guest, and the schema must match the byline the page shows.
+ */
+export async function getStaticPaths() {
+  const entries = await getCollection('blog', ({ data }) => !data.draft);
+  return entries.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { data } = entry;
+const { Content } = await render(entry);
+
+const url = new URL(`/blog/${entry.id}`, SITE.url).href;
+
+const published = data.published.toISOString();
+const modified = (data.updated ?? data.published).toISOString();
+
+const schema = [
+  {
+    '@type': 'BlogPosting',
+    '@id': `${url}#post`,
+    headline: data.title,
+    description: data.description,
+    mainEntityOfPage: url,
+    datePublished: published,
+    dateModified: modified,
+    author: {
+      '@type': 'Person',
+      name: data.author.name,
+      jobTitle: data.author.title,
+      sameAs: data.author.sameAs,
+    },
+    publisher: { '@id': `${SITE.url}/#organization` },
+    ...(data.tags.length > 0 ? { keywords: data.tags.join(', ') } : {}),
+    ...(data.sources.length > 0
+      ? {
+          citation: data.sources.map((s) => ({
+            '@type': 'CreativeWork',
+            name: s.label,
+            ...(s.url ? { url: s.url } : {}),
+          })),
+        }
+      : {}),
+  },
+  {
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Blog',
+        item: new URL('/blog', SITE.url).href,
+      },
+      { '@type': 'ListItem', position: 2, name: data.title, item: url },
+    ],
+  },
+  ...(data.faq.length > 0
+    ? [
+        {
+          '@type': 'FAQPage',
+          '@id': `${url}#faq`,
+          mainEntity: data.faq.map((f) => ({
+            '@type': 'Question',
+            name: f.q,
+            acceptedAnswer: { '@type': 'Answer', text: f.a },
+          })),
+        },
+      ]
+    : []),
+];
+---
+
+<BaseLayout
+  title={data.title}
+  description={data.description}
+  ogType="article"
+  canonical={data.canonical}
+  ogImage={data.ogImage}
+  schema={schema}
+>
+  <article class="post">
+    <nav class="post__crumb" aria-label="Breadcrumb">
+      <a href="/blog">Blog</a> <span aria-hidden="true">/</span>
+      <span>{data.title}</span>
+    </nav>
+
+    <h1>{data.title}</h1>
+
+    <p class="post__byline">
+      By <strong>{data.author.name}</strong>, {data.author.title} ·
+      <time datetime={published}>{published.slice(0, 10)}</time>
+      {data.updated && <span> · updated {modified.slice(0, 10)}</span>}
+    </p>
+
+    {/* Front-loaded answer — the lift target, first thing after the h1. */}
+    <p class="post__tldr">{data.tldr}</p>
+
+    <div class="post__body prose">
+      <Content />
+    </div>
+
+    {
+      data.tags.length > 0 && (
+        <p class="post__tags">
+          {data.tags.map((t) => (
+            <span class="post__tag">{t}</span>
+          ))}
+        </p>
+      )
+    }
+
+    {
+      data.faq.length > 0 && (
+        <section class="post__faq">
+          <h2>Questions this raises</h2>
+          {data.faq.map((f) => (
+            <details>
+              <summary>{f.q}</summary>
+              <p>{f.a}</p>
+            </details>
+          ))}
+        </section>
+      )
+    }
+
+    {
+      data.sources.length > 0 && (
+        <section class="post__sources">
+          <h2>Sources</h2>
+          <ol>
+            {data.sources.map((s) => (
+              <li>
+                {s.url ? (
+                  <a href={s.url} rel="nofollow noopener">
+                    {s.label}
+                  </a>
+                ) : (
+                  s.label
+                )}
+                {s.retrieved && (
+                  <span class="post__retrieved">
+                    {' '}
+                    · checked {s.retrieved.toISOString().slice(0, 10)}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ol>
+        </section>
+      )
+    }
+
+    <aside class="post__cta">
+      <p>
+        Want to talk about what you read here — or about anything else? The contact form
+        goes straight to a person.
+      </p>
+      <div class="btn-row">
+        <a
+          class="btn btn--primary"
+          href="/contact"
+          data-umami-event="cta-contact"
+          data-umami-event-place="blog-post">Get in touch</a
+        >
+        <a
+          class="btn"
+          href="/about"
+          data-umami-event="cta-about"
+          data-umami-event-place="blog-post">About this site</a
+        >
+      </div>
+    </aside>
+  </article>
+</BaseLayout>
+
+<style>
+  .post {
+    max-width: 44rem;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 4rem;
+  }
+  .post__crumb {
+    font-size: 0.875rem;
+    color: var(--ink-3);
+    margin-bottom: 1.5rem;
+  }
+  .post h1 {
+    font-size: 1.875rem;
+    line-height: 1.15;
+    margin: 0 0 0.75rem;
+  }
+  .post__byline {
+    font-size: 0.9375rem;
+    color: var(--ink-3);
+    margin: 0 0 1.5rem;
+    line-height: 1.6;
+  }
+  /* Front-loaded answer, same treatment as the glossary. */
+  .post__tldr {
+    font-size: 1.125rem;
+    line-height: 1.6;
+    border-left: 3px solid var(--ink);
+    padding-left: 1rem;
+    margin: 0 0 2rem;
+  }
+  .post__tags {
+    margin: 2rem 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .post__tag {
+    font-size: 0.8125rem;
+    background: var(--blue-tint);
+    border-radius: 999px;
+    padding: 0.25rem 0.625rem;
+    color: var(--ink-3);
+  }
+  .post__faq {
+    margin-top: 2.5rem;
+  }
+  .post__faq summary {
+    font-weight: 700;
+    cursor: pointer;
+    line-height: 1.5;
+    padding: 0.625rem 0;
+  }
+  .post__faq details {
+    border-top: 1px solid var(--line-2);
+  }
+  .post__faq details p {
+    margin: 0.25rem 0 0.875rem;
+    line-height: 1.7;
+  }
+  .post__sources {
+    margin-top: 2.5rem;
+    font-size: 0.9375rem;
+  }
+  .post__sources ol {
+    padding-left: 1.1rem;
+  }
+  .post__sources li {
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+  }
+  .post__retrieved {
+    color: var(--ink-3);
+  }
+  .post__cta {
+    margin-top: 3rem;
+    padding: 1.5rem;
+    background: var(--blue-tint);
+    border-radius: var(--radius);
+  }
+  .post__cta p {
+    margin: 0 0 1rem;
+    line-height: 1.6;
+  }
+
+  @media (min-width: 48rem) {
+    .post {
+      padding: 3rem 1.5rem 5rem;
+    }
+    .post h1 {
+      font-size: 2.25rem;
+    }
+  }
+</style>

@@ -3,7 +3,7 @@
  * Purge the Cloudflare edge cache after a deploy.
  *
  *   npm run purge                    # everything
- *   npm run purge -- /contact /features   # just those URLs
+ *   npm run purge -- /contact /about      # just those URLs
  *
  * WHY THIS EXISTS. Pages are served with `Cache-Control: public, max-age=300,
  * must-revalidate` and the Cloudflare cache rule honours it, so an edit reaches
@@ -30,12 +30,14 @@
  * Pass paths when you have changed one page and would rather not make every
  * other visitor pay for a fresh origin fetch.
  */
+import { SITE_URL } from '../src/data/origin.mjs';
+
 const ZONE = process.env.CLOUDFLARE_ZONE_ID;
 const TOKEN = process.env.CLOUDFLARE_API_TOKEN;
-const SITE = 'https://dodocket.com';
+const SITE = SITE_URL;
 
 if (!ZONE || !TOKEN) {
-  console.error('Set CLOUDFLARE_ZONE_ID and CLOUDFLARE_API_TOKEN. See DEPLOY.md § 3.');
+  console.error('Set CLOUDFLARE_ZONE_ID and CLOUDFLARE_API_TOKEN — see the header comment for scoping.');
   process.exit(2);
 }
 
@@ -64,4 +66,4 @@ if (!res.ok || !json.success) {
 console.log(paths.length ? `purged ${paths.length} URL(s):` : 'purged everything');
 for (const p of paths) console.log(`  ${new URL(p, SITE).href}`);
 console.log('\nVerify — first request MISS, second HIT:');
-console.log("  curl -sI https://dodocket.com/ | grep -i cf-cache-status");
+console.log(`  curl -sI ${SITE}/ | grep -i cf-cache-status`);

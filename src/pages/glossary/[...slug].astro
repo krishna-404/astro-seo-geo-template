@@ -1,0 +1,255 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { SITE } from '../../data/site';
+
+/**
+ * Canonical explainer, one URL per term.
+ *
+ * GEO note: the levers with evidence behind them are cited sources, quotations
+ * from authorities, and statistics. Every entry carries the first two by
+ * construction — `sources` is required by the schema, the TL;DR is
+ * front-loaded so the answer sits in the first 30% of the page, and the
+ * DefinedTerm + Article nodes make the definition machine-liftable.
+ */
+export async function getStaticPaths() {
+  const entries = await getCollection('glossary', ({ data }) => !data.draft);
+  return entries.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { data } = entry;
+const { Content } = await render(entry);
+
+const url = new URL(`/glossary/${entry.id}`, SITE.url).href;
+
+// Sibling terms for the related block — resolved by id so a missing id drops
+// out rather than rendering a dead link.
+const all = await getCollection('glossary', ({ data }) => !data.draft);
+const related = data.related
+  .map((id) => all.find((e) => e.id === id))
+  .filter((e) => e !== undefined);
+
+const schema = [
+  {
+    '@type': 'DefinedTerm',
+    '@id': `${url}#term`,
+    name: data.term,
+    description: data.shortDefinition,
+    inDefinedTermSet: {
+      '@type': 'DefinedTermSet',
+      name: `${SITE.name} glossary`,
+      url: new URL('/glossary', SITE.url).href,
+    },
+    ...(data.aliases.length > 0 ? { alternateName: data.aliases } : {}),
+  },
+  {
+    '@type': 'Article',
+    '@id': `${url}#article`,
+    headline: data.title,
+    description: data.description,
+    mainEntityOfPage: url,
+    /**
+     * References the site-wide Person node BaseLayout emits at `#founder`
+     * rather than restating the profile — one author identity, one @id, every
+     * page pointing at it. (Blog posts are the exception: they restate their
+     * own author so a guest post attributes to the guest.)
+     */
+    author: { '@id': `${SITE.url}/#founder` },
+    ...(data.updated ? { dateModified: data.updated.toISOString() } : {}),
+    ...(data.sources.length > 0
+      ? {
+          citation: data.sources.map((s) => ({
+            '@type': 'CreativeWork',
+            name: s.label,
+            ...(s.url ? { url: s.url } : {}),
+          })),
+        }
+      : {}),
+  },
+  {
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Glossary',
+        item: new URL('/glossary', SITE.url).href,
+      },
+      { '@type': 'ListItem', position: 2, name: data.term, item: url },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  title={data.title}
+  description={data.description}
+  ogType="article"
+  ogImage={data.ogImage}
+  schema={schema}
+>
+  <article class="term">
+    <nav class="term__crumb" aria-label="Breadcrumb">
+      <a href="/glossary">Glossary</a> <span aria-hidden="true">/</span>
+      <span>{data.term}</span>
+    </nav>
+
+    <h1>{data.title}</h1>
+
+    {/* The lift target. Front-loaded answer, visually distinct, first thing after h1. */}
+    <p class="term__tldr">{data.tldr}</p>
+
+    <dl class="term__def">
+      <dt>{data.term}</dt>
+      <dd>{data.shortDefinition}</dd>
+    </dl>
+
+    <div class="term__body prose">
+      <Content />
+    </div>
+
+    {
+      related.length > 0 && (
+        <section class="term__related">
+          <h2>Related terms</h2>
+          <ul>
+            {related.map((r) => (
+              <li>
+                <a href={`/glossary/${r.id}`}>{r.data.term}</a> — {r.data.shortDefinition}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+
+    <section class="term__sources">
+      <h2>Sources</h2>
+      <ol>
+        {
+          data.sources.map((s) => (
+            <li>
+              {s.url ? (
+                <a href={s.url} rel="nofollow noopener">
+                  {s.label}
+                </a>
+              ) : (
+                s.label
+              )}
+              {s.retrieved && (
+                <span class="term__retrieved">
+                  {' '}
+                  · checked {s.retrieved.toISOString().slice(0, 10)}
+                </span>
+              )}
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+
+    <aside class="term__cta">
+      <p>
+        This entry is part of a sourced glossary — every definition cites where it came
+        from. Spotted an error, or want a term added?
+      </p>
+      <div class="btn-row">
+        <a
+          class="btn btn--primary"
+          href="/contact"
+          data-umami-event="cta-contact"
+          data-umami-event-place="glossary-term">Tell us</a
+        >
+        <a
+          class="btn"
+          href="/glossary"
+          data-umami-event="cta-glossary"
+          data-umami-event-place="glossary-term">All terms</a
+        >
+      </div>
+    </aside>
+  </article>
+</BaseLayout>
+
+<style>
+  .term {
+    max-width: 44rem;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 4rem;
+  }
+  .term__crumb {
+    font-size: 0.875rem;
+    color: var(--ink-3);
+    margin-bottom: 1.5rem;
+  }
+  .term h1 {
+    font-size: 1.875rem;
+    line-height: 1.15;
+    margin: 0 0 1rem;
+  }
+  /* The lift target. Front-loaded answer, visually distinct, first thing after h1. */
+  .term__tldr {
+    font-size: 1.125rem;
+    line-height: 1.6;
+    border-left: 3px solid var(--ink);
+    padding-left: 1rem;
+    margin: 0 0 2rem;
+  }
+  .term__def {
+    background: var(--blue-tint);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    margin: 0 0 2rem;
+  }
+  .term__def dt {
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+  }
+  .term__def dd {
+    margin: 0;
+  }
+  .term__related ul {
+    padding-left: 1.1rem;
+  }
+  .term__related li {
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+  }
+  .term__sources {
+    margin-top: 2.5rem;
+    font-size: 0.9375rem;
+  }
+  .term__sources ol {
+    padding-left: 1.1rem;
+  }
+  .term__sources li {
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+  }
+  .term__retrieved {
+    color: var(--ink-3);
+  }
+  .term__cta {
+    margin-top: 3rem;
+    padding: 1.5rem;
+    background: var(--blue-tint);
+    border-radius: var(--radius);
+  }
+  .term__cta p {
+    margin: 0 0 1rem;
+    line-height: 1.6;
+  }
+
+  @media (min-width: 48rem) {
+    .term {
+      padding: 3rem 1.5rem 5rem;
+    }
+    .term h1 {
+      font-size: 2.25rem;
+    }
+  }
+</style>

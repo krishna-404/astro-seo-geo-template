@@ -3,10 +3,10 @@
  * indexnow.mjs — tell Bing, Yandex and Seznam that URLs changed, instead of
  * waiting to be crawled. Google does not participate.
  *
- *   node scripts/indexnow.mjs                     # submit everything in the live sitemap
- *   node scripts/indexnow.mjs --expect /vs        # wait for /vs to be live first
- *   node scripts/indexnow.mjs --min-urls 44       # wait until the deploy has landed
- *   node scripts/indexnow.mjs --dry-run           # show what would be sent
+ *   node scripts/indexnow.mjs                       # submit everything in the live sitemap
+ *   node scripts/indexnow.mjs --expect /new-page    # wait for /new-page to be live first
+ *   node scripts/indexnow.mjs --min-urls 44         # wait until the deploy has landed
+ *   node scripts/indexnow.mjs --dry-run             # show what would be sent
  *
  * The design point that matters: the URL list comes from the LIVE sitemap, not
  * from the local build. Submitting a URL that 404s is worse than not submitting
@@ -15,10 +15,43 @@
  *
  * Zero dependencies, so it runs from a clean checkout with nothing installed.
  */
+import { readdirSync, readFileSync, existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+import { SITE_URL } from '../src/data/origin.mjs';
 
-const HOST = 'dodocket.com';
-const ORIGIN = `https://${HOST}`;
-const KEY = '549177301d83a7473628a1e089cc95ce';
+const ORIGIN = SITE_URL;
+const HOST = new URL(ORIGIN).host;
+
+/**
+ * The IndexNow key. Two sources, tried in order:
+ *
+ *   1. The INDEXNOW_KEY env var (what CI sets).
+ *   2. Discovery: a `public/<key>.txt` whose content is exactly its own
+ *      basename — the shape IndexNow requires the key file to have anyway,
+ *      so committing the key file once makes local runs need no setup.
+ *
+ * The key is not a secret (it is served publicly by design — its only job is
+ * proving you control the host), so committing it is fine.
+ */
+function discoverKey() {
+  if (process.env.INDEXNOW_KEY) return process.env.INDEXNOW_KEY.trim();
+  const pub = resolve(dirname(fileURLToPath(import.meta.url)), '../public');
+  if (!existsSync(pub)) return null;
+  for (const f of readdirSync(pub)) {
+    const m = /^([a-f0-9]{16,64})\.txt$/i.exec(f);
+    if (m && readFileSync(resolve(pub, f), 'utf8').trim() === m[1]) return m[1];
+  }
+  return null;
+}
+
+const KEY = discoverKey();
+if (!KEY) {
+  console.error(
+    'indexnow: no key — set INDEXNOW_KEY, or commit public/<key>.txt containing exactly the key'
+  );
+  process.exit(1);
+}
 const KEY_LOCATION = `${ORIGIN}/${KEY}.txt`;
 
 // The shared endpoint forwards to every participating engine, so one POST
@@ -37,8 +70,13 @@ const fail = (msg) => {
   process.exit(1);
 };
 
-/** Poll a URL until it is 200, or give up. Dokploy takes a minute or two. */
-async function waitForLive(url, { tries = 20, delayMs = 15000 } = {}) {
+/**
+ * Poll a URL until it is 200, or give up. Cloudflare Workers deploys land in
+ * seconds, so ~6 × 10s is generous headroom — the long window this had under a
+ * container-rebuild deploy pipeline (20 × 15s) would just hide a real failure
+ * for five minutes.
+ */
+async function waitForLive(url, { tries = 6, delayMs = 10000 } = {}) {
   for (let i = 1; i <= tries; i++) {
     try {
       const r = await fetch(url, { method: 'HEAD', redirect: 'manual' });
@@ -56,13 +94,13 @@ async function waitForLive(url, { tries = 20, delayMs = 15000 } = {}) {
 //    submission is rejected with 403. Check it before sending anything.
 //
 //    Polled, not fetched once. The very first run after this lands on main
-//    starts while Dokploy is still deploying the commit that ADDS the key file,
+//    starts while the deploy that ADDS the key file may still be in flight,
 //    so a single fetch would 404 and fail the run that is supposed to work.
 //    Only waits when we are already waiting on a deploy. Run by hand, it checks
-//    once and tells you immediately rather than sitting there for five minutes.
+//    once and tells you immediately rather than sitting there polling.
 const waitingOnDeploy = Boolean(minUrls || expectPath);
 console.log(`Verifying key file at ${KEY_LOCATION}`);
-if (!(await waitForLive(KEY_LOCATION, { tries: waitingOnDeploy ? 20 : 1 }))) {
+if (!(await waitForLive(KEY_LOCATION, { tries: waitingOnDeploy ? 6 : 1 }))) {
   fail('key file never returned 200 — deploy it before submitting');
 }
 const keyRes = await fetch(KEY_LOCATION).catch((e) => fail(`key file unreachable: ${e.message}`));
@@ -84,9 +122,10 @@ if (expectPath) {
 
 // 3. Read the live sitemap. Production is the source of truth for what exists.
 //
-//    --min-urls closes the deploy race: CI fires on push, but Dokploy needs a
-//    minute or two, so without this a run right after adding a page would read
-//    the OLD sitemap and never ping the new page at all.
+//    --min-urls closes the deploy race: CI fires on push, but the deploy takes
+//    a moment to go live, so without this a run right after adding a page would
+//    read the OLD sitemap and never ping the new page at all. Workers deploys
+//    land in seconds, hence the short 6 × 10s window below.
 async function readLiveSitemap() {
   const r = await fetch(`${ORIGIN}/sitemap-0.xml`, { cache: 'no-store' });
   if (!r.ok) throw new Error(`sitemap returned ${r.status}`);
@@ -96,7 +135,7 @@ async function readLiveSitemap() {
 
 console.log(`Reading ${ORIGIN}/sitemap-0.xml${minUrls ? ` (waiting for >= ${minUrls} URLs)` : ''}`);
 let urlList = [];
-const sitemapTries = minUrls ? 20 : 1;
+const sitemapTries = minUrls ? 6 : 1;
 for (let i = 1; i <= sitemapTries; i++) {
   try {
     urlList = await readLiveSitemap();
@@ -106,7 +145,7 @@ for (let i = 1; i <= sitemapTries; i++) {
   if (urlList.length >= minUrls) break;
   console.log(`  ${urlList.length} URLs live, want ${minUrls} (try ${i}/${sitemapTries})`);
   // No sleep after the last attempt — nothing follows it but the failure.
-  if (i < sitemapTries) await new Promise((r) => setTimeout(r, 15000));
+  if (i < sitemapTries) await new Promise((r) => setTimeout(r, 10000));
 }
 if (minUrls && urlList.length < minUrls) {
   fail(`live sitemap still has ${urlList.length} URLs, expected ${minUrls} — deploy has not landed, not submitting`);

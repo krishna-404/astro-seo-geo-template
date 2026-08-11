@@ -1,0 +1,183 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE } from '../data/site';
+
+/**
+ * Homepage. The hero is deliberately plain: h1 from SITE.tagline, lede from
+ * SITE.description — so pointing the template at a new brand rewrites this
+ * page from site.ts without touching markup. The sections below demonstrate
+ * the band/card/FAQ patterns the rest of the site reuses.
+ */
+
+const faq = [
+  {
+    q: 'What is this template?',
+    a: 'A static Astro marketing-site template with the SEO, AEO and GEO machinery pre-wired: canonical URLs, JSON-LD, sitemap, RSS, llms.txt, and content collections whose schemas enforce sourced, front-loaded content.',
+  },
+  {
+    q: 'How do I rebrand it?',
+    a: 'Edit src/data/site.ts (name, tagline, description, nav, contact), origin.mjs for the domain, facts.json for your numbers, and the colour tokens in global.css. Nothing brand-specific is typed into page markup.',
+  },
+  {
+    q: 'Does it need a server or a database?',
+    a: 'No. It builds to static files that host anywhere for free. The contact form posts to a Google Apps Script and lands in a Sheet; analytics is cookieless Umami by default, so there is no consent banner unless you enable a cookie-setting vendor.',
+  },
+];
+
+const schema = [
+  {
+    '@type': 'WebSite',
+    '@id': `${SITE.url}/#website`,
+    url: SITE.url,
+    name: SITE.name,
+    description: SITE.description,
+    publisher: { '@id': `${SITE.url}/#organization` },
+  },
+  {
+    '@type': 'FAQPage',
+    mainEntity: faq.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  },
+];
+---
+
+<BaseLayout title={`${SITE.name} — ${SITE.tagline}`} description={SITE.description} schema={schema}>
+  <!-- Hero. One h1 per page, and it comes from site.ts. -->
+  <section class="band band--white hero">
+    <div class="wrap">
+      <p class="eyebrow">{SITE.name}</p>
+      <h1>{SITE.tagline}</h1>
+      <p class="lede">{SITE.description}</p>
+      <div class="btn-row">
+        <a
+          class="btn btn--primary"
+          href="/contact"
+          data-umami-event="cta-contact"
+          data-umami-event-place="home-hero">Get in touch</a
+        >
+        <a
+          class="btn"
+          href="/about"
+          data-umami-event="cta-about"
+          data-umami-event-place="home-hero">How the template works</a
+        >
+      </div>
+    </div>
+  </section>
+
+  <!-- Three-card grid: the standard "what you get" section pattern. -->
+  <section class="band band--cream">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">What this template gives you</p>
+        <h2>The machinery, pre-wired</h2>
+        <p class="lede">
+          Swap the brand in <code>site.ts</code>, write content, ship. Everything below is
+          already built and tested.
+        </p>
+      </div>
+      <div class="grid grid--3">
+        <div class="card">
+          <h3>SEO machinery</h3>
+          <p>
+            Canonical URLs, Open Graph tags, JSON-LD (Organization, Person, BlogPosting,
+            DefinedTerm, FAQPage, BreadcrumbList), sitemap and RSS — all emitted from one
+            layout and the collection templates.
+          </p>
+        </div>
+        <div class="card">
+          <h3>AEO &amp; GEO surfaces</h3>
+          <p>
+            Every entry front-loads its answer with a required <code>tldr</code>, glossary
+            terms won't build without sources, and <a href="/llms.txt">llms.txt</a>,
+            <a href="/llms-full.txt">llms-full.txt</a> and <a href="/for-llms">/for-llms</a>
+            are generated from the same content at build time.
+          </p>
+        </div>
+        <div class="card">
+          <h3>Zero-cost hosting</h3>
+          <p>
+            Static files, no server, no database. The contact form posts to a Google Apps
+            Script and lands in a Sheet you own; analytics is cookieless by default, so
+            there is no consent banner to maintain.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ as <details> — no JS, and the same items feed the FAQPage node above. -->
+  <section class="band band--tint">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Questions</p>
+        <h2>About this template</h2>
+      </div>
+      <div class="faq">
+        {
+          faq.map((f) => (
+            <details class="card">
+              <summary>{f.q}</summary>
+              <p>{f.a}</p>
+            </details>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Final CTA band. -->
+  <section class="band band--blue">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Make it yours</h2>
+        <p class="lede">
+          Read how the pieces fit, then replace this copy with your own pitch.
+        </p>
+      </div>
+      <div class="btn-row btn-row--center">
+        <a
+          class="btn btn--primary"
+          href="/contact"
+          data-umami-event="cta-contact"
+          data-umami-event-place="home-final">Get in touch</a
+        >
+        <a
+          class="btn"
+          href="/blog"
+          data-umami-event="cta-blog"
+          data-umami-event-place="home-final">Read the demo posts</a
+        >
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .hero {
+    padding-block: 4rem 4.5rem;
+  }
+  .hero .lede {
+    max-width: 38em;
+  }
+  .faq {
+    display: grid;
+    gap: 0.75rem;
+    max-width: 46rem;
+    margin: 0 auto;
+  }
+  .faq summary {
+    font-weight: 700;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .faq details p {
+    margin: 0.75rem 0 0;
+  }
+  .btn-row--center {
+    justify-content: center;
+  }
+</style>

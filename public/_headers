@@ -1,0 +1,41 @@
+# Header rules for Cloudflare's static asset layer. Unlike nginx's add_header,
+# rules here MERGE across matches — a more specific rule adds to /* rather than
+# wiping it, so the "one location silently drops every inherited security
+# header" trap class does not exist on this platform.
+#
+# HSTS is deliberately ABSENT: a browser honours only the FIRST
+# Strict-Transport-Security header it sees (RFC 6797), so there must be exactly
+# one emitter. On Cloudflare that emitter is the zone-level HSTS setting
+# (dashboard → SSL/TLS → Edge Certificates). Enable it there, then verify with
+# `curl -sI https://DOMAIN/ | grep -ci strict-transport` → exactly 1.
+#
+# Worker-generated responses (/api/*, negotiated .md) do NOT pass through this
+# file — the worker sets its own headers in code.
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Cache-Control: public, max-age=300, must-revalidate
+  Link: </llms.txt>; rel="describedby"; type="text/plain"; title="LLM brief", </llms-full.txt>; rel="describedby"; type="text/plain"; title="LLM corpus"
+
+# Fingerprinted build output: the hash in the filename IS the cache key, so
+# cache forever. Astro's image pipeline output lands here too.
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Stable-URL assets: refreshable within a week. These URLs never change, so
+# they must not be immutable — a regenerated favicon has to be able to land.
+/og/*
+  Cache-Control: public, max-age=604800
+/favicon.ico
+  Cache-Control: public, max-age=604800
+/favicon.svg
+  Cache-Control: public, max-age=604800
+/favicon-48.png
+  Cache-Control: public, max-age=604800
+/favicon-96.png
+  Cache-Control: public, max-age=604800
+/apple-touch-icon.png
+  Cache-Control: public, max-age=604800

@@ -1,6 +1,5 @@
 ---
-import Logo from './Logo.astro';
-import { SITE, CONTACT, FOOTER_NAV } from '../data/site';
+import { SITE, CONTACT, FOOTER_NAV, ANALYTICS } from '../data/site';
 
 const year = new Date().getFullYear();
 ---
@@ -8,11 +7,24 @@ const year = new Date().getFullYear();
 <footer class="ftr">
   <div class="wrap ftr__top">
     <div class="ftr__brand">
-      <Logo size={22} />
+      <span class="ftr__mark">{SITE.name}</span>
       <p class="ftr__tag">{SITE.tagline}</p>
       <p class="ftr__contact">
-        <a href={CONTACT.whatsapp} rel="noopener" data-umami-event="whatsapp" data-umami-event-place="footer">WhatsApp</a>
-        <a href={CONTACT.phoneHref} class="mono" data-umami-event="phone" data-umami-event-place="footer">{CONTACT.phone}</a>
+        <a href={CONTACT.emailHref} data-umami-event="email" data-umami-event-place="footer"
+          >{CONTACT.email}</a
+        >
+        {
+          CONTACT.phone && (
+            <a
+              href={CONTACT.phoneHref}
+              class="mono"
+              data-umami-event="phone"
+              data-umami-event-place="footer"
+            >
+              {CONTACT.phone}
+            </a>
+          )
+        }
       </p>
     </div>
 
@@ -36,12 +48,19 @@ const year = new Date().getFullYear();
 
   <div class="wrap ftr__legal">
     <span>© {year} {SITE.name}</span>
-    <a href="/privacy-policy">Privacy</a>
-    {/* Withdrawing consent has to be as easy as giving it, so the banner is
-        re-openable from every page. A link, not a button, so it still reads as
-        navigation with JavaScript off — where there is nothing to consent to
-        anyway, since the tracker is script-injected. */}
-    <a href="/privacy-policy" data-consent-reopen>Cookie settings</a>
+    <a href="/privacy-policy">Privacy policy</a>
+    {
+      /* Withdrawing consent has to be as easy as giving it, so the banner is
+         re-openable from every page. A link, not a button, so it still reads as
+         navigation with JavaScript off — where there is nothing to consent to
+         anyway, since the tracker is script-injected. Rendered only when GA4 is
+         configured: no banner, no reopen link. */
+      ANALYTICS.ga4.measurementId && (
+        <a href="/privacy-policy" data-consent-reopen>
+          Cookie settings
+        </a>
+      )
+    }
     <a href="/rss.xml">RSS</a>
     <a href="/llms.txt">llms.txt</a>
   </div>
@@ -64,6 +83,12 @@ const year = new Date().getFullYear();
     gap: 0.5rem;
     justify-items: start;
   }
+  .ftr__mark {
+    font-weight: 800;
+    font-size: 1rem;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
   .ftr__tag {
     margin: 0;
     font-size: 0.8125rem;
@@ -72,6 +97,7 @@ const year = new Date().getFullYear();
   }
   .ftr__contact {
     display: flex;
+    flex-wrap: wrap;
     gap: 1rem;
     margin: 0.25rem 0 0;
     font-size: 0.8125rem;
@@ -79,6 +105,8 @@ const year = new Date().getFullYear();
   .ftr__contact a {
     color: var(--ink-3);
     text-decoration: none;
+    /* Comfortable tap target on touch widths without inflating the row. */
+    padding-block: 0.2rem;
   }
   .ftr__contact a:hover {
     color: var(--ink);
@@ -109,7 +137,7 @@ const year = new Date().getFullYear();
     text-decoration: none;
   }
   .ftr__col a:hover {
-    color: var(--orange-strong);
+    color: var(--brand-strong);
   }
 
   .ftr__legal {

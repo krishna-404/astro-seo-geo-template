@@ -6,10 +6,10 @@ import { SITE, FOUNDER } from '../data/site';
 /**
  * The blog feed, at /rss.xml.
  *
- * Blog only, on purpose. Glossary and solution entries are reference pages that
- * get revised in place rather than published on a date — pushing them through a
- * feed would re-notify subscribers every time a source was re-checked. Both are
- * covered for machines by the sitemap and by llms.txt.
+ * Blog only, on purpose. Glossary entries are reference pages that get revised
+ * in place rather than published on a date — pushing them through a feed would
+ * re-notify subscribers every time a source was re-checked. They are covered
+ * for machines by the sitemap and by llms.txt.
  */
 export async function GET(context: APIContext) {
   const posts = await getCollection('blog', ({ data }) => !data.draft);

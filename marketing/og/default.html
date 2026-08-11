@@ -1,23 +1,27 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>Docket OG image</title>
+<title>Default OG image</title>
 <!--
-  Source for public/og/default.png. Rendered at exactly 1200x630 — the size
-  LinkedIn, WhatsApp, Slack and X all crop from.
+  Source for public/og/default.png — the card every page without a per-page
+  card falls back to. Rendered at exactly 1200x630, the size LinkedIn,
+  WhatsApp, Slack and X all crop from.
+
+  EDIT THE THREE STRINGS BELOW (site name, tagline, domain) and the --brand
+  colour for your site, then regenerate. Same style as page.html, with the
+  tagline where a page title would be.
 
   Rules that shaped it:
   - Nothing smaller than 24px. A social card is viewed at ~500px wide on a
-    desktop feed and less on a phone, so body copy from the site is unreadable
-    here and only wastes space.
-  - Everything important stays inside a centre safe area. Clients crop the
-    edges differently; a headline that runs to the margin loses words.
-  - Type and colour come from the site's tokens so it cannot drift out of brand.
+    desktop feed and less on a phone, so body copy is unreadable here.
+  - Everything important stays inside the 72px margin. Clients crop the edges
+    differently; a headline that runs to the margin loses words.
+  - Self-contained: system fonts, no external assets, one background colour.
 
   Regenerate:  node marketing/og/render.mjs
 -->
 <style>
   :root {
-    --orange:#c2410c; --ink:#101828; --ink-3:#576170;
+    --brand:#0f4c81; /* keep in step with the brand colour in site.ts / global.css */
     --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
@@ -25,114 +29,27 @@
   html,body { width:1200px; height:630px; }
   body {
     font-family:var(--font);
-    background:linear-gradient(180deg,#fff 0%,#f5f8fe 62%);
+    background:var(--brand);
+    color:#fff;
     display:flex; flex-direction:column; justify-content:space-between;
-    overflow:hidden;
+    padding:64px 72px; overflow:hidden;
   }
-  .top { padding:44px 72px 0; }
-  .brand { display:flex; align-items:center; gap:14px; margin-bottom:26px; }
-  .brand svg { display:block; }
-  .brand span { font-size:34px; font-weight:800; letter-spacing:-.02em; color:var(--ink); }
   .eyebrow {
-    font-family:var(--mono); font-size:22px; font-weight:600; letter-spacing:.16em;
-    text-transform:uppercase; color:var(--orange); margin-bottom:18px;
+    font-family:var(--mono); font-size:24px; font-weight:600; letter-spacing:.16em;
+    text-transform:uppercase; color:rgba(255,255,255,.75); margin-bottom:18px;
   }
   h1 {
-    font-size:64px; line-height:1.06; letter-spacing:-.035em; font-weight:800;
-    color:var(--ink); max-width:1010px;
+    font-size:64px; line-height:1.08; letter-spacing:-.025em; font-weight:800;
+    max-width:1010px;
   }
-  h1 b { color:var(--orange); font-weight:800; }
-  .sub {
-    margin-top:22px; font-size:26px; line-height:1.35; color:var(--ink-3);
+  .site {
+    font-size:30px; font-weight:800; letter-spacing:-.02em;
+    color:rgba(255,255,255,.9);
   }
-  .art { line-height:0; }
-  .art svg { width:1200px; height:186px; display:block; }
+  .site span { font-weight:500; color:rgba(255,255,255,.65); }
 </style>
-<div class="top">
-  <div class="brand">
-    <svg width="46" height="46" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#c2410c"/><g fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="9" r="2"/><path d="M16 11.5V24"/><path d="M11.5 14h9"/><path d="M8 19a8 8 0 0 0 16 0"/></g></svg>
-    <span>Docket</span>
-  </div>
-  <p class="eyebrow">AI trade desk</p>
-  <h1>Import&#8211;export trade? Save <b>~$200k a year</b> on chasing paperwork.</h1>
-  <p class="sub">Contracts in, follow-through automatic. dodocket.com</p>
+<div>
+  <p class="eyebrow">Example Co</p>
+  <h1>A one-line description of what this company does</h1>
 </div>
-<div class="art"><svg viewBox="0 0 1440 230" preserveAspectRatio="xMidYMax slice" role="presentation">
-  <!-- sun & clouds -->
-  <circle cx="1175" cy="58" r="38" fill="#fcd792"></circle>
-  <circle cx="1175" cy="58" r="26" fill="#fbc86f"></circle>
-  <g fill="#ffffff" opacity="0.9">
-    <ellipse cx="250" cy="52" rx="48" ry="14"></ellipse>
-    <ellipse cx="300" cy="42" rx="30" ry="11"></ellipse>
-    <ellipse cx="880" cy="38" rx="42" ry="12"></ellipse>
-    <ellipse cx="922" cy="30" rx="24" ry="9"></ellipse>
-  </g>
-
-  <!-- gulls -->
-  <g stroke="#7d8ea3" stroke-width="2.4" fill="none" stroke-linecap="round">
-    <path d="M180 78 q7 -7 14 0 M194 78 q7 -7 14 0"></path>
-    <path d="M1040 64 q6 -6 12 0 M1052 64 q6 -6 12 0"></path>
-  </g>
-
-  <!-- sea -->
-  <rect x="0" y="150" width="1440" height="80" fill="#bfdcf0"></rect>
-  <rect x="0" y="150" width="1440" height="6" fill="#aecfe9"></rect>
-
-  <!-- dock + gantry crane (left) -->
-  <rect x="0" y="128" width="330" height="24" fill="#d9cbb5"></rect>
-  <rect x="0" y="150" width="330" height="80" fill="#c9b99f"></rect>
-  <g fill="#9fb0c1">
-    <rect x="70" y="34" width="10" height="96"></rect>
-    <rect x="120" y="34" width="10" height="96"></rect>
-    <rect x="52" y="24" width="200" height="10" rx="3"></rect>
-    <rect x="60" y="118" width="80" height="10" rx="3"></rect>
-  </g>
-  <line x1="218" y1="34" x2="218" y2="66" stroke="#8a99ab" stroke-width="3"></line>
-  <rect x="196" y="66" width="44" height="26" rx="3" fill="#f6821f"></rect>
-
-  <!-- dock container stacks -->
-  <g>
-    <rect x="18" y="106" width="44" height="22" rx="2" fill="#2a9d8f"></rect>
-    <rect x="18" y="84" width="44" height="22" rx="2" fill="#e9c46a"></rect>
-    <rect x="264" y="106" width="44" height="22" rx="2" fill="#457b9d"></rect>
-    <rect x="264" y="84" width="44" height="22" rx="2" fill="#e15b64"></rect>
-    <rect x="264" y="62" width="44" height="22" rx="2" fill="#7fb069"></rect>
-  </g>
-
-  <!-- ship -->
-  <g>
-    <path d="M420 168 L1060 168 L1014 216 L462 216 Z" fill="#33517e"></path>
-    <rect x="420" y="160" width="640" height="12" rx="4" fill="#e15b64"></rect>
-    <!-- bridge -->
-    <rect x="984" y="106" width="40" height="56" rx="4" fill="#f2f6fa"></rect>
-    <rect x="992" y="116" width="24" height="8" rx="2" fill="#9fb8d4"></rect>
-    <rect x="992" y="130" width="24" height="8" rx="2" fill="#9fb8d4"></rect>
-    <line x1="1004" y1="86" x2="1004" y2="106" stroke="#8a99ab" stroke-width="4"></line>
-    <!-- container rows -->
-    <g>
-      <rect x="452" y="134" width="62" height="26" rx="2" fill="#f6821f"></rect>
-      <rect x="518" y="134" width="62" height="26" rx="2" fill="#2a9d8f"></rect>
-      <rect x="584" y="134" width="62" height="26" rx="2" fill="#e9c46a"></rect>
-      <rect x="650" y="134" width="62" height="26" rx="2" fill="#457b9d"></rect>
-      <rect x="716" y="134" width="62" height="26" rx="2" fill="#e15b64"></rect>
-      <rect x="782" y="134" width="62" height="26" rx="2" fill="#7fb069"></rect>
-      <rect x="848" y="134" width="62" height="26" rx="2" fill="#f6821f"></rect>
-      <rect x="914" y="134" width="62" height="26" rx="2" fill="#2a9d8f"></rect>
-    </g>
-    <g>
-      <rect x="485" y="108" width="62" height="26" rx="2" fill="#457b9d"></rect>
-      <rect x="551" y="108" width="62" height="26" rx="2" fill="#e15b64"></rect>
-      <rect x="617" y="108" width="62" height="26" rx="2" fill="#f6821f"></rect>
-      <rect x="683" y="108" width="62" height="26" rx="2" fill="#7fb069"></rect>
-      <rect x="749" y="108" width="62" height="26" rx="2" fill="#e9c46a"></rect>
-      <rect x="815" y="108" width="62" height="26" rx="2" fill="#2a9d8f"></rect>
-    </g>
-  </g>
-
-  <!-- foreground waves -->
-  <path
-    d="M0 214 Q 60 206 120 214 T 240 214 T 360 214 T 480 214 T 600 214 T 720 214 T 840 214 T 960 214 T 1080 214 T 1200 214 T 1320 214 T 1440 214 L 1440 230 L 0 230 Z"
-    fill="#a9cde9"
-    opacity="0.75"></path>
-</svg>
-</div>
+<div class="site">Example Co <span>· example.com</span></div>

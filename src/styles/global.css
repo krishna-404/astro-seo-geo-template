@@ -1,5 +1,5 @@
 /*
- * Docket design system.
+ * Site design system.
  * Mobile-first: every rule is the phone rule; min-width queries add tablet
  * and desktop. Ships as one stylesheet, no client JS, no external requests.
  */
@@ -11,17 +11,19 @@
  * and fails the build if a new pairing drops under. Do not lighten these by
  * eye — change a value and run the check.
  *
- * The oranges moved on 10 Aug 2026. The old brand orange (f9 73 16) is a
- * beautiful colour and an unreadable one: 2.8:1 on white, which failed both as
- * text and behind the white text of every primary CTA on the site. #c2410c is
- * the same hue two steps deeper, at 5.18:1. If you want the brighter orange
- * back, it can only return somewhere it neither is text nor carries any.
+ * THE BRAND COLOUR IS CHOSEN FOR CONTRAST FIRST. A previous brand hue on this
+ * codebase was a beautiful colour and an unreadable one: 2.8:1 on white, which
+ * failed both as text and behind the white text of every primary CTA on the
+ * site. --brand below is #0f4c81, at ~8.9:1 on white — comfortably past AA in
+ * both directions (as link text on white, and behind white button labels). If
+ * you rebrand, pick a value that keeps both of those true, or your brighter
+ * colour can only live somewhere it neither is text nor carries any.
  */
 :root {
   /* Brand */
-  --orange: #c2410c;
-  --orange-strong: #9a3412; /* hover, and emphasis on pale orange */
-  --orange-soft: #fff2e6;
+  --brand: #0f4c81;
+  --brand-strong: #0b3a63; /* hover, and emphasis on the pale brand tint */
+  --brand-soft: #e8f0f9;
   --green: #0f7038;
   --red: #b91c1c;
 
@@ -167,7 +169,7 @@ p {
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--orange);
+  color: var(--brand);
   margin: 0 0 0.75rem;
 }
 
@@ -192,6 +194,19 @@ p {
   font-size: 0.8125rem;
   line-height: 1.55;
   color: var(--ink-3);
+}
+
+/* Visually hidden but present for screen readers — the standard clip pattern. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 @media (min-width: 48rem) {
@@ -223,25 +238,20 @@ p {
 .btn:active { transform: translateY(1px); }
 
 .btn--primary {
-  background: var(--orange);
-  border-color: var(--orange);
+  background: var(--brand);
+  border-color: var(--brand);
   color: #fff;
 }
 .btn--primary:hover {
-  background: var(--orange-strong);
-  border-color: var(--orange-strong);
+  background: var(--brand-strong);
+  border-color: var(--brand-strong);
 }
 
-/* WhatsApp green is unusable behind white text (1.98:1) and there is no darker
-   green that still reads as WhatsApp. So the brand colour stays exactly as
-   WhatsApp publishes it and the label goes dark instead — 8.95:1, and the
-   same treatment WhatsApp uses on its own message bubbles. */
-.btn--wa {
-  background: #25d366;
-  border-color: #25d366;
-  color: var(--ink);
-}
-.btn--wa:hover { background: #1fb457; border-color: #1fb457; }
+/* There is deliberately no third-party-brand button variant (WhatsApp green,
+   etc.). The lesson from the last one: most vendor brand colours fail AA
+   behind white text (WhatsApp's green is 1.98:1), and the fix is to keep the
+   vendor's exact colour and put a DARK label on it — as the vendors themselves
+   do. If you add such a variant, check the dark-label contrast first. */
 
 .btn-row {
   display: flex;
@@ -250,7 +260,7 @@ p {
 }
 
 :where(a, button, summary):focus-visible {
-  outline: 2px solid var(--orange);
+  outline: 2px solid var(--brand);
   outline-offset: 2px;
   border-radius: 6px;
 }
@@ -323,10 +333,10 @@ p {
   line-height: 1.1;
 }
 .stat--xl { font-size: clamp(1.75rem, 6vw, 2.5rem); }
-.stat--orange { color: var(--orange); }
+.stat--brand { color: var(--brand); }
 .stat--green { color: var(--green); }
 
-/* ---------- Table (competitors) ---------- */
+/* ---------- Table (comparisons) ---------- */
 
 .table-scroll {
   overflow-x: auto;
@@ -359,8 +369,9 @@ table.cmp th {
   white-space: nowrap;
 }
 table.cmp tbody tr:last-child td { border-bottom: 0; }
-table.cmp tr.is-docket td {
-  background: var(--orange-soft);
+/* The row for your own product in a comparison table. */
+table.cmp tr.is-self td {
+  background: var(--brand-soft);
   font-weight: 600;
   color: var(--ink);
 }
@@ -389,7 +400,7 @@ table.cmp tr.is-docket td {
 }
 .prose h2 { margin-top: 2.5rem; }
 .prose h3 { margin-top: 2rem; }
-.prose a { color: var(--orange-strong); }
+.prose a { color: var(--brand-strong); }
 .prose code {
   font-family: var(--font-mono);
   font-size: 0.875em;

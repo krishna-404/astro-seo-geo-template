@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Placeholder mark: rounded square in the brand colour with a bold white
+       chevron. Replace with your own logo, then run `node marketing/favicon.mjs`
+       to regenerate the raster fallbacks. Thick strokes on purpose — this must
+       still read at 16px in a browser tab. -->
+  <rect width="512" height="512" rx="112" fill="#0f4c81"/>
+  <path d="M204 148 L316 256 L204 364" fill="none" stroke="#fff" stroke-width="72" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

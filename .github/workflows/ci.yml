@@ -1,9 +1,10 @@
 name: CI
 
-# Nothing ran on pull requests before this, so `astro check` was enforced only
-# on whoever remembered to run it locally. Two real bugs reached a PR that way:
-# markdown tables that scrolled the page sideways on a phone, and solution pages
-# rendering two <h1>s.
+# Every PR gets the full check battery; main additionally deploys — and only
+# after every check passes. That ordering is the reason deploy lives HERE as a
+# dependent job rather than using Cloudflare's git-connected Workers Builds:
+# Workers Builds deploys on push in parallel with CI, so a commit that fails an
+# invariant would ship anyway. `needs: build` makes green checks a precondition.
 on:
   pull_request:
   push:
@@ -18,17 +19,7 @@ jobs:
       # derives each page's date from `git log`, and at depth 1 git knows one
       # commit — so every route resolves to HEAD and the map becomes "everything
       # changed at the last deploy", which is the exact signal the git
-      # derivation exists to avoid. Verified: a --depth 1 clone produces 44
-      # routes with 1 distinct date.
-      # v7, not v4. GitHub forces v4 onto Node 24 anyway and warns on every run;
-      # v5 was the release that made that official, v7 is current.
-      #
-      # Both majors carry a breaking change and neither applies here, checked
-      # rather than assumed: checkout v7 blocks fork-PR checkout for
-      # `pull_request_target` and `workflow_run`, and this workflow triggers on
-      # `pull_request` and `push`. setup-node v5 began caching automatically
-      # when package.json has a `packageManager` field — ours does not, and the
-      # `cache: npm` below is explicit regardless.
+      # derivation exists to avoid.
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
@@ -38,56 +29,54 @@ jobs:
           node-version: 22
           cache: npm
 
-      # `npm ci`, not `npm install` — the lockfile is the contract, and a build
-      # that silently resolves different versions than the Docker image is worse
-      # than no build at all.
+      # `npm ci`, not `npm install` — the lockfile is the contract.
       - run: npm ci
 
-      # `npm run build` is `astro check && astro build`, so this covers types,
-      # the zod content schemas and the actual render in one step. A post whose
-      # frontmatter is missing `sources` fails here rather than at deploy.
+      # A route for every collection, checked BEFORE the build: a collection
+      # with entries and no route renders nowhere, indefinitely, without any
+      # error — the original site shipped a glossary that way for weeks.
+      - name: Check every content collection has a route
+        run: |
+          fail=0
+          for dir in src/content/*/; do
+            name=$(basename "$dir")
+            if [ ! -f "src/pages/$name/[...slug].astro" ]; then
+              echo "FAIL: collection '$name' has entries but no src/pages/$name/[...slug].astro route"
+              fail=1
+            fi
+          done
+          [ "$fail" -eq 0 ] && echo "ok: every collection has a route"
+          exit $fail
+
+      # `npm run build` is `astro check && sheets && llms && astro build &&
+      # markdown-twins`, so this covers types, the zod content schemas and the
+      # actual render in one step. A post whose frontmatter is missing
+      # `sources` fails here rather than at deploy.
       - run: npm run build
 
-      # Cheap guards for the rules that keep getting broken by hand.
-      #
-      # Deliberately no `set -e`. Two reasons, both learned the hard way:
-      #   1. grep exits 1 when it finds nothing, so `n=$(grep -o x f | wc -l)`
-      #      under `set -e -o pipefail` kills the script at the assignment — on
-      #      exactly the page the check exists to catch. The build went red with
-      #      no message at all: no filename, no reason.
-      #   2. Collecting every failure beats stopping at the first. If three pages
-      #      are broken you want all three in one run, not three round trips.
-      # Every count is guarded with `|| n=0` so a no-match is data, not a crash.
-      #
-      # The sitemap's <lastmod> comes from a committed map, because the Docker
-      # build has no .git (see scripts/lastmod.mjs). A committed file can go
-      # stale, so regenerate it here — where full history exists — and compare.
-      # Runs BEFORE the invariants so a stale map is reported as itself rather
-      # than as some downstream oddity.
-      #
-      # The comparison is not a plain diff: see scripts/check-lastmod.mjs for
-      # why a commit that edits a page can never contain a map that knows that
-      # commit's own date, and why exactly that one case is tolerated.
+      # The sitemap's <lastmod> comes from a committed map (see
+      # scripts/lastmod.mjs for why). A committed file can go stale, so
+      # regenerate it here — where full history exists — and compare. Runs
+      # BEFORE the invariants so a stale map is reported as itself rather than
+      # as some downstream oddity.
       - name: Check src/data/lastmod.json is current
         run: |
           cp src/data/lastmod.json "$RUNNER_TEMP/lastmod.committed.json"
           npm run lastmod
           node scripts/check-lastmod.mjs "$RUNNER_TEMP/lastmod.committed.json"
 
+      # Cheap guards for the rules that keep getting broken by hand.
+      #
+      # Deliberately no `set -e`. Two reasons, both learned the hard way:
+      #   1. grep exits 1 when it finds nothing, so `n=$(grep -o x f | wc -l)`
+      #      under `set -e -o pipefail` kills the script at the assignment — on
+      #      exactly the page the check exists to catch, with no message.
+      #   2. Collecting every failure beats stopping at the first.
+      # Every count is guarded with `|| n=0` so a no-match is data, not a crash.
       - name: Check site invariants
         run: |
           set -uo pipefail
           fail=0
-
-          echo "→ /pricing must carry no visible internal link"
-          if grep -rq 'href="/pricing"' dist --include='*.html'; then
-            echo "   FAIL: linked from:"
-            grep -rl 'href="/pricing"' dist --include='*.html' | sed 's/^/     /'
-            echo "   /pricing is deliberately unlinked — see CLAUDE.md § Site structure."
-            fail=1
-          else
-            echo "   ok"
-          fi
 
           echo "→ exactly one <h1> per page"
           bad=0
@@ -115,10 +104,8 @@ jobs:
           [ "$bad" -eq 0 ] && echo "   ok"
 
           echo "→ <title> at most 60 characters"
-          # BaseLayout clamps every title via clampTitle() before it reaches
-          # the page, so a failure here means either the clamp was bypassed
-          # (a raw <title> written outside BaseLayout) or clampTitle() itself
-          # has a bug — not a page author forgetting to shorten a string.
+          # BaseLayout clamps every title via clampTitle(), so a failure here
+          # means the clamp was bypassed or has a bug — not an author's string.
           if ! node -e '
             const fs = require("fs");
             let bad = 0;
@@ -138,23 +125,112 @@ jobs:
             echo "   ok"
           fi
 
+          echo "→ no broken internal links"
+          # Every root-relative href must resolve to a file the deploy will
+          # actually serve. This is the in-repo half of the lesson "a redirect
+          # written in a doc is not a redirect" — anything that only exists as
+          # dashboard config or worker code is whitelisted explicitly, so the
+          # whitelist is also the inventory of off-repo routes.
+          if ! node -e '
+            const fs = require("fs"), path = require("path");
+            const WORKER_ROUTES = ["/api/", "/hi"];  // exist in worker/index.ts, not dist/
+            let bad = 0;
+            const files = process.argv.slice(1);
+            for (const f of files) {
+              const html = fs.readFileSync(f, "utf8");
+              for (const m of html.matchAll(/href="(\/[^"#?]*)/g)) {
+                const p = decodeURIComponent(m[1]);
+                if (WORKER_ROUTES.some((w) => p.startsWith(w))) continue;
+                const clean = p.replace(/\/$/, "") || "/index";
+                const candidates = [
+                  path.join("dist", clean),
+                  path.join("dist", clean + ".html"),
+                  path.join("dist", clean, "index.html"),
+                ];
+                if (!candidates.some((c) => fs.existsSync(c))) {
+                  console.log(`   FAIL: ${f} links to ${p} which nothing serves`);
+                  bad = 1;
+                }
+              }
+            }
+            process.exit(bad);
+          ' $(find dist -name '*.html'); then
+            fail=1
+          else
+            echo "   ok"
+          fi
+
+          echo "→ every CTA carries an analytics event"
+          # The rule: every conversion surface is measured, whichever analytics
+          # vendor is active. CTAs (.btn), tel: and mailto: links all leave the
+          # page — no pageview fires for them, so an unmarked one is invisible
+          # to analytics forever. data-umami-event is the vendor-neutral marker
+          # (Umami binds it natively; the consent banner forwards it to GA4).
+          if ! node -e '
+            const fs = require("fs");
+            let bad = 0;
+            for (const f of process.argv.slice(1)) {
+              const html = fs.readFileSync(f, "utf8");
+              for (const m of html.matchAll(/<a\s[^>]*>/g)) {
+                const tag = m[0];
+                const isCta = /class="[^"]*\bbtn\b[^"]*"/.test(tag);
+                const leaves = /href="(tel:|mailto:)/.test(tag);
+                if ((isCta || leaves) && !/data-umami-event=/.test(tag)) {
+                  console.log(`   FAIL: ${f} unmeasured CTA: ${tag.slice(0, 120)}`);
+                  bad = 1;
+                }
+              }
+            }
+            process.exit(bad);
+          ' $(find dist -name '*.html'); then
+            fail=1
+          else
+            echo "   ok"
+          fi
+
           if [ "$fail" -ne 0 ]; then
             echo "Invariant check failed."
             exit 1
           fi
           echo "All invariants hold."
 
-      # WCAG AA contrast over every built page. This is the only thing stopping
-      # the old 2.8:1 brand orange from coming back as a text colour — it looked
-      # right to everyone who chose it, which is exactly why an eye is not the
-      # instrument for this. See src/styles/global.css.
+      # WCAG AA contrast over every built page. An eye is not the instrument
+      # for this: the ancestor site's hand-picked brand colour measured 2.8:1
+      # and failed on 66 element pairs including its own primary CTA.
       #
       # Playwright is installed here rather than added to package.json on
-      # purpose: it is a publish-time and CI tool, and the Docker image runs
-      # `npm ci` against the same lockfile. Keeping it out of the manifest keeps
-      # a 300MB browser out of the production build. Same rule as the OG cards.
+      # purpose: it is a CI/publish-time tool, and keeping it out of the
+      # manifest keeps a 300MB browser out of every `npm ci`.
       - name: Check colour contrast
         run: |
           npm install --no-save playwright
           npx playwright install --with-deps chromium
           npm run check:contrast
+
+  deploy:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # build:ci skips `astro check` — types already gated the build job; the
+      # deploy job only needs the artifact.
+      - run: npm run build:ci
+
+      # Needs one repo secret: CLOUDFLARE_API_TOKEN, scoped to "Edit Workers"
+      # on this account only — never a Global API Key. Create at
+      # dash.cloudflare.com → My Profile → API Tokens.
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}

@@ -1,0 +1,133 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE } from '../data/site';
+
+/**
+ * /about — on a real site this sells the company. In the template it documents
+ * the architecture, which doubles as a demo of the section/table patterns.
+ */
+const title = `About — how the ${SITE.name} template is put together`;
+const description =
+  'The architecture of this template: one contract file for the brand, zod-enforced content collections, generated machine surfaces, and static hosting that costs nothing.';
+---
+
+<BaseLayout title={title} description={description}>
+  <section class="band band--white">
+    <div class="wrap">
+      <p class="eyebrow">About</p>
+      <h1>How this template is put together</h1>
+      <p class="lede">
+        One rule organises everything: nothing brand- or fact-specific is typed into
+        markup. Pages import from data files, so rebranding is editing, not rewriting.
+      </p>
+    </div>
+  </section>
+
+  <section class="band band--cream">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">The map</p>
+        <h2>Where everything lives</h2>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>File</th><th>What it owns</th><th>Edit when</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>src/data/site.ts</code></td>
+              <td>Name, tagline, description, nav, contact channels, analytics IDs</td>
+              <td>Rebranding, or wiring analytics</td>
+            </tr>
+            <tr>
+              <td><code>src/data/origin.mjs</code></td>
+              <td>The canonical domain, in one place</td>
+              <td>Pointing at a new domain</td>
+            </tr>
+            <tr>
+              <td><code>src/data/facts.json</code></td>
+              <td>Every published number, each with a source</td>
+              <td>Any figure the site states changes</td>
+            </tr>
+            <tr>
+              <td><code>src/data/privacy.json</code></td>
+              <td>Everything the privacy policy renders</td>
+              <td>A vendor, cookie or controller fact changes</td>
+            </tr>
+            <tr>
+              <td><code>src/content.config.ts</code></td>
+              <td>Zod schemas for the blog and glossary collections</td>
+              <td>Adding a field or tightening a rule</td>
+            </tr>
+            <tr>
+              <td><code>src/layouts/BaseLayout.astro</code></td>
+              <td>Canonical, OG tags, JSON-LD, analytics — the whole <code>&lt;head&gt;</code></td>
+              <td>Rarely; pages pass props instead</td>
+            </tr>
+            <tr>
+              <td><code>src/styles/global.css</code></td>
+              <td>Colour tokens and the utility classes every page uses</td>
+              <td>Rebranding colours (re-run the contrast check)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="band band--white">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">The principles</p>
+        <h2>Three decisions doing the work</h2>
+      </div>
+      <div class="grid grid--3">
+        <div class="card">
+          <h3>Content is files in git</h3>
+          <p>
+            Markdown with zod-checked frontmatter, not a CMS. A wrong description length
+            or a glossary entry without a source fails the build — review, diffs and
+            rollback come free with the pull request.
+          </p>
+        </div>
+        <div class="card">
+          <h3>Static by default</h3>
+          <p>
+            No client JavaScript on content pages, CSS inlined, no render-blocking
+            requests. Core Web Vitals pass by construction, and hosting is free because
+            there is nothing to run.
+          </p>
+        </div>
+        <div class="card">
+          <h3>Machine surfaces are generated</h3>
+          <p>
+            The sitemap, RSS, llms.txt and the <a href="/for-llms">/for-llms</a> brief are
+            built from the same collections that render the pages, so they can never
+            contradict the site.
+          </p>
+        </div>
+      </div>
+      <div class="btn-row about__cta">
+        <a
+          class="btn btn--primary"
+          href="/contact"
+          data-umami-event="cta-contact"
+          data-umami-event-place="about-page">Get in touch</a
+        >
+        <a
+          class="btn"
+          href="/glossary"
+          data-umami-event="cta-glossary"
+          data-umami-event-place="about-page">See the glossary pattern</a
+        >
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .about__cta {
+    margin-top: 2rem;
+  }
+</style>

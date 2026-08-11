@@ -1,0 +1,122 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { SITE } from '../../data/site';
+
+const entries = (await getCollection('glossary', ({ data }) => !data.draft)).sort((a, b) =>
+  a.data.term.localeCompare(b.data.term)
+);
+
+/**
+ * Grouped by the free-string `category` from frontmatter, alphabetically.
+ * Once your category list settles, tighten `category` to an enum in
+ * content.config.ts and give the groups an explicit, meaningful order here —
+ * the order a reader would learn the domain in, not the alphabet's.
+ */
+const categories = [...new Set(entries.map((e) => e.data.category))].sort();
+const labelFor = (c: string) =>
+  c.replace(/-/g, ' ').replace(/^./, (ch) => ch.toUpperCase());
+
+const groups = categories.map((key) => ({
+  key,
+  label: labelFor(key),
+  items: entries.filter((e) => e.data.category === key),
+}));
+
+const schema = [
+  {
+    '@type': 'DefinedTermSet',
+    '@id': `${SITE.url}/glossary#set`,
+    name: `${SITE.name} glossary`,
+    description:
+      'Sourced, plain-English definitions — each entry carries a quotable short answer and at least one citation.',
+    url: new URL('/glossary', SITE.url).href,
+    hasDefinedTerm: entries.map((e) => ({
+      '@type': 'DefinedTerm',
+      name: e.data.term,
+      description: e.data.shortDefinition,
+      url: new URL(`/glossary/${e.id}`, SITE.url).href,
+    })),
+  },
+];
+---
+
+<BaseLayout
+  title={`Glossary — ${SITE.name}`}
+  description="Sourced, plain-English definitions of the terms this site's audience needs — every entry cites its sources and front-loads a quotable answer."
+  schema={schema}
+>
+  <div class="gloss">
+    <h1>Glossary</h1>
+    <p class="gloss__lede">
+      Definitions written to be quoted: a short answer up top, sources at the bottom,
+      and nothing in between that a reader has to wade through. The schema requires at
+      least one source per entry — no source, no page.
+    </p>
+
+    {
+      groups.map((g) => (
+        <section class="gloss__group">
+          <h2>{g.label}</h2>
+          <ul>
+            {g.items.map((e) => (
+              <li>
+                <a href={`/glossary/${e.id}`}>{e.data.term}</a>
+                <span> — {e.data.shortDefinition}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))
+    }
+  </div>
+</BaseLayout>
+
+<style>
+  .gloss {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 4rem;
+  }
+  .gloss h1 {
+    font-size: 1.875rem;
+    margin: 0 0 1rem;
+  }
+  .gloss__lede {
+    font-size: 1.125rem;
+    line-height: 1.6;
+    margin: 0 0 2.5rem;
+  }
+  .gloss__group {
+    margin-bottom: 2.5rem;
+  }
+  .gloss__group h2 {
+    font-size: 1.125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-3);
+    margin: 0 0 0.75rem;
+  }
+  .gloss__group ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .gloss__group li {
+    padding: 0.75rem 0;
+    border-top: 1px solid var(--line-2);
+    line-height: 1.6;
+  }
+  .gloss__group a {
+    font-weight: 700;
+  }
+
+  @media (min-width: 48rem) {
+    .gloss {
+      padding: 3rem 1.5rem 5rem;
+    }
+    .gloss h1 {
+      font-size: 2.25rem;
+    }
+  }
+</style>

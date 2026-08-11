@@ -4,12 +4,12 @@
  *
  *   node marketing/favicon.mjs
  *
- * WHY THIS EXISTS. The site shipped an SVG favicon and nothing else, and Google
- * showed the grey globe placeholder next to dodocket.com in search results
- * rather than the mark. Google's favicon crawler wants a raster file it can
- * scale — its guidance is a square that is a multiple of 48px — and it also
- * probes /favicon.ico at the site root regardless of what the HTML declares.
- * We were serving a 404 there.
+ * WHY THIS EXISTS. The site this template came from shipped an SVG favicon and
+ * nothing else, and Google showed the grey globe placeholder next to the
+ * domain in search results rather than the mark. Google's favicon crawler
+ * wants a raster file it can scale — its guidance is a square that is a
+ * multiple of 48px — and it also probes /favicon.ico at the site root
+ * regardless of what the HTML declares. That site was serving a 404 there.
  *
  * The SVG stays, and modern browsers still prefer it: it is sharp at any size
  * and a tenth of the bytes. This only adds the raster fallbacks that the
@@ -18,11 +18,15 @@
  * ONE SOURCE. Everything here is generated from public/favicon.svg, so the mark
  * cannot drift between formats. Re-run it if the logo or the brand colour
  * changes — nothing checks this for you, and a favicon that still shows the old
- * orange is the kind of thing nobody notices for a year.
+ * brand colour is the kind of thing nobody notices for a year.
  */
 import { writeFileSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import sharp from 'sharp';
+
+/** Backing colour for the opaque apple-touch-icon — keep in step with the
+ *  brand colour in public/favicon.svg / site.ts. */
+const BRAND_BG = '#0f4c81';
 
 const SRC = resolve(process.cwd(), 'public/favicon.svg');
 const out = (name) => resolve(process.cwd(), 'public', name);
@@ -82,7 +86,7 @@ const pngs = [
 ];
 for (const [name, size] of pngs) {
   await render(size)
-    .flatten({ background: '#c2410c' })
+    .flatten({ background: BRAND_BG })
     .toFile(out(name));
 }
 

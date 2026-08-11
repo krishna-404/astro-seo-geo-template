@@ -1,30 +1,39 @@
 ---
-import Logo from './Logo.astro';
-import { NAV, CONTACT } from '../data/site';
+import { SITE, NAV } from '../data/site';
+
+/**
+ * The wordmark is plain text, deliberately. A template ships no logo asset,
+ * and a styled SITE.name is legible, accessible, and needs no design work to
+ * go live. Swap in an inline SVG mark here if the brand grows one.
+ */
 ---
 
 <header class="hdr">
   <div class="wrap hdr__in">
     <!-- No aria-label: the visible wordmark is the accessible name, so a
-         voice-control user can say "Docket" and hit the link. An aria-label
-         that does not start with the visible text breaks that. -->
-    <a href="/" class="hdr__brand">
-      <Logo />
-    </a>
+         voice-control user can say the brand name and hit the link. An
+         aria-label that does not start with the visible text breaks that. -->
+    <a href="/" class="hdr__brand">{SITE.name}</a>
 
     <nav class="hdr__nav" aria-label="Main">
       {
-        NAV.map((item) => (
-          // Contact survives the mobile collapse; the rest do not. It is the
-          // only nav item that is an ACTION rather than a destination, and on a
-          // phone the footer is a long scroll away from someone who has just
-          // decided they want to talk to a person.
-          <a href={item.href} class={item.href === '/contact' ? 'hdr__keep' : undefined}>
-            {item.label}
-          </a>
+        /* The CTA below already goes to /contact, so the plain Contact link is
+           skipped here — one destination, one control. Everything else renders
+           as a text link and collapses on narrow widths. */
+        NAV.filter((item) => item.href !== '/contact').map((item) => (
+          <a href={item.href}>{item.label}</a>
         ))
       }
-      <a href={CONTACT.demo} class="btn hdr__cta" data-umami-event="demo" data-umami-event-place="header">Live demo</a>
+      {/* Contact survives the mobile collapse; the destinations do not. It is
+          the only header item that is an ACTION rather than a destination, and
+          on a phone the footer is a long scroll away from someone who has just
+          decided they want to talk to a person. */}
+      <a
+        href="/contact"
+        class="btn hdr__cta"
+        data-umami-event="cta-contact"
+        data-umami-event-place="header">Contact</a
+      >
     </nav>
   </div>
 </header>
@@ -48,8 +57,16 @@ import { NAV, CONTACT } from '../data/site';
   }
 
   .hdr__brand {
-    text-decoration: none;
     flex-shrink: 0;
+    /* ≥44px touch target for the home link, matching the CTA. */
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-weight: 800;
+    font-size: 1.125rem;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    text-decoration: none;
   }
 
   .hdr__nav {
@@ -59,10 +76,10 @@ import { NAV, CONTACT } from '../data/site';
   }
 
   /*
-   * Three destinations plus two actions — a hamburger would be more chrome than
-   * content. Below the breakpoint the destinations drop; both actions survive,
-   * because a header that offers no way to reach a person sends anyone who has
-   * decided to talk on a full-page scroll to the footer.
+   * A handful of destinations plus one action — a hamburger would be more
+   * chrome than content. Below the breakpoint the destinations drop; the CTA
+   * survives, because a header that offers no way to reach a person sends
+   * anyone who has decided to talk on a full-page scroll to the footer.
    */
   .hdr__nav a:not(.hdr__cta) {
     display: none;
@@ -85,21 +102,12 @@ import { NAV, CONTACT } from '../data/site';
     font-size: 0.875rem;
   }
 
-  /* Contact is exempt from the collapse — see the note above. Tightened on
-     phones so the logo, it and the demo button all fit at 320px. */
-  .hdr__nav a.hdr__keep {
-    display: inline-block;
-    padding-inline: 0.4rem;
-  }
-
-  /* The destinations return once there is room. Measured: four links plus the
-     CTA fit from 46rem with no overflow at any width up to 1280. */
+  /* The destinations return once there is room. Measured on the original
+     layout: the text links plus the CTA fit from 46rem with no overflow at
+     any width up to 1280. */
   @media (min-width: 46rem) {
     .hdr__nav a:not(.hdr__cta) {
       display: inline-block;
-    }
-    .hdr__nav a.hdr__keep {
-      padding-inline: 0.75rem;
     }
   }
 

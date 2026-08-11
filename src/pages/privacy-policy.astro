@@ -1,0 +1,264 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE } from '../data/site';
+import privacy from '../data/privacy.json';
+
+/**
+ * The privacy policy, rendered entirely from src/data/privacy.json.
+ *
+ * TEMPLATE, NOT ADVICE. The structure is sound; the facts are placeholders
+ * until you fill them in. Every gap renders visibly as [TO CONFIRM: …] rather
+ * than being smoothed over with "as long as necessary" filler. A policy that
+ * reads complete while being unverified is worse than one that admits its
+ * gaps: it is a representation to customers and regulators, and a security
+ * questionnaire will test it line by line.
+ *
+ * While `status.draft` is true the page is noindex, excluded from the sitemap
+ * (astro.config.mjs reads the same flag), and says so at the top. Filling in
+ * privacy.json and flipping the flag is what publishes it.
+ */
+
+const isDraft = privacy.status.draft;
+
+/** Renders an unconfirmed value as something nobody can mistake for a fact. */
+const todo = (v: string) =>
+  v.startsWith('TODO') ? `[TO CONFIRM: ${v.replace(/^TODO\s*—?\s*/, '')}]` : v;
+const isTodo = (v: string) => v.startsWith('TODO');
+
+const entity = isTodo(privacy.controller.legalName)
+  ? privacy.controller.tradingName
+  : privacy.controller.legalName;
+
+/**
+ * Hosting rendered generically: iterate whatever systems privacy.json names
+ * rather than hard-coding sections, so a site that adds an app or an API adds
+ * a row to the JSON, not markup here.
+ */
+const hostingRows = Object.values(privacy.hosting);
+
+const schema = {
+  '@type': 'WebPage',
+  '@id': `${SITE.url}/privacy-policy#page`,
+  name: 'Privacy Policy',
+  url: `${SITE.url}/privacy-policy`,
+  isPartOf: { '@id': `${SITE.url}/#website` },
+  publisher: { '@id': `${SITE.url}/#organization` },
+  dateModified: privacy.status.lastUpdated,
+};
+---
+
+<BaseLayout
+  title={`Privacy Policy — ${SITE.name}`}
+  description="How we handle personal data on this website: what we collect, who we share it with, how long we keep it, and your rights."
+  schema={schema}
+  noindex={isDraft}
+>
+  <section class="band band--white">
+    <div class="wrap prose">
+      <h1>Privacy Policy</h1>
+
+      {
+        isDraft && (
+          <aside class="notice">
+            <p>
+              <strong>Draft — under review.</strong> This page still carries items marked
+              <span class="mono"> [TO CONFIRM]</span>, and it is not indexed by search
+              engines until they are resolved. It is not yet a published policy and
+              should not be relied on as one. Reason: {privacy.status.draftReason}
+            </p>
+            {privacy.openQuestions.length > 0 && (
+              <ul>
+                {privacy.openQuestions.map((q) => (
+                  <li>{todo(q)}</li>
+                ))}
+              </ul>
+            )}
+          </aside>
+        )
+      }
+
+      <p class="fine">
+        Last updated {privacy.status.lastUpdated}. Applies from {todo(privacy.status.effectiveFrom)}.
+      </p>
+
+      <p class="lede">
+        This policy covers <strong>{SITE.domain}</strong> (this website), operated by
+        {entity}{isTodo(privacy.controller.legalName) && <span class="mono"> [TO CONFIRM: registered company name]</span>}.
+        {privacy.controller.note}
+      </p>
+
+      <h2 id="site">What this website collects</h2>
+      <p>
+        Little. Nothing at all unless you choose to contact us — there is no sign-up on
+        this site, and nothing below identifies you personally except the form, which
+        only holds what you typed into it.
+      </p>
+      <ul>
+        <li>
+          <strong>What you send us</strong> — if you fill in the contact form we keep
+          what you typed (name, email, message and any optional fields), so that we can
+          reply. It goes to a spreadsheet we control and to our own inbox; it is not
+          sold, and it is not used to build a profile of you.
+        </li>
+        <li>
+          <strong>Page analytics</strong> — in the default configuration, a cookieless
+          analytics tool records page views, referrer, rough country and device type. It
+          sets no cookie and stores nothing on your device. If a cookie-setting
+          analytics vendor is enabled instead, it only loads after you accept the
+          consent banner.
+        </li>
+        <li>
+          <strong>Server logs</strong> — standard web server records, including IP
+          address, kept for security and troubleshooting.
+        </li>
+      </ul>
+
+      <h2 id="cookies">Cookies</h2>
+      <p>If it is not in this table, we do not set it.</p>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Cookie</th><th>Set by</th><th>What it does</th><th>Lasts</th><th>Optional?</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              privacy.cookies.map((c) => (
+                <tr>
+                  <td class="mono">{c.name}</td>
+                  <td>{c.setBy}</td>
+                  <td>{c.purpose}</td>
+                  <td>{c.life}</td>
+                  <td>{c.essential ? 'No — required' : 'Yes'}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p>
+        <a href="/privacy-policy" data-consent-reopen>Change your cookie choice</a>.
+        Refusing after having accepted also deletes the optional cookie from this
+        browser. (The link only does anything when a cookie-setting vendor is enabled —
+        otherwise there is no choice to change.)
+      </p>
+
+      <h2 id="sharing">Who else sees the data</h2>
+      <p>
+        We do not sell personal data and we do not share it for anyone else's
+        advertising. We use service providers who process it on our behalf, in these
+        categories:
+      </p>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>Category</th><th>What it does</th><th>Applies to</th></tr>
+          </thead>
+          <tbody>
+            {
+              privacy.subProcessors.categories.map((c) => (
+                <tr>
+                  <td>{c.category}</td>
+                  <td>{c.what}</td>
+                  <td>{c.appliesTo === 'site' ? 'This website' : c.appliesTo}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p>{privacy.subProcessors.namedListNote}</p>
+
+      <h2 id="where">Where the data lives</h2>
+      <ul>
+        {
+          hostingRows.map((h) => (
+            <li>
+              <strong>{h.what}</strong> — {h.where}.
+              {!h.verified && <span class="mono"> [TO CONFIRM: not yet verified]</span>}
+            </li>
+          ))
+        }
+      </ul>
+      <p>
+        Where a transfer leaves the country you are in, we rely on the protections the
+        applicable law requires for it.
+      </p>
+
+      <h2 id="retention">How long we keep it</h2>
+      <p>
+        We keep personal data only as long as it is needed for what it was collected
+        for. In practice that means:
+      </p>
+      <ul>
+        {privacy.retention.criteria.map((c) => (<li>{c}</li>))}
+      </ul>
+
+      <h2 id="rights">Your rights</h2>
+      <p>Depending on where you are, you can ask us to:</p>
+      <ul>
+        <li>tell you what personal data we hold about you, and give you a copy;</li>
+        <li>correct it if it is wrong;</li>
+        <li>delete it, where we are not required to keep it;</li>
+        <li>stop using it for a particular purpose, including withdrawing consent;</li>
+        <li>complain to your data protection regulator.</li>
+      </ul>
+      <p>The laws we work to:</p>
+      <ul>
+        {privacy.laws.map((l) => (<li><strong>{l.market}</strong> — {l.law}</li>))}
+      </ul>
+      <p>
+        Write to <a href={`mailto:${privacy.contact.privacyEmail}`}>{privacy.contact.privacyEmail}</a>
+        and we will respond within {privacy.contact.responseTargetDays} days.
+      </p>
+      <p>
+        <strong>Privacy contact.</strong> {todo(privacy.contact.dpo)} —
+        <a href={`mailto:${privacy.contact.dpoEmail}`}>{privacy.contact.dpoEmail}</a>.
+      </p>
+
+      <h2 id="children">Children</h2>
+      <p>
+        This site is a business site. It is not directed at children and we do not
+        knowingly collect their data.
+      </p>
+
+      <h2 id="changes">Changes</h2>
+      <p>
+        We will update this page when what we do changes — including whenever a service
+        provider is added or removed. The date at the top always reflects the current
+        version.
+      </p>
+
+      <h2 id="contact">Contact</h2>
+      <p>
+        <a href={`mailto:${privacy.contact.privacyEmail}`}>{privacy.contact.privacyEmail}</a>,
+        or <a href={`mailto:${privacy.contact.generalEmail}`}>{privacy.contact.generalEmail}</a>
+        for anything else.
+      </p>
+      <p class="fine">
+        {todo(privacy.controller.legalName)}, {todo(privacy.controller.registeredAddress)}.
+        Registration: {todo(privacy.controller.registrationNumber)}.
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .notice {
+    border: 1px solid var(--line);
+    background: var(--cream);
+    border-radius: var(--radius-lg);
+    padding: 0.875rem 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .notice p {
+    margin: 0;
+    font-size: 0.875rem;
+  }
+  .notice ul {
+    margin: 0.5rem 0 0;
+    padding-left: 1.25rem;
+    font-size: 0.875rem;
+  }
+</style>

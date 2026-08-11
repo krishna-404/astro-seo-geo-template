@@ -1,0 +1,49 @@
+# Example Co
+
+> A one-line description of what this company does
+
+Two or three sentences an answer engine can quote verbatim: what the company does, for whom, and the one thing that makes it different.
+
+## The numbers on this site
+
+Every figure published on example.com is sourced in
+`src/data/facts.json` in the site repository, and this file is generated from
+that same source at build time. Nothing is estimated: a figure that cannot be
+sourced is not published.
+
+## Pages
+
+- [Home](https://example.com/)
+- [About](https://example.com/about)
+- [Contact](https://example.com/contact)
+- [For LLMs](https://example.com/for-llms): a brand brief for automated readers
+- [Full corpus](https://example.com/llms-full.txt): every blog and glossary page in one file
+- [RSS](https://example.com/rss.xml)
+- [Sitemap](https://example.com/sitemap-index.xml)
+
+## Blog
+
+- [How this template's SEO machinery works](https://example.com/blog/how-the-seo-machinery-works): A tour of the SEO plumbing this template ships with — canonical URLs, JSON-LD, sitemap, RSS and OG cards — and which file each piece lives in.
+- [Writing content that answer engines actually cite](https://example.com/blog/writing-content-answer-engines-cite): The three evidence-backed GEO levers — citations, quotable definitions and front-loaded answers — and how this template's schemas force you to use them.
+
+Index: <https://example.com/blog> · Feed: <https://example.com/rss.xml>
+
+## Glossary
+
+Reference definitions. Each entry carries a short definition written to be
+quoted, its authorities by name, and a `retrieved` date where a URL was
+checked. Where a figure is jurisdiction-specific or unverified, the entry says
+so rather than publishing a number.
+
+Core Web Vitals · llms.txt
+
+Index: <https://example.com/glossary>
+
+## Contact
+
+TODO Founder Name, founder
+LinkedIn: https://www.linkedin.com/in/TODO
+
+## Note
+
+Only example.com is canonical.

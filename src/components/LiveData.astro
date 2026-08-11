@@ -1,0 +1,86 @@
+---
+/**
+ * Silent client-side refresh for Google-Sheet-backed values.
+ *
+ * The data layer is two-stage: scripts/fetch-sheets.mjs snapshots published
+ * sheet tabs into src/data/sheets/<tab>.json at BUILD time (pages render
+ * statically from that), and this component refreshes the same values in the
+ * browser AFTER load from /api/data/<tab> (the worker's edge-cached proxy).
+ * The page is never blank, never blocked, and never more than ~5 minutes
+ * stale for anyone with JavaScript — while staying fully correct with
+ * JavaScript off.
+ *
+ * OPT-IN, PER ELEMENT. Mark any element:
+ *
+ *   <span data-live="team:alice:role">{buildTimeValue}</span>
+ *                     tab  row  column
+ *
+ * where `tab` is a key in src/data/sheets.config.json, `row` is the value of
+ * the FIRST column of the target row, and `column` is the header name of the
+ * cell to show. Include <LiveData /> ONCE on any page that has such marks —
+ * pages without it ship zero JavaScript, which is the default this template
+ * protects.
+ *
+ * The script is strictly additive: no layout shift (textContent only, and
+ * only when the value actually changed), wrapped in try/catch, and a failed
+ * fetch leaves the build-time value in place. It follows the same rule as the
+ * form's attribution script: if it breaks, the page must not.
+ */
+---
+
+<script is:inline>
+  (function () {
+    try {
+      var marks = document.querySelectorAll('[data-live]');
+      if (!marks.length) return;
+      // One fetch per referenced tab, not per mark.
+      var tabs = {};
+      marks.forEach(function (el) {
+        var tab = (el.getAttribute('data-live') || '').split(':')[0];
+        if (tab) tabs[tab] = true;
+      });
+      // Minimal CSV parser: quoted fields, embedded commas/quotes/newlines.
+      function parseCsv(text) {
+        var rows = [], row = [], cell = '', q = false;
+        for (var i = 0; i < text.length; i++) {
+          var c = text[i];
+          if (q) {
+            if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+            else if (c === '"') q = false;
+            else cell += c;
+          } else if (c === '"') q = true;
+          else if (c === ',') { row.push(cell); cell = ''; }
+          else if (c === '\n' || c === '\r') {
+            if (c === '\r' && text[i + 1] === '\n') i++;
+            row.push(cell); cell = ''; rows.push(row); row = [];
+          } else cell += c;
+        }
+        if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+        return rows;
+      }
+      Object.keys(tabs).forEach(function (tab) {
+        fetch('/api/data/' + encodeURIComponent(tab))
+          .then(function (r) { return r.ok ? r.text() : Promise.reject(); })
+          .then(function (text) {
+            var rows = parseCsv(text);
+            if (rows.length < 2) return;
+            var header = rows[0];
+            marks.forEach(function (el) {
+              var parts = (el.getAttribute('data-live') || '').split(':');
+              if (parts[0] !== tab || parts.length < 3) return;
+              var col = header.indexOf(parts[2]);
+              if (col < 0) return;
+              for (var r = 1; r < rows.length; r++) {
+                if (rows[r][0] === parts[1]) {
+                  var v = rows[r][col];
+                  if (v != null && v !== '' && el.textContent !== v) el.textContent = v;
+                  break;
+                }
+              }
+            });
+          })
+          .catch(function () { /* build-time value stands */ });
+      });
+    } catch (e) { /* never break the page */ }
+  })();
+</script>

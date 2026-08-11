@@ -1,0 +1,168 @@
+# Example Co — full corpus
+
+> A one-line description of what this company does This file concatenates every blog and glossary page
+> published on example.com, tldr and full body, for a reader
+> that wants the content in one fetch rather than a crawl per page. It is
+> generated at build time from the same MDX source the pages render from —
+> see llms.txt for the index.
+
+# How this template's SEO machinery works
+
+Every page in this template gets a canonical URL, Open Graph tags and JSON-LD from BaseLayout automatically; the sitemap, RSS feed and llms.txt are generated at build time. You write content and frontmatter — the machinery is already wired.
+
+## One layout owns the head
+
+Every page in this template renders through `src/layouts/BaseLayout.astro`, and that is
+where all of the SEO plumbing lives. A page passes `title`, `description` and optionally
+`schema`, `ogImage`, `canonical` or `noindex` — the layout does the rest:
+
+- **Canonical URL** — derived from the route and `SITE.url`. Because the build emits
+  `.html` files but the server serves extensionless URLs, the layout strips the suffix
+  before building the canonical. Don't bypass it.
+- **Open Graph and Twitter tags** — from the same title and description, with an image
+  precedence of explicit prop → generated card for the route → site default.
+- **JSON-LD** — a site-wide `Organization` node and a `Person` node for the founder
+  (`#founder`) on every page, plus whatever page-specific nodes you pass via the
+  `schema` prop. Blog and glossary templates already pass `BlogPosting`, `Article`,
+  `DefinedTerm`, `BreadcrumbList` and `FAQPage` nodes for you.
+
+## The collections enforce the boring parts
+
+`src/content.config.ts` gives each collection a zod schema, and the schema is doing SEO
+work: `title` is capped at 70 characters so it doesn't truncate in results, `description`
+must be 50–200 characters so it works as a meta description, and `tldr` is required so
+every content page front-loads its answer — the one GEO lever with real evidence behind
+it. If frontmatter is wrong, the build fails. That is the feature.
+
+## Generated surfaces
+
+Three things are produced at build time and never hand-edited:
+
+1. **The sitemap**, via `@astrojs/sitemap`, minus anything `noindex` or draft.
+2. **The RSS feed** at `/rss.xml` — blog only, with each item's `tldr` as its
+   description.
+3. **`llms.txt` and `llms-full.txt`**, an index and a full-corpus file for machine
+   readers, plus the human-readable brief at [/for-llms](/for-llms).
+
+Counts and lists on those surfaces come from `getCollection()` at build time, so they
+cannot disagree with the site.
+
+## What you actually do per page
+
+Write the markdown, fill in the frontmatter, keep the body headings starting at `##`
+(the template renders the frontmatter title as the page's single `<h1>`). That's it —
+if it builds, the machinery is on.
+
+Source: https://example.com/blog/how-the-seo-machinery-works
+
+---
+
+# Writing content that answer engines actually cite
+
+Cited sources, quotations from authorities and statistics measurably improve how often generative engines cite a page; keyword stuffing measurably hurts. This template hard-codes those findings: every entry requires a front-loaded tldr, and glossary entries will not build without at least one source.
+
+## The levers with evidence behind them
+
+Most GEO advice is folklore. The one controlled study worth reading (Aggarwal et al.,
+KDD 2024) found three interventions that raised a page's visibility in generative
+engine answers: **citing sources**, **quoting authorities**, and **adding statistics**.
+The same study found keyword stuffing *reduced* visibility. This template turns those
+findings into schema requirements rather than advice:
+
+- Every blog post and glossary entry requires a `tldr` — the front-loaded answer that
+  sits in the first 30% of the page, styled as the lift target.
+- Glossary entries require `sources` with at least one entry. No source, no page — the
+  build fails.
+- Blog posts require a `proprietary` field naming what in the post an LLM could not
+  have produced: original data, first-hand experience, original analysis, an expert
+  interview, or a case study.
+
+## Write the 40-word answer first
+
+The glossary schema caps `shortDefinition` at 300 characters for a reason: that string
+is what an answer engine lifts, what the index page shows, and what the `DefinedTerm`
+JSON-LD carries. Write it as a complete, quotable sentence that survives being read
+with no page around it. Then let the body add the depth.
+
+## A named human author, everywhere
+
+Every post carries an author with a real, linkable profile (`sameAs` is required and
+must contain at least one URL). E-E-A-T and answer engines both key on a verifiable
+human being behind the byline. The template renders the byline, feeds it into the
+`BlogPosting` node, and emits a site-wide `Person` node for the founder that other
+pages reference by `@id`.
+
+## What to do with this template
+
+Replace this post. Seriously — it exists to show a valid frontmatter block, a working
+Sources section, and the tldr treatment. Your first real post should say something only
+you can say, and the `proprietary` field is where you declare what that is.
+
+Source: https://example.com/blog/writing-content-answer-engines-cite
+
+---
+
+# Core Web Vitals: the three metrics and this template's budget
+
+Core Web Vitals are Google's three field metrics for page experience: Largest Contentful Paint (loading, good under 2.5s), Interaction to Next Paint (responsiveness, good under 200ms) and Cumulative Layout Shift (visual stability, good under 0.1). A static site with no client JS passes them almost by construction.
+
+## The three metrics
+
+- **LCP — Largest Contentful Paint.** How long until the biggest thing in the viewport
+  is painted. Good is under 2.5 seconds at the 75th percentile of real visits.
+- **INP — Interaction to Next Paint.** How quickly the page responds to a tap or
+  keypress. Good is under 200 milliseconds. INP replaced FID in March 2024.
+- **CLS — Cumulative Layout Shift.** How much the layout jumps around while loading.
+  Good is under 0.1.
+
+Google measures these in the field (Chrome UX Report), not in the lab, and uses them
+as part of its page experience signals.
+
+## Why this template passes by default
+
+The template makes three structural choices that buy the metrics before any tuning:
+
+1. **Static HTML, no client JavaScript on content pages** — nothing to hydrate, so INP
+   has almost nothing to measure.
+2. **CSS inlined into each page** — no render-blocking stylesheet request, which is
+   usually the LCP bottleneck on small sites.
+3. **No layout-shifting embeds** — images get intrinsic dimensions, and there are no
+   late-loading banners pushing content down, so CLS stays near zero.
+
+The way to lose this is to add things: a web font without `font-display`, a script in
+`<head>`, an unsized hero image. Measure with real-user data before and after anything
+you add.
+
+Source: https://example.com/glossary/core-web-vitals
+
+---
+
+# llms.txt: what it is and whether to ship one
+
+llms.txt is a proposed convention: a markdown file at the site root that gives LLM-based readers a curated index of the site's important content. This template generates /llms.txt and /llms-full.txt at build time from the content collections, so they can never disagree with the site.
+
+## What it is
+
+`llms.txt` is a convention proposed in 2024: a plain-markdown file at the root of a
+site that tells an LLM-based reader what the site is and where its substantive content
+lives, without the reader having to crawl and parse every HTML page. The companion
+`llms-full.txt` goes further and concatenates the full content, so a model can ingest
+the whole corpus in one fetch.
+
+## How this template handles it
+
+Both files are **generated at build time** from the same content collections that
+render the pages — never hand-maintained. That is the property that matters: a
+hand-written brand summary drifts; a generated one cannot say something the site does
+not. The human-readable companion is the [/for-llms](/for-llms) page, which carries
+the same brief as a real, linked, indexable page.
+
+## Should you rely on it?
+
+No. The honest evidence as of 2026 is that few AI crawlers demonstrably honour
+`llms.txt`, so do not build strategy around it. But generation costs minutes and the
+downside is zero, which is why the template ships it anyway — as a cheap bet, not a
+moat. The durable levers are on the pages themselves: sourced claims, quotable
+definitions, and front-loaded answers.
+
+Source: https://example.com/glossary/llms-txt

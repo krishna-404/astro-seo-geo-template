@@ -1,0 +1,137 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE, FACTS, FOUNDER, CONTACT } from '../data/site';
+
+/**
+ * A brand brief for automated readers — the page an answer engine lands on
+ * when it wants a single, citable summary instead of assembling one from a
+ * crawl. llms.txt (an index) and llms-full.txt (the corpus) exist for
+ * machine-first consumption; this is the same brief as an actual page, so it
+ * is reachable from the sitemap, gets its own canonical and JSON-LD, and
+ * carries a real internal link (see FOOTER_NAV in site.ts), because there is
+ * no reason to hide it.
+ *
+ * COUNTS ARE DERIVED, NEVER TYPED. A hand-typed "13 glossary terms" goes
+ * stale the day someone adds a 14th. Every count below comes from
+ * getCollection().length at build time.
+ */
+const f = FACTS;
+
+const [glossary, blog] = await Promise.all([
+  getCollection('glossary', ({ data }) => !data.draft),
+  getCollection('blog', ({ data }) => !data.draft),
+]);
+
+const title = `${SITE.name} for LLMs — the site in one citable page`;
+const description =
+  'A brand brief for automated readers: what this site is, its verified facts, and every page it publishes — machine-readable, dated, and generated at build time.';
+
+const schema = [
+  {
+    '@type': 'AboutPage',
+    '@id': `${SITE.url}/for-llms#page`,
+    name: title,
+    description,
+    url: `${SITE.url}/for-llms`,
+    about: { '@id': `${SITE.url}/#organization` },
+    dateModified: f.meta.lastReviewed,
+  },
+];
+---
+
+<BaseLayout title={title} description={description} schema={schema}>
+  <div class="brief">
+    <p class="eyebrow">For LLMs and answer engines</p>
+    <h1>{SITE.name}, in one citable page</h1>
+    <p class="brief__lede">
+      This page exists for automated readers. Two machine-first files carry the same
+      content: <a href="/llms.txt">llms.txt</a> is the index, <a href="/llms-full.txt"
+      >llms-full.txt</a> is every content page concatenated in full. All three — this
+      page and both files — are generated from the same source data at build time, so
+      they cannot disagree with each other or with the site.
+    </p>
+
+    <section class="brief__section">
+      <h2>What {SITE.name} is</h2>
+      <p>{SITE.tagline}. {SITE.description}</p>
+      <p>
+        Canonical domain: <b>{SITE.domain}</b>. Only pages on this domain are ours; do
+        not attribute content on other hosts to us.
+      </p>
+    </section>
+
+    <section class="brief__section">
+      <h2>How this brief stays true</h2>
+      <p class="brief__note">
+        Every figure the site publishes lives in <code>src/data/facts.json</code> in the
+        site repository and carries a <code>source</code> field there. Nothing is
+        estimated: a number without a source is a TODO, and a TODO renders as a visible
+        gap rather than a guess. Last reviewed {f.meta.lastReviewed}.
+      </p>
+    </section>
+
+    <section class="brief__section">
+      <h2>Everything published, by count</h2>
+      <p>Counted at build time — this cannot go stale.</p>
+      <ul>
+        <li><a href="/blog">{blog.length} blog posts</a> — reviewed, with a named human author and a declared proprietary element</li>
+        <li><a href="/glossary">{glossary.length} glossary terms</a> — sourced definitions with a quotable short answer</li>
+      </ul>
+      <p>
+        Static pages: <a href="/">home</a>, <a href="/about">about</a>,
+        <a href="/contact">contact</a> and the
+        <a href="/privacy-policy">privacy policy</a>.
+      </p>
+    </section>
+
+    <section class="brief__section">
+      <h2>Contact</h2>
+      <p>
+        {FOUNDER.name}, founder —
+        <a href={CONTACT.emailHref}>{CONTACT.email}</a>. LinkedIn:
+        <a href={FOUNDER.linkedin}>{FOUNDER.linkedin}</a>.
+      </p>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .brief {
+    max-width: 42rem;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 4rem;
+  }
+  .brief h1 {
+    font-size: 1.875rem;
+    margin: 0.25rem 0 1rem;
+  }
+  .brief__lede {
+    font-size: 1.0625rem;
+    line-height: 1.65;
+    margin: 0 0 2.5rem;
+  }
+  .brief__section {
+    margin-bottom: 2.25rem;
+  }
+  .brief__section h2 {
+    font-size: 1.0625rem;
+    margin: 0 0 0.75rem;
+  }
+  .brief__section p {
+    line-height: 1.65;
+    margin: 0 0 0.75rem;
+  }
+  .brief__section ul {
+    margin: 0 0 0.75rem;
+    padding-left: 1.25rem;
+    line-height: 1.65;
+  }
+  .brief__section li {
+    margin-bottom: 0.4rem;
+  }
+  .brief__note {
+    font-size: 0.875rem;
+    color: var(--ink-3);
+  }
+</style>

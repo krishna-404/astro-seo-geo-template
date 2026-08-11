@@ -6,15 +6,15 @@
  *
  * WHY THIS FILE EXISTS AT ALL. The sitemap's <lastmod> is derived from git, so
  * that it reflects when a page actually changed rather than when the site was
- * last deployed. But the production build runs inside Docker, and
- * `.dockerignore` excludes `.git` — so the build container has no history and
- * every lookup came back empty. The feature degraded exactly as designed
- * (omit rather than invent a date) and therefore did nothing at all in
- * production: 0 of 43 URLs carried a lastmod.
+ * last deployed. But CI build environments routinely have no usable history —
+ * the first deployment of this code built inside a container that excluded
+ * `.git` entirely, so every lookup came back empty. The feature degraded
+ * exactly as designed (omit rather than invent a date) and therefore did
+ * nothing at all in production: 0 of 43 URLs carried a lastmod.
  *
- * Handing `.git` to the Docker context would not fix it either. Dokploy's
- * checkout may be shallow, and with depth 1 every file's "last commit" is HEAD
- * — which would stamp every URL with the deploy date. That is precisely the
+ * Handing `.git` to the build would not fix it either. CI checkouts are
+ * typically shallow, and with depth 1 every file's "last commit" is HEAD —
+ * which would stamp every URL with the deploy date. That is precisely the
  * misleading signal the git derivation exists to avoid, wearing a better
  * disguise.
  *
@@ -60,8 +60,6 @@ const map = {};
 const COLLECTIONS = {
   blog: 'blog',
   glossary: 'glossary',
-  'hs-code': 'hs-code',
-  solutions: 'solution',
 };
 for (const [route, folder] of Object.entries(COLLECTIONS)) {
   const dir = resolve(root, 'src/content', folder);
@@ -83,13 +81,15 @@ for (const [route, folder] of Object.entries(COLLECTIONS)) {
 // cannot ship uncovered.
 //
 // EXTRA_SOURCES names the non-obvious inputs — pages whose content comes from
-// data as well as markup, where editing only the JSON should still move the
-// date. /vs/<slug> is generated from site.ts, so that counts as its source
-// alongside the template.
+// data as well as markup, where editing only the data file should still move
+// the date. /for-llms also lists the content collections: it summarises them,
+// so a new entry changes what that page says.
 const EXTRA_SOURCES = {
-  '/ops-cost-calculator': ['src/data/assumptions.json'],
+  '/': ['src/data/site.ts'],
+  '/about': ['src/data/site.ts'],
+  '/contact': ['src/data/site.ts'],
   '/privacy-policy': ['src/data/privacy.json'],
-  '/vs': ['src/data/site.ts'],
+  '/for-llms': ['src/data/site.ts', 'src/content/blog', 'src/content/glossary'],
 };
 
 /** 404 is not a page anyone links to, and it is not in the sitemap. */
@@ -118,16 +118,6 @@ for (const [route, file] of Object.entries(discoverPages())) {
   if (SKIP.has(route)) continue;
   const date = newestCommit([file, ...(EXTRA_SOURCES[route] ?? [])]);
   if (date) map[route] = date;
-}
-
-const site = resolve(root, 'src/data/site.ts');
-for (const [, slug] of [
-  ...execFileSync('cat', [site], { encoding: 'utf8' }).matchAll(
-    /^\s*slug: '([^']+)',\n\s*strength:/gm
-  ),
-].map((m) => [m[0], m[1]])) {
-  const date = newestCommit(['src/pages/vs/[slug].astro', 'src/data/site.ts']);
-  if (date) map[`/vs/${slug}`] = date;
 }
 
 const sorted = Object.fromEntries(Object.entries(map).sort(([a], [b]) => a.localeCompare(b)));

@@ -1,0 +1,46 @@
+// Cloudflare Workers (static assets) deployment config.
+//
+// WHY WORKERS AND NOT PAGES: static-asset requests on Workers are free and
+// UNLIMITED (no bandwidth cap), worker invocations are 100k/day free, and
+// Cloudflare ships new platform features to Workers, not Pages. The whole
+// site therefore hosts for $0 at any realistic traffic level.
+//
+// THE FREE-TIER LEVER is `run_worker_first` below: ONLY the listed routes
+// invoke the worker (metered at 100k/day free). Everything else — pages,
+// CSS, images — is served straight from the asset store, unmetered. Add a
+// route here only if the worker genuinely must see it.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "astro-website-template", // ← rename per site
+  "compatibility_date": "2026-08-01",
+  "main": "worker/index.ts",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // Must agree with astro.config.mjs: build.format 'file' emits /page.html,
+    // and "drop-trailing-slash" serves it at /page while 301-redirecting
+    // /page/ → /page (matching trailingSlash: 'never'). If a site switches
+    // Astro to build.format 'directory', change this to "auto-trailing-slash"
+    // — one without the other breaks every route.
+    "html_handling": "drop-trailing-slash",
+    // Serves dist/404.html with a 404 status for unknown paths.
+    "not_found_handling": "404-page",
+    // Routes the worker must intercept:
+    //   /api/*             form proxy + sheet data + (optional) analytics collector
+    //   /hi, /hi/*         cookieless attribution rewrite to /contact
+    //   /blog/*, /glossary/*  markdown-twin content negotiation (Accept header)
+    //   /s.js              (optional) same-origin analytics script proxy
+    "run_worker_first": ["/api/*", "/hi", "/hi/*", "/blog/*", "/glossary/*", "/s.js"]
+  },
+  // Non-secret config. Secrets are NOT set here:
+  //   npx wrangler secret put CONTACT_SCRIPT_ID   ← Google Apps Script deployment id
+  // The worker treats an unset/empty CONTACT_SCRIPT_ID as "feature off": the
+  // form still redirects to /contact/thanks and nothing crashes — a broken
+  // feature, never a broken site (the empty-default rule).
+  "vars": {
+    // e.g. "https://umami.example.com" — enables the same-origin analytics
+    // proxy at /s.js and /api/send. Empty string = proxy disabled.
+    "UMAMI_UPSTREAM": ""
+  },
+  "observability": { "enabled": true }
+}

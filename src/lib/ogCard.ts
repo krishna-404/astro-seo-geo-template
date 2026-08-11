@@ -19,7 +19,7 @@ import { resolve } from 'node:path';
  * path against it therefore lands inside dist/, where public/ does not exist,
  * and every lookup silently returns undefined.
  *
- * The four collection templates used to do this check inline with
+ * The collection templates used to do this check inline with
  * `../../../public`, written relative to src/pages/<collection>/. That worked,
  * but only because the emitted chunk happens to sit exactly three levels deep
  * too — the same arithmetic against a different base. If Astro ever changes
@@ -31,8 +31,8 @@ import { resolve } from 'node:path';
 export function ogCardFor(route: string): string | undefined {
   const clean = route.replace(/\/$/, '') || '/';
 
-  // Collection entries and /vs keep their folder; everything else is a page.
-  const m = /^\/(blog|glossary|hs-code|solutions|vs)\/(.+)$/.exec(clean);
+  // Collection entries keep their folder; everything else is a page.
+  const m = /^\/(blog|glossary)\/(.+)$/.exec(clean);
   const rel = m
     ? `${m[1]}/${m[2]}`
     : clean === '/'

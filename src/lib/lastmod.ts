@@ -19,12 +19,12 @@ import committed from '../data/lastmod.json';
  * simply no claim; a wrong one is a false claim that teaches crawlers to
  * discount every other one.
  *
- * AUDIT NOTE (12 Aug 2026): an external SEO/AEO/GEO parity review flagged this
- * site as carrying "@astrojs/sitemap but zero lastmod." That is not what ships
- * — every route's <lastmod> is derived here, from the real last-commit date,
- * with the CI-checked src/data/lastmod.json fallback below for the git-less
- * Docker build. Confirm with `curl -s https://dodocket.com/sitemap-0.xml | grep -c lastmod`
- * before treating that finding as live.
+ * AUDIT NOTE: an external SEO review once flagged a site on this stack as
+ * carrying "@astrojs/sitemap but zero lastmod." That is not what ships — every
+ * route's <lastmod> is derived here, from the real last-commit date, with the
+ * CI-checked src/data/lastmod.json fallback below for the git-less Docker
+ * build. Confirm with `curl -s https://<your-domain>/sitemap-0.xml | grep -c lastmod`
+ * before treating such a finding as live.
  */
 
 /** Route path (no extension, leading slash) → source file, relative to repo root. */
@@ -33,24 +33,19 @@ function sourceCandidates(pathname: string): string[] {
 
   if (clean === '/') return ['src/pages/index.astro'];
 
-  // Collection entries: /blog/<slug>, /glossary/<slug>, /hs-code/<slug>,
-  // /solutions/<slug>. The content file is the thing that actually changed;
-  // the [slug] template is a fallback for when only the template moved.
-  const m = clean.match(/^\/(blog|glossary|hs-code|solutions)\/(.+)$/);
+  // Collection entries: /blog/<slug>, /glossary/<slug>. The content file is
+  // the thing that actually changed; the [slug] template is a fallback for
+  // when only the template moved.
+  const m = clean.match(/^\/(blog|glossary)\/(.+)$/);
   if (m) {
     const [, section, slug] = m;
-    const collection = section === 'solutions' ? 'solution' : section;
     return [
-      `src/content/${collection}/${slug}.mdx`,
-      `src/content/${collection}/${slug}.md`,
+      `src/content/${section}/${slug}.mdx`,
+      `src/content/${section}/${slug}.md`,
       `src/pages/${section}/[...slug].astro`,
       `src/pages/${section}/[slug].astro`,
     ];
   }
-
-  // /vs/<slug> is generated from site.ts data, not per-slug files, so the
-  // template and the data are jointly what "changed".
-  if (clean.startsWith('/vs/')) return ['src/pages/vs/[slug].astro', 'src/data/site.ts'];
 
   // Plain pages and collection indexes.
   return [

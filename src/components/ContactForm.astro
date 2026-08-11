@@ -1,59 +1,41 @@
 ---
 /**
- * The enquiry form. Posts to /api/contact, which nginx proxies to a Google
- * Apps Script Web App — see marketing/apps-script/contact-form.gs and
- * DEPLOY.md § 7d.
+ * The enquiry form. Posts to /api/contact, which the edge worker (or your
+ * reverse proxy) forwards to the configured backend — a Google Apps Script Web
+ * App writing to a sheet, in the default setup.
  *
  * IT WORKS WITH JAVASCRIPT OFF, and that is the whole design.
  *
  * A plain `method="post"` and a redirect to a real /contact/thanks page means a
  * submission cannot vanish into a failed fetch, there is no spinner state to
- * get wrong, and the thank-you URL is a free Umami conversion with no extra
- * script. This is the only form on the site besides the calculator, and unlike
- * the calculator it does not need to compute anything, so it ships no JS at all.
+ * get wrong, and the thank-you URL is a free analytics conversion with no extra
+ * script. The form does not need to compute anything, so it ships no JS at all
+ * beyond the additive attribution snippet below.
  *
  * WHY IT POSTS SAME-ORIGIN. Pointing the form straight at the Apps Script URL
  * would navigate the visitor to script.googleusercontent.com and show them a
  * Google-hosted page — which is how most Apps Script forms end up feeling
- * broken. The nginx proxy keeps the browser on dodocket.com and keeps the
+ * broken. The same-origin proxy keeps the browser on your domain and keeps the
  * script URL, which is write-capable, out of the page source.
  *
- * SPAM: a honeypot here plus limit_req in nginx. There is deliberately no
- * "submitted too fast" timestamp check — this is a static build, so any
+ * SPAM: a honeypot here plus rate limiting at the edge. There is deliberately
+ * no "submitted too fast" timestamp check — this is a static build, so any
  * timestamp rendered into the page is the BUILD time, not the visitor's page
  * load, and would reject everyone or nobody depending on how old the deploy is.
  */
-import { CONTACT } from '../data/site';
 
 interface Props {
-  /** Recorded in the sheet, so we can tell a /contact lead from a calculator one. */
+  /** Recorded with the submission, so leads can be traced to the page they came from. */
   source: string;
   heading?: string;
-  /** Prefills the volume band when the page already knows it. */
-  containers?: string;
 }
 
-const { source, heading = 'Or send us the details', containers } = Astro.props;
-
-/**
- * Bands, not a number. A trader knows roughly which of these they are without
- * looking anything up, and the boundaries are the pricing tiers — so the answer
- * routes the lead as well as qualifying it.
- */
-const BANDS = [
-  { value: '', label: 'Select…' },
-  { value: 'under-50', label: 'Under 50 a month' },
-  { value: '50-300', label: '50 – 300 a month' },
-  { value: '300-plus', label: '300+ a month' },
-  { value: 'unsure', label: 'Not sure yet' },
-];
+const { source, heading = 'Send us a message' } = Astro.props;
 ---
 
 <form class="cf card" method="post" action="/api/contact">
   <h2 class="cf__h">{heading}</h2>
-  <p class="cf__sub">
-    Straight to the founder. We usually reply the same working day.
-  </p>
+  <p class="cf__sub">We usually reply within one working day.</p>
 
   <input type="hidden" name="source" value={source} />
 
@@ -65,17 +47,17 @@ const BANDS = [
     WHAT THESE CAN AND CANNOT TELL YOU. document.referrer is the page
     immediately before this one, and it is overwritten on every navigation. A
     visitor who arrives from Google on a blog post and then clicks through to
-    /contact carries "dodocket.com/blog/…" here, not Google — the original
+    /contact carries "yourdomain.com/blog/…" here, not Google — the original
     source is already gone by the time the form renders. So this is LAST TOUCH,
     which is why the column is called "Came from" and not "Source".
 
     Persisting the first referrer is what analytics suites do, and it needs
-    somewhere to keep it. Not available here: CLAUDE.md forbids localStorage and
-    sessionStorage outright, and a cookie for attribution is not strictly
+    somewhere to keep it. Not available here: localStorage and sessionStorage
+    are banned repo-wide, and a cookie for attribution is not strictly
     necessary, so it would need consent — a second optional cookie, which breaks
     the consent banner's two-button design and would bias the data to people who
-    accepted. Umami already answers the aggregate question; it simply cannot tie
-    a session to one row in a sheet.
+    accepted. Aggregate analytics already answers the aggregate question; it
+    simply cannot tie a session to one row in a sheet.
   */}
   <input type="hidden" name="ref" value="" />
   <input type="hidden" name="campaign" value="" />
@@ -107,28 +89,15 @@ const BANDS = [
       <input type="email" name="email" autocomplete="email" required maxlength="180" />
     </label>
 
-    <label class="cf__f">
-      <span>Company</span>
+    <label class="cf__f cf__f--wide">
+      <span>Company <span class="cf__optional">(optional)</span></span>
       <input type="text" name="company" autocomplete="organization" maxlength="160" />
-    </label>
-
-    <label class="cf__f">
-      <span>Containers a month</span>
-      <select name="containers">
-        {
-          BANDS.map((b) => (
-            <option value={b.value} selected={containers === b.value}>
-              {b.label}
-            </option>
-          ))
-        }
-      </select>
     </label>
   </div>
 
   <label class="cf__f cf__f--wide">
-    <span>What are you trying to fix?</span>
-    <textarea name="message" rows="4" maxlength="4000"></textarea>
+    <span>How can we help?</span>
+    <textarea name="message" rows="4" required maxlength="4000"></textarea>
   </label>
 
   {/*
@@ -139,14 +108,18 @@ const BANDS = [
   */}
   <label class="cf__opt">
     <input type="checkbox" name="optin" value="yes" />
-    <span>Email me the occasional note on trade ops. No more than monthly.</span>
+    <span>Email me the occasional update. No more than monthly.</span>
   </label>
 
   <div class="cf__foot">
-    <button class="btn btn--primary" type="submit">Send it</button>
+    <button
+      class="btn btn--primary"
+      type="submit"
+      data-umami-event="form-submit"
+      data-umami-event-place={source}>Send message</button
+    >
     <p class="fine cf__legal">
       We use this to reply to you and nothing else. <a href="/privacy-policy">How we handle it</a>.
-      In a hurry? <a href={CONTACT.whatsappPrefilled} rel="noopener" data-umami-event="whatsapp" data-umami-event-place="form-footnote">WhatsApp</a> is faster.
     </p>
   </div>
 
@@ -178,11 +151,11 @@ const BANDS = [
         // Read from THIS page's URL, not the referrer's — the one case where
         // the original source survives all the way to the form.
         //
-        // The path form is what we send: dodocket.com/hi/<code>, served by an
+        // The path form is what we send: yourdomain.com/hi/<code>, served by an
         // internal rewrite so it stays in the address bar. Query parameters are
         // still honoured because other platforms append their own, but we do
-        // not put ?utm_source= on our own links — see the /hi block in
-        // nginx.conf for why.
+        // not put ?utm_source= on our own links — the /hi rewrite exists so the
+        // shared URL stays short and human.
         var q = new URLSearchParams(location.search);
         var path = /^\/hi\/([A-Za-z0-9][A-Za-z0-9-]{0,39})\/?$/.exec(location.pathname);
         put(
@@ -240,7 +213,12 @@ const BANDS = [
     color: var(--ink-2);
   }
 
-  .cf :is(input[type='text'], input[type='email'], select, textarea) {
+  .cf__optional {
+    font-weight: 400;
+    color: var(--ink-3);
+  }
+
+  .cf :is(input[type='text'], input[type='email'], textarea) {
     width: 100%;
     min-height: 44px; /* touch target */
     padding: 0.55rem 0.7rem;
@@ -257,10 +235,10 @@ const BANDS = [
     resize: vertical;
   }
 
-  .cf :is(input, select, textarea):focus-visible {
-    outline: 2px solid var(--orange);
+  .cf :is(input, textarea):focus-visible {
+    outline: 2px solid var(--brand);
     outline-offset: 1px;
-    border-color: var(--orange);
+    border-color: var(--brand);
   }
 
   .cf__opt {
@@ -295,6 +273,9 @@ const BANDS = [
   @media (min-width: 34rem) {
     .cf__grid {
       grid-template-columns: 1fr 1fr;
+    }
+    .cf__f--wide {
+      grid-column: 1 / -1;
     }
   }
 </style>

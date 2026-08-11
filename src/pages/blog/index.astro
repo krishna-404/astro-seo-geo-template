@@ -1,0 +1,115 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { SITE } from '../../data/site';
+
+const entries = (await getCollection('blog', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.published.valueOf() - a.data.published.valueOf()
+);
+
+const schema = [
+  {
+    '@type': 'Blog',
+    '@id': `${SITE.url}/blog#blog`,
+    name: `${SITE.name} blog`,
+    description:
+      'Reviewed posts with a named human author — each one declares what it contains that no model could have produced.',
+    url: new URL('/blog', SITE.url).href,
+    publisher: { '@id': `${SITE.url}/#organization` },
+    blogPost: entries.map((e) => ({
+      '@type': 'BlogPosting',
+      headline: e.data.title,
+      description: e.data.description,
+      datePublished: e.data.published.toISOString(),
+      url: new URL(`/blog/${e.id}`, SITE.url).href,
+      author: { '@type': 'Person', name: e.data.author.name },
+    })),
+  },
+];
+---
+
+<BaseLayout
+  title={`Blog — ${SITE.name}`}
+  description="Reviewed posts with a named author, sourced claims and a front-loaded answer — the demo posts document how this template itself works."
+  schema={schema}
+>
+  <div class="blog">
+    <h1>Blog</h1>
+    <p class="blog__lede">
+      Substance over volume. Every post here carries a named human author, cited
+      sources, and something no model could have produced — the schema in
+      <code>content.config.ts</code> will not build a post without them.
+    </p>
+
+    {entries.length === 0 && <p class="blog__empty">No posts published yet.</p>}
+
+    <ul class="blog__list">
+      {
+        entries.map((e) => (
+          <li>
+            <a href={`/blog/${e.id}`}>{e.data.title}</a>
+            <p class="blog__meta">
+              {e.data.author.name} ·{' '}
+              <time datetime={e.data.published.toISOString()}>
+                {e.data.published.toISOString().slice(0, 10)}
+              </time>
+            </p>
+            <p class="blog__desc">{e.data.description}</p>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</BaseLayout>
+
+<style>
+  .blog {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 4rem;
+  }
+  .blog h1 {
+    font-size: 1.875rem;
+    margin: 0 0 1rem;
+  }
+  .blog__lede {
+    font-size: 1.125rem;
+    line-height: 1.6;
+    margin: 0 0 2.5rem;
+  }
+  .blog__empty {
+    color: var(--ink-3);
+  }
+  .blog__list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .blog__list li {
+    padding: 1.25rem 0;
+    border-top: 1px solid var(--line-2);
+  }
+  .blog__list a {
+    font-weight: 700;
+    font-size: 1.125rem;
+    line-height: 1.4;
+  }
+  .blog__meta {
+    font-size: 0.875rem;
+    color: var(--ink-3);
+    margin: 0.375rem 0 0;
+  }
+  .blog__desc {
+    margin: 0.5rem 0 0;
+    line-height: 1.6;
+  }
+
+  @media (min-width: 48rem) {
+    .blog {
+      padding: 3rem 1.5rem 5rem;
+    }
+    .blog h1 {
+      font-size: 2.25rem;
+    }
+  }
+</style>

@@ -8,25 +8,25 @@
  * Runs AFTER `astro build` — it needs dist/ to exist, if only so a missing
  * dist/ fails loudly instead of writing markdown nobody serves.
  *
- * SCOPE: the four content collections (blog, solution, glossary, hs-code)
- * only. Their MDX source IS the page body — plain markdown, no JSX, checked
- * in readContent.mjs — so the twin is exact rather than reconstructed. The
- * hand-authored marketing pages (/, /features, /pricing, /contact, the ops
- * cost calculator) have no equivalent markdown source; a faithful twin for
- * those would mean converting rendered HTML back to markdown, which is a
+ * SCOPE: the two content collections (blog, glossary) only. Their MDX source
+ * IS the page body — plain markdown, no JSX, checked in readContent.mjs — so
+ * the twin is exact rather than reconstructed. The hand-authored pages
+ * (/, /about, /contact) have no equivalent markdown source; a faithful twin
+ * for those would mean converting rendered HTML back to markdown, which is a
  * different, lossier mechanism and a separate piece of work. The console
  * summary below states the count this run actually covers, per the
  * no-silent-caps rule — this is a subset of the site, not the whole thing.
  *
  * Each twin carries the same title/tldr/sources a visitor sees on the page
- * itself (glossary, blog, hs-code and solution templates all render a
- * "Sources" section from frontmatter — see src/pages/<collection>/[...slug].astro)
- * so the twin is a faithful copy, not a stripped-down one.
+ * itself (the blog and glossary templates both render a "Sources" section
+ * from frontmatter — see src/pages/<collection>/[...slug].astro) so the twin
+ * is a faithful copy, not a stripped-down one.
  */
 import { writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readCollection } from './lib/readContent.mjs';
+import { SITE_URL } from '../src/data/origin.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = resolve(root, 'dist');
@@ -36,13 +36,9 @@ if (!existsSync(dist)) {
   process.exit(1);
 }
 
-const SITE_URL = 'https://dodocket.com';
-
 const COLLECTIONS = {
-  solution: '/solutions',
-  glossary: '/glossary',
   blog: '/blog',
-  'hs-code': '/hs-code',
+  glossary: '/glossary',
 };
 
 const sourcesSection = (sources) => {
@@ -86,4 +82,4 @@ for (const [collection, routePrefix] of Object.entries(COLLECTIONS)) {
   }
 }
 
-console.log(`markdown-twins: ${written} .md twins written to dist/ (blog, solution, glossary, hs-code only — see file header for scope)`);
+console.log(`markdown-twins: ${written} .md twins written to dist/ (blog and glossary only — see file header for scope)`);

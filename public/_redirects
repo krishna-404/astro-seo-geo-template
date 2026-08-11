@@ -1,0 +1,13 @@
+# Redirect rules for Cloudflare's static asset layer.
+#
+# What does NOT belong here:
+#  - trailing-slash normalisation — wrangler.jsonc html_handling does it
+#  - www → apex — that is a zone-level Redirect Rule (dashboard), because it
+#    fires before the request reaches this worker's hostname at all
+#  - /hi/<code> — that is a REWRITE (URL must stay in the address bar), which
+#    lives in worker/index.ts, not a redirect
+#
+# What does: legacy paths from previous versions of the site. Always 301
+# (permanent) so link authority transfers. Example kept from the ancestor site
+# — a merged page keeps its old URL working forever:
+# /cookies /privacy-policy 301

@@ -1,0 +1,4 @@
+{
+  "$comment": "Google Sheets data sources. Map a tab name to its PUBLISHED-to-the-web CSV URL (File → Share → Publish to web → select the tab → CSV). Example: \"tabs\": { \"team\": { \"url\": \"https://docs.google.com/spreadsheets/d/e/2PACX-.../pub?gid=0&single=true&output=csv\" } }. scripts/fetch-sheets.mjs snapshots each tab to src/data/sheets/<name>.json at build time; the worker serves the same tabs live at /api/data/<name>. This lives in JSON rather than site.ts because plain Node scripts cannot import TypeScript — site.ts re-exports it as SHEETS. PRIVACY: only publish a public tab that QUERY-selects the public columns of approved rows; the master tab with emails/phones stays unpublished.",
+  "tabs": {}
+}

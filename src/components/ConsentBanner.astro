@@ -1,15 +1,16 @@
 ---
-import { LEADFEEDER, CONSENT } from '../data/site';
+import { ANALYTICS, CONSENT } from '../data/site';
 
 /**
  * Cookie consent gate.
  *
- * The site sets exactly one non-essential cookie — Leadfeeder's `_lfa` — so this
- * is a two-button banner, not a preference centre with toggles nobody reads.
- * Building a category matrix for a single vendor would be theatre.
+ * The site's only non-essential cookies come from GA4, so this is a two-button
+ * banner, not a preference centre with toggles nobody reads. Building a
+ * category matrix for a single vendor would be theatre.
  *
  * WHAT IS GATED AND WHAT IS NOT:
- *   - Leadfeeder      gated. Does not load at all until "Accept" is clicked.
+ *   - GA4             gated. The gtag snippet does not load at all until
+ *                     "Accept" is clicked.
  *   - Umami           NOT gated. Self-hosted, sets no cookie, stores nothing on
  *                     the device. ePrivacy consent attaches to storage access on
  *                     the visitor's device, and there is none to consent to.
@@ -19,17 +20,24 @@ import { LEADFEEDER, CONSENT } from '../data/site';
  *
  * CONSENT IS PRIOR, NOT RETROACTIVE. The tracker is injected by this script on
  * click, never rendered into the page and disabled afterwards. If you ever move
- * the Leadfeeder tag back into BaseLayout's head, this banner becomes decoration
+ * the gtag snippet back into BaseLayout's head, this banner becomes decoration
  * and the compliance story is gone.
  *
- * STORED IN A COOKIE, NOT localStorage — CLAUDE.md forbids web storage outright,
- * and a consent record is the textbook "strictly necessary" cookie anyway.
+ * CTA MEASUREMENT SURVIVES THE VENDOR SWAP. Every CTA in the markup carries
+ * `data-umami-event` / `data-umami-event-place` — Umami binds those natively.
+ * On Accept this script also installs a small click forwarder that relays the
+ * same attributes to gtag, so one set of vendor-neutral attributes reports to
+ * whichever provider is live.
+ *
+ * STORED IN A COOKIE, NOT localStorage — web storage is banned repo-wide, and a
+ * consent record is the textbook "strictly necessary" cookie anyway.
  */
 
 const script = `
 (function () {
   var NAME = ${JSON.stringify(CONSENT.cookieName)};
   var DAYS = ${CONSENT.maxAgeDays};
+  var MID = ${JSON.stringify(ANALYTICS.ga4.measurementId)};
 
   function read(name) {
     var hit = document.cookie.split('; ').find(function (row) {
@@ -45,28 +53,70 @@ const script = `
   }
 
   /**
-   * Vendor snippet, verbatim, wrapped so it runs on consent rather than on load.
+   * Relays CTA clicks to GA4. The markup's data-umami-event attributes are the
+   * single source of truth for event names; this listener just forwards them,
+   * so enabling GA4 needs no markup changes. Additive and fail-safe: if it
+   * throws, the click still navigates.
+   */
+  function installCtaForwarder() {
+    document.addEventListener('click', function (e) {
+      try {
+        var el = e.target && e.target.closest && e.target.closest('[data-umami-event]');
+        if (!el || typeof window.gtag !== 'function') return;
+        window.gtag('event', el.getAttribute('data-umami-event'), {
+          place: el.getAttribute('data-umami-event-place') || '',
+        });
+      } catch (err) { /* Analytics is never worth breaking a click for. */ }
+    });
+  }
+
+  /**
+   * The GA4 snippet, injected on consent rather than rendered on load.
    * Guarded because "Accept" can be clicked again from the footer re-open.
    */
   var loaded = false;
   function loadTracker() {
-    if (loaded) return;
+    if (loaded || !MID) return;
     loaded = true;
-    ${LEADFEEDER.snippet(LEADFEEDER.trackerId)}
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(MID);
+    document.head.appendChild(s);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { window.dataLayer.push(arguments); };
+    window.gtag('js', new Date());
+    window.gtag('config', MID);
+    installCtaForwarder();
   }
 
   /**
    * Withdrawing consent has to actually remove what was set, or "Reject" is a
    * lie the second time someone clicks it. The page cannot see HttpOnly cookies
    * and cannot touch the vendor's own domain, so this clears what is reachable:
-   * the first-party _lfa cookie, on this host and on the dot-domain variant.
+   * the first-party GA cookies, on this host and on the dot-domain variant.
+   *
+   * A trailing * in a configured name is prefix-matched against the cookies
+   * actually present — needed because GA4's session cookie embeds the
+   * measurement id in its NAME (_ga_XXXXXXXXXX), so it cannot be listed
+   * literally in site.ts.
    */
   function clearTrackerCookies() {
     var host = location.hostname;
     var domains = ['', ';domain=' + host, ';domain=.' + host.replace(/^www\\./, '')];
-    ${JSON.stringify(CONSENT.trackerCookies)}.forEach(function (name) {
-      domains.forEach(function (d) {
-        document.cookie = name + '=;path=/;max-age=0' + d;
+    var present = document.cookie.split('; ').map(function (row) {
+      return row.split('=')[0];
+    });
+    ${JSON.stringify(CONSENT.trackerCookies)}.forEach(function (pattern) {
+      var names =
+        pattern.slice(-1) === '*'
+          ? present.filter(function (n) {
+              return n.indexOf(pattern.slice(0, -1)) === 0;
+            })
+          : [pattern];
+      names.forEach(function (name) {
+        domains.forEach(function (d) {
+          document.cookie = name + '=;path=/;max-age=0' + d;
+        });
       });
     });
   }
@@ -126,8 +176,8 @@ const script = `
         taller, and a tall fixed banner covers the hero CTA — measured at 667px
         height, where the button ends around y=460. Detail lives on /privacy-policy. */}
     <p id="consent-body" class="consent__body">
-      One cookie, to see which <em>companies</em> visit — never who you are. Our page
-      analytics use none. <a href="/privacy-policy#cookies">What we set</a>.
+      Optional analytics cookies show us how the site is <em>used</em> — never who you
+      are. Nothing is set unless you accept. <a href="/privacy-policy#cookies">What we set</a>.
     </p>
     <div class="consent__actions">
       <button type="button" class="btn btn--primary" data-consent="accept">Accept</button>
@@ -139,8 +189,8 @@ const script = `
 <script is:inline set:html={script} />
 
 <style>
-  /* Fixed, not sticky: CLAUDE.md requires the ship inside the first fold on a
-     phone, and a banner in flow would push the hero up. This floats over it. */
+  /* Fixed, not sticky: the hero has to stay inside the first fold on a phone,
+     and a banner in flow would push it up. This floats over it instead. */
   .consent {
     position: fixed;
     inset-inline: 0;
@@ -186,7 +236,7 @@ const script = `
     color: var(--ink-2);
   }
   .consent__body a {
-    color: var(--orange-strong);
+    color: var(--brand-strong);
   }
 
   /* nowrap: wrapping would stack the buttons and add ~50px of banner height,
@@ -196,7 +246,7 @@ const script = `
     flex-wrap: nowrap;
     gap: 0.5rem;
   }
-  /* ≥44px touch targets on touch widths, per CLAUDE.md. */
+  /* ≥44px touch targets on touch widths. */
   .consent__actions .btn {
     flex: 1 1 0;
     min-height: 44px;

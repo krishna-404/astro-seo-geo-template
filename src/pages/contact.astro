@@ -1,0 +1,158 @@
+---
+/**
+ * /contact — the routes into the company.
+ *
+ * The form works with JavaScript off (see ContactForm.astro), and the direct
+ * email address is deliberately on the page: some visitors will not type into
+ * a form, and an address that exists only inside data files appears nowhere a
+ * human can copy. Optional channels (phone, WhatsApp) render only when
+ * site.ts → CONTACT carries them — an empty string hides the card.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ContactForm from '../components/ContactForm.astro';
+import { CONTACT, SITE } from '../data/site';
+
+const title = `Contact ${SITE.name}`;
+const description =
+  'How to reach us: send the form and it lands in our inbox the same day, or email us directly. Every channel on this page goes to a person, not a queue.';
+
+/**
+ * ContactPage plus a ContactPoint hung off the site-wide Organization node.
+ * `availableLanguage` is one of the fields answer engines actually read back
+ * when someone asks how to reach a company.
+ */
+const schema = [
+  {
+    '@type': 'ContactPage',
+    '@id': `${SITE.url}/contact#page`,
+    name: title,
+    description,
+    url: `${SITE.url}/contact`,
+    about: { '@id': `${SITE.url}/#organization` },
+  },
+  {
+    '@type': 'ContactPoint',
+    '@id': `${SITE.url}/contact#sales`,
+    contactType: 'sales',
+    email: CONTACT.email,
+    ...(CONTACT.phone ? { telephone: CONTACT.phone } : {}),
+    availableLanguage: ['en'],
+  },
+];
+---
+
+<BaseLayout title={title} description={description} schema={schema}>
+  <section class="band band--white">
+    <div class="wrap">
+      <p class="eyebrow">Contact</p>
+      <h1>Talk to us</h1>
+      <p class="lede">
+        The form below goes straight to our inbox. Prefer your own mail client? The
+        address is right here too — no gatekeeping.
+      </p>
+
+      <ul class="ways">
+        <li class="card way">
+          <h2 class="way__h">Email</h2>
+          <p class="way__p">
+            Best when you want to attach something or loop in a colleague. We usually
+            reply the same working day.
+          </p>
+          <a
+            class="btn"
+            href={CONTACT.emailHref}
+            data-umami-event="cta-email"
+            data-umami-event-place="contact-page">{CONTACT.email}</a
+          >
+        </li>
+
+        {
+          CONTACT.whatsapp && (
+            <li class="card way">
+              <h2 class="way__h">WhatsApp</h2>
+              <p class="way__p">The quickest route if you already live in WhatsApp.</p>
+              <a
+                class="btn btn--wa"
+                href={CONTACT.whatsappPrefilled || CONTACT.whatsapp}
+                rel="noopener"
+                data-umami-event="cta-whatsapp"
+                data-umami-event-place="contact-page"
+              >
+                Message us on WhatsApp
+              </a>
+            </li>
+          )
+        }
+
+        {
+          CONTACT.phone && (
+            <li class="card way">
+              <h2 class="way__h">Phone</h2>
+              <p class="way__p">If you would rather just talk.</p>
+              <a
+                class="btn mono"
+                href={CONTACT.phoneHref}
+                data-umami-event="cta-phone"
+                data-umami-event-place="contact-page"
+              >
+                {CONTACT.phone}
+              </a>
+            </li>
+          )
+        }
+      </ul>
+    </div>
+  </section>
+
+  <section class="band band--cream">
+    <div class="wrap form-wrap">
+      <ContactForm source="contact" />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .ways {
+    list-style: none;
+    margin: 2rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 1rem;
+  }
+
+  /* Flex, not grid: `margin-top: auto` on the button only pushes it to the
+     bottom of a flex column, which is what keeps buttons aligned across cards
+     whose descriptions run to different lengths. */
+  .way {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .way__h {
+    font-size: 1.0625rem;
+    margin: 0;
+  }
+  .way__p {
+    font-size: 0.9375rem;
+    color: var(--ink-3);
+    margin: 0 0 0.75rem;
+  }
+  .way .btn {
+    margin-top: auto;
+    align-self: start;
+  }
+
+  /* Astro's scoped CSS does not reach a child component's root element, so the
+     form is positioned by this wrapper rather than by a class prop. */
+  .form-wrap {
+    max-width: 44rem;
+  }
+
+  /* auto-fit, not repeat(3, 1fr): with phone and WhatsApp unset only the email
+     card renders, and it should fill the row rather than sit at a third. */
+  @media (min-width: 52rem) {
+    .ways {
+      grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    }
+  }
+</style>

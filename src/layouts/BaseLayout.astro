@@ -33,9 +33,9 @@ const {
 
 /**
  * `build.format: 'file'` makes Astro.url.pathname carry the emitted filename
- * (/pricing.html, /index.html). The served URLs are extensionless, so strip it
- * — a canonical pointing at /pricing.html would be a canonical to a URL nginx
- * never hands out.
+ * (/about.html, /index.html). The served URLs are extensionless, so strip it
+ * — a canonical pointing at /about.html would be a canonical to a URL the
+ * server never hands out.
  */
 function cleanPath(pathname: string): string {
   const stripped = pathname.replace(/\/index\.html$/, '/').replace(/\.html$/, '');
@@ -49,14 +49,14 @@ const canonicalUrl = canonical ?? new URL(path, SITE.url).href;
  * Card precedence: an explicit prop, then a generated card for this route, then
  * the site default. Collection templates pass their own card as `ogImage`, so
  * this only reaches the pages that have no slug of their own — the marketing
- * pages, the collection indexes and /vs/<competitor>.
+ * pages and the collection indexes.
  */
 const ogImageUrl = new URL(ogImage ?? ogCardFor(path) ?? SITE.ogImage, SITE.url).href;
 
 /**
- * The founder appears on every page via <FounderNote />, so the Person node is
- * site-wide rather than per-page. Blog posts reference this same @id as their
- * author instead of restating the profile.
+ * The founder is referenced site-wide, so the Person node is site-wide rather
+ * than per-page. Blog posts reference this same @id as their author instead of
+ * restating the profile.
  */
 const founder = {
   '@type': 'Person',
@@ -76,8 +76,7 @@ const organization = {
   name: SITE.name,
   url: SITE.url,
   description: SITE.description,
-  slogan: 'The desk work of global trade, done by AI.',
-  areaServed: ['Singapore', 'United Arab Emirates', 'India'],
+  slogan: SITE.tagline,
   founder: { '@id': `${SITE.url}/#founder` },
 };
 
@@ -85,8 +84,8 @@ const pageSchemas = schema ? (Array.isArray(schema) ? schema : [schema]) : [];
 const graph = [organization, founder, ...pageSchemas];
 
 /**
- * Leadfeeder is gated behind consent and injected from <ConsentBanner />, which
- * owns the snippet. Nothing to build here.
+ * GA4 is gated behind consent and injected from <ConsentBanner />, which owns
+ * the gtag snippet. Nothing to build here — see the analytics notes below.
  */
 ---
 
@@ -112,7 +111,7 @@ const graph = [organization, founder, ...pageSchemas];
         preview before it has fetched the image. */}
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:locale" content="en" />
+    <meta property="og:locale" content={SITE.locale} />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
@@ -124,15 +123,15 @@ const graph = [organization, founder, ...pageSchemas];
         one refactor away from being lost silently. */}
     {VERIFICATION.bing && <meta name="msvalidate.01" content={VERIFICATION.bing} />}
 
-    <meta name="theme-color" content="#c2410c" />
+    <meta name="theme-color" content={SITE.themeColor} />
     {/*
       FOUR ICONS, AND THE ORDER IS NOT ARBITRARY.
 
-      The site shipped only the SVG, and Google showed the grey globe next to
-      dodocket.com in search rather than the mark. Google's favicon crawler
-      wants a raster it can scale — its guidance names a square that is a
-      multiple of 48px — and it probes /favicon.ico at the root whatever the
-      HTML says. We were answering that with a 404.
+      A site that ships only the SVG gets the grey globe next to its domain in
+      Google search rather than the mark. Google's favicon crawler wants a
+      raster it can scale — its guidance names a square that is a multiple of
+      48px — and it probes /favicon.ico at the root whatever the HTML says.
+      Answer that with a 404 and you keep the globe.
 
       .ico first, because a browser takes the first icon it understands and the
       crawler wants this one. The SVG follows for browsers that prefer it: it is
@@ -154,22 +153,23 @@ const graph = [organization, founder, ...pageSchemas];
 
     {
       /* Umami. Production builds only, so `astro dev` doesn't file local page
-         views against real traffic. `defer` keeps it off the critical path —
-         these pages otherwise ship no JavaScript at all. Cookieless, so there
-         is nothing to ask consent for. */
-      import.meta.env.PROD && (
+         views against real traffic, and only when a website ID is configured.
+         `defer` keeps it off the critical path — these pages otherwise ship no
+         JavaScript at all. Cookieless, so there is nothing to ask consent for
+         and it is never gated behind the banner. */
+      import.meta.env.PROD && ANALYTICS.umami.websiteId && (
         <script
           defer
-          src={ANALYTICS.src}
-          data-website-id={ANALYTICS.websiteId}
+          src={ANALYTICS.umami.src}
+          data-website-id={ANALYTICS.umami.websiteId}
           is:inline
         />
       )
     }
 
-    {/* Leadfeeder is NOT loaded here. It sets a cookie, so it is injected by
-        <ConsentBanner /> only after the visitor accepts. Putting the tag back
-        in <head> would make the banner decoration — see ConsentBanner.astro. */}
+    {/* GA4 is NOT loaded here. It sets cookies, so its gtag snippet is injected
+        by <ConsentBanner /> only after the visitor accepts. Putting the tag
+        back in <head> would make the banner decoration — see ConsentBanner.astro. */}
 
     <slot name="head" />
   </head>
@@ -183,9 +183,11 @@ const graph = [organization, founder, ...pageSchemas];
     <Footer />
     {/* Last in the body: the banner is fixed-position, so its place in the
         source order costs nothing visually, and every visitor reaches the
-        content and the footer links before it. Production only — the tag it
-        gates is production only, so a banner in `astro dev` would be asking
-        consent for something that cannot load. */}
-    {import.meta.env.PROD && <ConsentBanner />}
+        content and the footer links before it. Rendered only when GA4 is
+        configured — with Umami alone there are no cookies and nothing to
+        consent to. Production only — the tag it gates is production only, so
+        a banner in `astro dev` would be asking consent for something that
+        cannot load. */}
+    {import.meta.env.PROD && ANALYTICS.ga4.measurementId && <ConsentBanner />}
   </body>
 </html>
