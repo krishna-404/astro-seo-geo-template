@@ -184,7 +184,10 @@ export default {
 
     // ── 4. Markdown twins — Accept negotiation on content routes ─────────
     const isTwinRoute = TWIN_PREFIXES.some((p) => pathname.startsWith(p));
-    if (isTwinRoute && request.method === 'GET') {
+    // HEAD included: crawlers and link-checkers probe with HEAD, and a HEAD
+    // answer whose headers disagree with the GET answer (no Vary, wrong
+    // Content-Type) poisons caches and misleads audits.
+    if (isTwinRoute && (request.method === 'GET' || request.method === 'HEAD')) {
       const accept = request.headers.get('accept') ?? '';
       if (/text\/markdown/i.test(accept)) {
         const twin = await env.ASSETS.fetch(new URL(`${pathname}.md`, url).toString());

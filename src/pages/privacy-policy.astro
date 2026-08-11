@@ -209,12 +209,12 @@ const schema = {
         {privacy.laws.map((l) => (<li><strong>{l.market}</strong> — {l.law}</li>))}
       </ul>
       <p>
-        Write to <a href={`mailto:${privacy.contact.privacyEmail}`}>{privacy.contact.privacyEmail}</a>
+        Write to <a href={`mailto:${privacy.contact.privacyEmail}`} data-umami-event="cta-email" data-umami-event-place="privacy-page">{privacy.contact.privacyEmail}</a>
         and we will respond within {privacy.contact.responseTargetDays} days.
       </p>
       <p>
         <strong>Privacy contact.</strong> {todo(privacy.contact.dpo)} —
-        <a href={`mailto:${privacy.contact.dpoEmail}`}>{privacy.contact.dpoEmail}</a>.
+        <a href={`mailto:${privacy.contact.dpoEmail}`} data-umami-event="cta-email" data-umami-event-place="privacy-page">{privacy.contact.dpoEmail}</a>.
       </p>
 
       <h2 id="children">Children</h2>
@@ -232,8 +232,8 @@ const schema = {
 
       <h2 id="contact">Contact</h2>
       <p>
-        <a href={`mailto:${privacy.contact.privacyEmail}`}>{privacy.contact.privacyEmail}</a>,
-        or <a href={`mailto:${privacy.contact.generalEmail}`}>{privacy.contact.generalEmail}</a>
+        <a href={`mailto:${privacy.contact.privacyEmail}`} data-umami-event="cta-email" data-umami-event-place="privacy-page">{privacy.contact.privacyEmail}</a>,
+        or <a href={`mailto:${privacy.contact.generalEmail}`} data-umami-event="cta-email" data-umami-event-place="privacy-page">{privacy.contact.generalEmail}</a>
         for anything else.
       </p>
       <p class="fine">

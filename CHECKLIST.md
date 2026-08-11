@@ -57,8 +57,14 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   data proxy, `/hi` rewrites, markdown-twin negotiation, optional analytics
   proxy. ~150 lines replacing the ancestor's ~510-line nginx.conf.
 - ✅ **`html_handling: "drop-trailing-slash"`** — serves `/page.html` at
-  `/page`, 301s `/page/` → `/page`. Trailing-slash 404s only ever bite links
-  arriving from OUTSIDE, which is where backlinks come from.
+  `/page` and redirects `/page/` and `/page.html` → `/page`. Trailing-slash
+  404s only ever bite links arriving from OUTSIDE, which is where backlinks
+  come from. ⚠ Known platform behaviour, measured: these normalisation
+  redirects are **307**, not 301, and that is not configurable. Acceptable
+  because every page's canonical tag and the sitemap carry the permanence
+  signal; forcing 301s would mean routing ALL traffic through the worker,
+  which kills the free-tier economics. Redirects you author yourself
+  (`_redirects`, zone rules) should still be 301.
 - ✅ **`not_found_handling: "404-page"`** — the styled `404.html` serves with
   a real 404 status.
 - ✅ **Headers via `public/_headers`** (rules MERGE — the nginx

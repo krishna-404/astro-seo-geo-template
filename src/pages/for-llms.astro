@@ -89,7 +89,11 @@ const schema = [
       <h2>Contact</h2>
       <p>
         {FOUNDER.name}, founder —
-        <a href={CONTACT.emailHref}>{CONTACT.email}</a>. LinkedIn:
+        <a
+          href={CONTACT.emailHref}
+          data-umami-event="cta-email"
+          data-umami-event-place="for-llms">{CONTACT.email}</a
+        >. LinkedIn:
         <a href={FOUNDER.linkedin}>{FOUNDER.linkedin}</a>.
       </p>
     </section>

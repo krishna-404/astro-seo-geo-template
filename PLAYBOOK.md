@@ -193,7 +193,9 @@ any change here in the same commit.
 - [ ] `curl -sI https://www.DOMAIN/` → 301 to apex ⚠
 - [ ] `curl -sI http://DOMAIN/` → https, same host
 - [ ] `curl -sIL https://DOMAIN/ | grep -c '^HTTP'` → redirects resolve in one hop
-- [ ] `curl -sI https://DOMAIN/about/` → 301 `/about` (trailing slash)
+- [ ] `curl -sI https://DOMAIN/about/` → redirect to `/about` (trailing
+      slash; the platform emits 307 here — see CHECKLIST §2 for why that is
+      accepted)
 - [ ] `curl -sI https://DOMAIN/definitely-not-a-page | head -1` → 404
 
 **Headers — on a page AND on a fingerprinted asset** ⚠ (the pairing catches
