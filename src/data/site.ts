@@ -125,6 +125,7 @@ export const FOOTER_NAV = [
     links: [
       { label: 'Blog', href: '/blog' },
       { label: 'Glossary', href: '/glossary' },
+      { label: 'Search', href: '/search' },
       { label: 'For LLMs', href: '/for-llms' },
     ],
   },

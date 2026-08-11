@@ -29,6 +29,7 @@ import { execFileSync } from 'node:child_process';
 import { writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join } from 'node:path';
+import { readCollection } from './lib/readContent.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -56,18 +57,25 @@ function newestCommit(files) {
 
 const map = {};
 
-// Collection entries: the content file is what changed.
+// Collection entries: the content file is what changed. Read through the
+// shared reader so drafts and scheduled (future-dated) entries never get a
+// lastmod row — a route the sitemap will not contain must not appear here, or
+// check-lastmod flags the committed map as stale on every CI run until the
+// entry publishes. (This walk previously read the directory raw and leaked
+// draft entries into the map.)
 const COLLECTIONS = {
   blog: 'blog',
   glossary: 'glossary',
 };
 for (const [route, folder] of Object.entries(COLLECTIONS)) {
-  const dir = resolve(root, 'src/content', folder);
-  if (!existsSync(dir)) continue;
-  for (const file of readdirSync(dir).filter((f) => /\.mdx?$/.test(f))) {
-    const slug = file.replace(/\.mdx?$/, '');
-    const date = newestCommit([join('src/content', folder, file)]);
-    if (date) map[`/${route}/${slug}`] = date;
+  for (const entry of readCollection(folder)) {
+    // The reader strips the extension; resolve the real filename for git.
+    const file = ['md', 'mdx']
+      .map((ext) => join('src/content', folder, `${entry.slug}.${ext}`))
+      .find((f) => existsSync(resolve(root, f)));
+    if (!file) continue;
+    const date = newestCommit([file]);
+    if (date) map[`/${route}/${entry.slug}`] = date;
   }
 }
 
@@ -92,8 +100,9 @@ const EXTRA_SOURCES = {
   '/for-llms': ['src/data/site.ts', 'src/content/blog', 'src/content/glossary'],
 };
 
-/** 404 is not a page anyone links to, and it is not in the sitemap. */
-const SKIP = new Set(['/404']);
+/** Routes deliberately outside the sitemap need no lastmod row: 404, and the
+ *  noindex /search tool page (client-rendered results carry no date claim). */
+const SKIP = new Set(['/404', '/search']);
 
 /** route → the .astro file that renders it, for every static page. */
 function discoverPages() {

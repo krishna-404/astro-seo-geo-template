@@ -1,0 +1,224 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+/**
+ * Site search — the one page that ships page-level JavaScript, and the
+ * documented exception to "zero client JS by default" (CHECKLIST §1). The
+ * exception is bounded the same way ConsentBanner's is: additive, one route,
+ * nothing anywhere else pays for it.
+ *
+ *  - The index is built by Pagefind (a build-time devDependency) from the
+ *    shipped HTML — no server, no third party, no API key. Only elements
+ *    inside [data-pagefind-body] (the two detail-page <article>s) are
+ *    indexed; chrome carries data-pagefind-ignore.
+ *  - Not a single search byte loads until the visitor interacts with the
+ *    input (or arrives with ?q= already set): the loader below is an
+ *    idempotent singleton around a dynamic import of /pagefind/pagefind.js.
+ *  - ?q= is kept in sync via history.replaceState — searches are linkable
+ *    and the back button works; never pushState (no history spam).
+ *  - Race safety: pagefind.debouncedSearch() resolves null for superseded
+ *    queries (built-in 300ms debounce + monotonic guard), so a slow early
+ *    query can never paint over a newer one.
+ *  - noindex + excluded from the sitemap (astro.config.mjs) — the iron rule
+ *    that the two must agree. A tool page with client-rendered results has
+ *    nothing for a crawler; content is indexed at its real URLs.
+ *  - Result styles use only token pairs already measured elsewhere
+ *    (AGENTS rule 6) — the contrast sweep cannot drive a live query.
+ *
+ * JS off: the form still submits (GET /search?q=…) and the <noscript> notice
+ * explains; content remains findable via /glossary, /blog and llms.txt.
+ */
+---
+
+<BaseLayout
+  title="Search"
+  description="Search every blog post and glossary entry on this site — the index is built from the same pages you'd read, at build time."
+  noindex={true}
+>
+  <div class="search">
+    <h1>Search</h1>
+    <form role="search" action="/search" method="get">
+      <label for="search-input">Search blog posts and glossary entries</label>
+      <input
+        id="search-input"
+        type="search"
+        name="q"
+        placeholder="e.g. core web vitals"
+        autocomplete="off"
+      />
+    </form>
+
+    <noscript>
+      <p class="search__notice">
+        Search needs JavaScript. Everything it would find is also on the
+        <a href="/blog">blog</a> and <a href="/glossary">glossary</a> indexes.
+      </p>
+    </noscript>
+
+    <p class="search__status" role="status"></p>
+    <div class="search__results"></div>
+  </div>
+</BaseLayout>
+
+<script is:inline type="module">
+  const input = document.getElementById('search-input');
+  const status = document.querySelector('.search__status');
+  const results = document.querySelector('.search__results');
+
+  /* Idempotent loader: however many events race, one import happens, and no
+     search bytes move until the first interaction. `astro dev` serves no
+     /pagefind/ — the catch renders the how-to notice; in production the same
+     path covers blocked JS or a CDN hiccup. */
+  let pagefindPromise = null;
+  function loadPagefind() {
+    pagefindPromise ??= import('/pagefind/pagefind.js').then(async (pf) => {
+      await pf.options({ excerptLength: 30 });
+      pf.init();
+      return pf;
+    });
+    return pagefindPromise;
+  }
+
+  function prettyUrl(raw) {
+    return raw.replace(/\/index\.html$/, '/').replace(/\.html$/, '') || '/';
+  }
+
+  async function renderSearch(query, { immediate = false } = {}) {
+    let pf;
+    try {
+      pf = await loadPagefind();
+    } catch {
+      status.textContent =
+        'Search runs against the built site — `npm run build && npm run preview`. (If you are a visitor seeing this, the search index failed to load.)';
+      return;
+    }
+
+    if (!query) {
+      status.textContent = '';
+      results.replaceChildren();
+      history.replaceState(null, '', location.pathname);
+      return;
+    }
+
+    // debouncedSearch resolves null when a newer query superseded this one —
+    // the built-in debounce + race guard. The initial ?q= run skips the wait.
+    const search = immediate
+      ? await pf.search(query)
+      : await pf.debouncedSearch(query, {}, 300);
+    if (search === null) return;
+
+    history.replaceState(null, '', `${location.pathname}?q=${encodeURIComponent(query)}`);
+
+    const shown = search.results.slice(0, 20);
+    const items = await Promise.all(shown.map((r) => r.data()));
+
+    status.textContent = search.results.length
+      ? `${search.results.length} result${search.results.length === 1 ? '' : 's'} for “${query}”`
+      : `No results for “${query}”`;
+
+    results.replaceChildren(
+      ...items.map((item) => {
+        const li = document.createElement('article');
+        li.className = 'search__hit';
+        const h = document.createElement('h2');
+        const a = document.createElement('a');
+        a.href = prettyUrl(item.url);
+        a.textContent = item.meta.title ?? prettyUrl(item.url);
+        h.append(a);
+        const p = document.createElement('p');
+        // Pagefind excerpts are our own indexed content plus <mark> tags.
+        p.innerHTML = item.excerpt;
+        li.append(h, p);
+        return li;
+      })
+    );
+  }
+
+  input.addEventListener('input', () => renderSearch(input.value.trim()));
+  // Warm the module on first focus so the first keystroke's search is fast.
+  input.addEventListener('focus', () => loadPagefind().catch(() => {}), { once: true });
+
+  const initial = new URLSearchParams(location.search).get('q');
+  if (initial) {
+    input.value = initial;
+    renderSearch(initial.trim(), { immediate: true });
+  }
+</script>
+
+<style>
+  .search {
+    max-width: 44rem;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 4rem;
+    /* A results page that grows/shrinks under the fold reads as jumpy —
+       reserve most of a viewport so typing doesn't bounce the footer. */
+    min-height: 70vh;
+  }
+  .search h1 {
+    font-size: 1.875rem;
+    margin: 0 0 1rem;
+  }
+  .search form {
+    margin: 0 0 1.5rem;
+  }
+  .search label {
+    display: block;
+    font-size: 0.9375rem;
+    color: var(--ink-3);
+    margin-bottom: 0.5rem;
+  }
+  .search input {
+    width: 100%;
+    min-height: 44px;
+    padding: 0.55rem 0.7rem;
+    font: inherit;
+    font-size: 1rem; /* 16px — anything smaller makes iOS zoom on focus */
+    color: var(--ink);
+    background: var(--white);
+    border: 1px solid var(--line-2);
+    border-radius: 8px;
+  }
+  .search input:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 1px;
+    border-color: var(--brand);
+  }
+  .search__status {
+    color: var(--ink-3);
+    font-size: 0.9375rem;
+    min-height: 1.5em;
+    margin: 0 0 1rem;
+  }
+  .search__notice {
+    color: var(--ink-2);
+  }
+  .search__hit {
+    padding: 1rem 0;
+    border-top: 1px solid var(--line-2);
+  }
+  .search__hit h2 {
+    font-size: 1.125rem;
+    margin: 0 0 0.375rem;
+  }
+  .search__hit p {
+    margin: 0;
+    line-height: 1.6;
+    color: var(--ink-2);
+  }
+  /* Token pair measured elsewhere: --brand-soft carries --ink text site-wide. */
+  .search__hit :global(mark) {
+    background: var(--brand-soft);
+    color: var(--ink);
+    border-radius: 3px;
+    padding: 0 0.15em;
+  }
+
+  @media (min-width: 48rem) {
+    .search {
+      padding: 3rem 1.5rem 5rem;
+    }
+    .search h1 {
+      font-size: 2.25rem;
+    }
+  }
+</style>

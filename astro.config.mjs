@@ -10,6 +10,14 @@ import { SITE_URL } from './src/data/origin.mjs';
  * Wraps every markdown <table> in <div class="table-scroll">, so a wide table
  * scrolls inside its own box instead of scrolling the page. Written inline and
  * dependency-free — it walks the hast tree rather than pulling in unist-util-visit.
+ *
+ * The wrapper is a labelled, keyboard-scrollable region (WCAG 2.1.1): a
+ * scrollable box that only a pointer can scroll locks keyboard users out of
+ * whatever overflows. The generic label is deliberate — a build plugin cannot
+ * know a table's subject; authors who want better add a <caption> in the
+ * markdown. Hand-authored .table-scroll wrappers in .astro files must carry
+ * the same three attributes, with a SPECIFIC aria-label (CI checks all of
+ * them — see ci.yml).
  */
 function rehypeWrapTables() {
   return (tree) => {
@@ -21,7 +29,12 @@ function rehypeWrapTables() {
           return {
             type: 'element',
             tagName: 'div',
-            properties: { className: ['table-scroll'] },
+            properties: {
+              className: ['table-scroll'],
+              tabIndex: 0,
+              role: 'region',
+              'aria-label': 'Table, scrolls horizontally',
+            },
             children: [child],
           };
         }
@@ -71,9 +84,14 @@ export default defineConfig({
       // It is also what keeps the lastmod coverage check honest — that check
       // measures the map against the sitemap, so a page deliberately absent
       // from one is correctly absent from the other.
+      //
+      // /search is a noindex tool page (client-rendered results have nothing
+      // for a crawler; content is indexed at its real URLs) — same iron rule:
+      // noindex ⇔ out of the sitemap, always both.
       filter: (page) =>
         !page.includes('/draft/') &&
         !page.includes('/contact/thanks') &&
+        !page.includes('/search') &&
         !(privacy.status.draft && page.includes('/privacy-policy')),
 
       // <lastmod> from the commit that last touched each page's source, not

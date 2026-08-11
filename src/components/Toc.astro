@@ -1,0 +1,69 @@
+---
+/**
+ * Table of contents — plain crawlable anchors, generated at build time from
+ * the headings Astro already extracted. No scrollspy, no JS: the value is the
+ * anchor list itself (Google surfaces "jump to" links from in-page anchors,
+ * and an answer engine can cite a section instead of the whole page). The
+ * `:target` scroll-margin in global.css keeps jumped-to headings clear of the
+ * sticky header.
+ *
+ * Opt-in per entry via `toc: true` frontmatter — short entries don't need a
+ * map of themselves. Not part of the markdown twins: twins are the SOURCE
+ * markdown, and an agent reading markdown has the heading structure already.
+ */
+import { computeTocItems } from '../lib/toc';
+
+interface Props {
+  headings: { depth: number; slug: string; text: string }[];
+}
+
+const items = computeTocItems(Astro.props.headings);
+---
+
+{
+  items.length > 1 && (
+    <nav class="toc" aria-label="Table of contents" data-pagefind-ignore>
+      <h2>On this page</h2>
+      <ol>
+        {items.map((item) => (
+          <li class={`toc__l${item.level}`}>
+            <a href={`#${item.slug}`}>{item.text}</a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  )
+}
+
+<style>
+  .toc {
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    margin: 0 0 2rem;
+    font-size: 0.9375rem;
+  }
+  .toc h2 {
+    font-size: 0.6875rem;
+    font-family: var(--font-mono);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 0.5rem;
+  }
+  .toc ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .toc li {
+    padding: 0.2rem 0;
+    line-height: 1.5;
+  }
+  .toc__l1 {
+    padding-left: 1rem;
+  }
+  .toc__l2 {
+    padding-left: 2rem;
+  }
+</style>

@@ -2,26 +2,24 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { SITE } from '../../data/site';
+import { isPublished } from '../../data/publishing.mjs';
+import { GLOSSARY_CATEGORIES } from '../../data/taxonomy';
 
-const entries = (await getCollection('glossary', ({ data }) => !data.draft)).sort((a, b) =>
+const entries = (await getCollection('glossary', ({ data }) => isPublished(data))).sort((a, b) =>
   a.data.term.localeCompare(b.data.term)
 );
 
 /**
- * Grouped by the free-string `category` from frontmatter, alphabetically.
- * Once your category list settles, tighten `category` to an enum in
- * content.config.ts and give the groups an explicit, meaningful order here —
- * the order a reader would learn the domain in, not the alphabet's.
+ * Grouped by the closed category vocabulary in src/data/taxonomy.ts, in its
+ * DECLARED order — the order a reader would learn the domain in, not the
+ * alphabet's. Empty groups (a declared category with no entries yet) are
+ * skipped rather than rendered as headings over nothing.
  */
-const categories = [...new Set(entries.map((e) => e.data.category))].sort();
-const labelFor = (c: string) =>
-  c.replace(/-/g, ' ').replace(/^./, (ch) => ch.toUpperCase());
-
-const groups = categories.map((key) => ({
-  key,
-  label: labelFor(key),
-  items: entries.filter((e) => e.data.category === key),
-}));
+const groups = GLOSSARY_CATEGORIES.map((c) => ({
+  key: c.key,
+  label: c.label,
+  items: entries.filter((e) => e.data.category === c.key),
+})).filter((g) => g.items.length > 0);
 
 const schema = [
   {

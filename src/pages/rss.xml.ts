@@ -2,6 +2,7 @@ import rss from '@astrojs/rss';
 import { getCollection } from 'astro:content';
 import type { APIContext } from 'astro';
 import { SITE, FOUNDER } from '../data/site';
+import { isPublished } from '../data/publishing.mjs';
 
 /**
  * The blog feed, at /rss.xml.
@@ -12,7 +13,7 @@ import { SITE, FOUNDER } from '../data/site';
  * for machines by the sitemap and by llms.txt.
  */
 export async function GET(context: APIContext) {
-  const posts = await getCollection('blog', ({ data }) => !data.draft);
+  const posts = await getCollection('blog', ({ data }) => isPublished(data));
 
   posts.sort((a, b) => b.data.published.valueOf() - a.data.published.valueOf());
 

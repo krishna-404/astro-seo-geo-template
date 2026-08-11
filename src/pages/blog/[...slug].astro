@@ -1,7 +1,14 @@
 ---
 import { getCollection, render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import Faq from '../../components/Faq.astro';
+import Toc from '../../components/Toc.astro';
+import RelatedLinks from '../../components/RelatedLinks.astro';
 import { SITE } from '../../data/site';
+import { isPublished } from '../../data/publishing.mjs';
+import { faqPageNode } from '../../lib/faqSchema';
+import { relatedFor, type RelatedCandidate } from '../../lib/related';
 
 /**
  * Blog post template.
@@ -11,23 +18,69 @@ import { SITE } from '../../data/site';
  * profile. The BlogPosting node here deliberately restates its own author
  * instead: a post carries its author in frontmatter precisely so a guest post
  * attributes to the guest, and the schema must match the byline the page shows.
+ *
+ * Related links and the prev/next pager are computed HERE, once over the
+ * sorted list, not per-page in the body — and candidates span both
+ * collections, because a post about llms.txt should link the glossary entry
+ * for it. The pager is blog-only: posts have a chronology; glossary entries
+ * are reference material where alphabetical prev/next is navigation theatre.
  */
 export async function getStaticPaths() {
-  const entries = await getCollection('blog', ({ data }) => !data.draft);
-  return entries.map((entry) => ({
-    params: { slug: entry.id },
-    props: { entry },
-  }));
+  const [entries, glossary] = await Promise.all([
+    getCollection('blog', ({ data }) => isPublished(data)),
+    getCollection('glossary', ({ data }) => isPublished(data)),
+  ]);
+
+  const candidateOf = (e: (typeof entries)[number]): RelatedCandidate => ({
+    id: e.id,
+    collection: 'blog',
+    title: e.data.title,
+    summary: e.data.description,
+    topics: e.data.tags,
+    published: e.data.published,
+  });
+  const candidates: RelatedCandidate[] = [
+    ...entries.map(candidateOf),
+    ...glossary.map((e) => ({
+      id: e.id,
+      collection: 'glossary',
+      title: e.data.term,
+      summary: e.data.shortDefinition,
+      topics: [e.data.category, ...e.data.aliases],
+    })),
+  ];
+
+  const chrono = [...entries].sort(
+    (a, b) => a.data.published.valueOf() - b.data.published.valueOf()
+  );
+
+  return entries.map((entry) => {
+    const i = chrono.findIndex((e) => e.id === entry.id);
+    const asLink = (e: (typeof entries)[number] | undefined) =>
+      e ? { href: `/blog/${e.id}`, title: e.data.title } : null;
+    return {
+      params: { slug: entry.id },
+      props: {
+        entry,
+        related: relatedFor(candidateOf(entry), candidates),
+        prev: asLink(chrono[i - 1]),
+        next: asLink(chrono[i + 1]),
+      },
+    };
+  });
 }
 
-const { entry } = Astro.props;
+const { entry, related, prev, next } = Astro.props;
 const { data } = entry;
-const { Content } = await render(entry);
+const { Content, headings } = await render(entry);
 
 const url = new URL(`/blog/${entry.id}`, SITE.url).href;
 
 const published = data.published.toISOString();
 const modified = (data.updated ?? data.published).toISOString();
+/** Only a LATER `updated` is a real revision — sample content ships with
+ *  updated == published, which used to render a redundant "updated" byline. */
+const wasUpdated = data.updated != null && data.updated.valueOf() > data.published.valueOf();
 
 const schema = [
   {
@@ -68,19 +121,7 @@ const schema = [
       { '@type': 'ListItem', position: 2, name: data.title, item: url },
     ],
   },
-  ...(data.faq.length > 0
-    ? [
-        {
-          '@type': 'FAQPage',
-          '@id': `${url}#faq`,
-          mainEntity: data.faq.map((f) => ({
-            '@type': 'Question',
-            name: f.q,
-            acceptedAnswer: { '@type': 'Answer', text: f.a },
-          })),
-        },
-      ]
-    : []),
+  ...(data.faq.length > 0 ? [faqPageNode(url, data.faq)] : []),
 ];
 ---
 
@@ -90,24 +131,25 @@ const schema = [
   ogType="article"
   canonical={data.canonical}
   ogImage={data.ogImage}
+  publishedTime={data.published}
+  modifiedTime={wasUpdated ? data.updated : undefined}
   schema={schema}
 >
-  <article class="post">
-    <nav class="post__crumb" aria-label="Breadcrumb">
-      <a href="/blog">Blog</a> <span aria-hidden="true">/</span>
-      <span>{data.title}</span>
-    </nav>
+  <article class="post" data-pagefind-body>
+    <Breadcrumbs items={[{ label: 'Blog', href: '/blog' }, { label: data.title }]} />
 
     <h1>{data.title}</h1>
 
     <p class="post__byline">
       By <strong>{data.author.name}</strong>, {data.author.title} ·
       <time datetime={published}>{published.slice(0, 10)}</time>
-      {data.updated && <span> · updated {modified.slice(0, 10)}</span>}
+      {wasUpdated && <span> · updated {modified.slice(0, 10)}</span>}
     </p>
 
     {/* Front-loaded answer — the lift target, first thing after the h1. */}
     <p class="post__tldr">{data.tldr}</p>
+
+    {data.toc && <Toc headings={headings} />}
 
     <div class="post__body prose">
       <Content />
@@ -123,19 +165,7 @@ const schema = [
       )
     }
 
-    {
-      data.faq.length > 0 && (
-        <section class="post__faq">
-          <h2>Questions this raises</h2>
-          {data.faq.map((f) => (
-            <details>
-              <summary>{f.q}</summary>
-              <p>{f.a}</p>
-            </details>
-          ))}
-        </section>
-      )
-    }
+    {data.faq.length > 0 && <Faq faq={data.faq} groupName={entry.id} />}
 
     {
       data.sources.length > 0 && (
@@ -164,7 +194,28 @@ const schema = [
       )
     }
 
-    <aside class="post__cta">
+    <RelatedLinks items={related} />
+
+    {
+      (prev || next) && (
+        <nav class="pager" aria-label="More posts" data-pagefind-ignore>
+          {prev && (
+            <a class="pager__prev" href={prev.href} rel="prev">
+              <span class="pager__dir">← Older</span>
+              {prev.title}
+            </a>
+          )}
+          {next && (
+            <a class="pager__next" href={next.href} rel="next">
+              <span class="pager__dir">Newer →</span>
+              {next.title}
+            </a>
+          )}
+        </nav>
+      )
+    }
+
+    <aside class="post__cta" data-pagefind-ignore>
       <p>
         Want to talk about what you read here — or about anything else? The contact form
         goes straight to a person.
@@ -192,11 +243,6 @@ const schema = [
     max-width: 44rem;
     margin: 0 auto;
     padding: 2rem 1.25rem 4rem;
-  }
-  .post__crumb {
-    font-size: 0.875rem;
-    color: var(--ink-3);
-    margin-bottom: 1.5rem;
   }
   .post h1 {
     font-size: 1.875rem;
@@ -230,22 +276,6 @@ const schema = [
     padding: 0.25rem 0.625rem;
     color: var(--ink-3);
   }
-  .post__faq {
-    margin-top: 2.5rem;
-  }
-  .post__faq summary {
-    font-weight: 700;
-    cursor: pointer;
-    line-height: 1.5;
-    padding: 0.625rem 0;
-  }
-  .post__faq details {
-    border-top: 1px solid var(--line-2);
-  }
-  .post__faq details p {
-    margin: 0.25rem 0 0.875rem;
-    line-height: 1.7;
-  }
   .post__sources {
     margin-top: 2.5rem;
     font-size: 0.9375rem;
@@ -260,6 +290,30 @@ const schema = [
   .post__retrieved {
     color: var(--ink-3);
   }
+  .pager {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line-2);
+  }
+  .pager a {
+    display: block;
+    font-weight: 700;
+    line-height: 1.4;
+    min-height: 44px;
+  }
+  .pager__dir {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 400;
+    color: var(--ink-3);
+    margin-bottom: 0.125rem;
+  }
+  .pager__next {
+    text-align: right;
+  }
+
   .post__cta {
     margin-top: 3rem;
     padding: 1.5rem;

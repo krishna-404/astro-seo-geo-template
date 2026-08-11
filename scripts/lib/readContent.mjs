@@ -21,13 +21,15 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
+import { isPublished } from '../../src/data/publishing.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 
 /**
  * @param {string} collection folder name under src/content/
  * @returns {Array<{slug: string, data: Record<string, unknown>, body: string}>}
- *   Published entries only (draft: true is excluded), sorted by slug.
+ *   Published entries only (drafts and future-dated `published` excluded via
+ *   the shared isPublished filter — see src/data/publishing.mjs), sorted by slug.
  */
 export function readCollection(collection) {
   const dir = resolve(root, 'src/content', collection);
@@ -46,7 +48,7 @@ export function readCollection(collection) {
       const data = parseYaml(frontmatter) ?? {};
       return { slug, data, body: body.trim() };
     })
-    .filter((entry) => !entry.data.draft);
+    .filter((entry) => isPublished(entry.data));
 
   entries.sort((a, b) => a.slug.localeCompare(b.slug));
   return entries;

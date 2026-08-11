@@ -133,6 +133,17 @@ const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 const failures = new Map(); // dedup by selector+colour pair, list the routes
 for (const route of routes) {
   await page.goto(`http://127.0.0.1:${PORT}${route}`, { waitUntil: 'networkidle' });
+  // Closed <details> content is display:none and the walker skips it — FAQ
+  // answers would never be measured. Force everything open first. The `name`
+  // attribute must go before opening: exclusive groups enforce
+  // one-open-at-a-time even for programmatic opens, so with it in place only
+  // the last answer in each group would be measured.
+  await page.evaluate(() => {
+    document.querySelectorAll('details').forEach((d) => {
+      d.removeAttribute('name');
+      d.open = true;
+    });
+  });
   for (const f of await page.evaluate(AUDIT)) {
     const key = `${f.sel}|${f.color}|${f.bg}`;
     if (!failures.has(key)) failures.set(key, { ...f, routes: [] });

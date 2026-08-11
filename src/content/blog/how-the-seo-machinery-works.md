@@ -4,6 +4,7 @@ description: 'A tour of the SEO plumbing this template ships with — canonical 
 tldr: 'Every page in this template gets a canonical URL, Open Graph tags and JSON-LD from BaseLayout automatically; the sitemap, RSS feed and llms.txt are generated at build time. You write content and frontmatter — the machinery is already wired.'
 published: 2026-08-11
 updated: 2026-08-11
+toc: true
 author:
   name: 'TODO Founder Name'
   title: 'Founder'

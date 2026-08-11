@@ -1,0 +1,66 @@
+---
+/**
+ * Visible breadcrumb trail — the on-page counterpart of the BreadcrumbList
+ * JSON-LD the detail templates emit. Google's rich-result guidance expects
+ * breadcrumb markup to reflect visible navigation, and CI asserts the two
+ * agree (item count and order) on every page that emits the node.
+ *
+ * Semantics, deliberately: the current page is a <span aria-current="page">,
+ * never a self-link (a link to where you already are is a focusable no-op);
+ * separators are literal aria-hidden spans rather than CSS ::before content,
+ * which some screen readers announce inconsistently. Zero JS.
+ */
+interface Props {
+  /** In order, root-first. The LAST item is the current page (no href needed). */
+  items: { label: string; href?: string }[];
+}
+
+const { items } = Astro.props;
+---
+
+<nav class="crumbs" aria-label="Breadcrumb" data-pagefind-ignore>
+  <ol>
+    {
+      items.map((item, i) => (
+        <li>
+          {i < items.length - 1 && item.href ? (
+            <>
+              <a href={item.href}>{item.label}</a>
+              <span aria-hidden="true">/</span>
+            </>
+          ) : (
+            <span aria-current="page">{item.label}</span>
+          )}
+        </li>
+      ))
+    }
+  </ol>
+</nav>
+
+<style>
+  .crumbs {
+    font-size: 0.875rem;
+    color: var(--ink-3);
+    margin-bottom: 1.5rem;
+  }
+  .crumbs ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+  .crumbs li {
+    display: inline-flex;
+    gap: 0.375rem;
+    min-width: 0;
+  }
+  .crumbs [aria-current='page'] {
+    /* The current page's title can be long — let it truncate rather than wrap
+       the whole trail onto three lines on a phone. */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+</style>

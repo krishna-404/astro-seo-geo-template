@@ -70,6 +70,17 @@
 html {
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;
+  /* The scrollbar always has room, so navigating between a short page and a
+     tall one never shifts the layout sideways. `overflow-y: scroll` is the
+     fallback for browsers without scrollbar-gutter. */
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
+/* Anchor targets (TOC links, search deep links, the skip link) land clear of
+   the sticky header instead of underneath it — WCAG "focus not obscured". */
+:target {
+  scroll-margin-block-start: 5rem;
 }
 
 @media (prefers-reduced-motion: reduce) {

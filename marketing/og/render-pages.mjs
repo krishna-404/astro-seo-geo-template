@@ -74,6 +74,20 @@ function discoverRoutes(dir = distDir, out = []) {
   return out;
 }
 
+/**
+ * True when the built page's og:image points at neither the site default nor
+ * this script's output tree — i.e. the page declared its own `ogImage` in
+ * frontmatter/props. Rendering a card for it would be dead weight: BaseLayout
+ * precedence means an explicit image always wins, so the generated file could
+ * never be referenced.
+ */
+function declaresOwnOgImage(file) {
+  const m = /<meta property="og:image" content="([^"]+)"/.exec(readFileSync(file, 'utf8'));
+  if (!m) return false;
+  const path = m[1].replace(/^https?:\/\/[^/]+/, '');
+  return !path.startsWith('/og/') && path !== '/og/default.png';
+}
+
 /** The page's own <title>, minus the site-name prefix/suffix. */
 function titleOf(file) {
   const m = /<title>(.*?)<\/title>/s.exec(readFileSync(file, 'utf8'));
@@ -142,6 +156,12 @@ for (const { route, file } of discoverRoutes().sort((a, b) => a.route.localeComp
   const title = titleOf(file);
   if (!title) {
     console.warn(`skip ${route}: no <title> in built HTML`);
+    skipped += 1;
+    continue;
+  }
+
+  if (declaresOwnOgImage(file)) {
+    console.log(`skip ${route}: page declares its own ogImage`);
     skipped += 1;
     continue;
   }

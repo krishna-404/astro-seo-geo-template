@@ -21,6 +21,14 @@
  * itself (the blog and glossary templates both render a "Sources" section
  * from frontmatter — see src/pages/<collection>/[...slug].astro) so the twin
  * is a faithful copy, not a stripped-down one.
+ *
+ * DELIBERATELY NOT IN TWINS: the TOC, related-links block and prev/next
+ * pager the HTML pages render. Twins are the article's source markdown —
+ * an agent reading markdown already has the heading structure, and the
+ * related/pager blocks are site chrome whose scorer lives in the Astro
+ * world; llms.txt gives agents the full page index instead. Decision
+ * recorded in CHECKLIST §6/§7 — don't "complete" the twins by duplicating
+ * the scorer here.
  */
 import { writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';

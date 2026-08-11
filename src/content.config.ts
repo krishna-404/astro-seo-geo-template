@@ -2,6 +2,7 @@ import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 // Imported directly rather than via astro:content — the re-export is deprecated in Astro 7.
 import { z } from 'zod';
+import { GLOSSARY_CATEGORY_KEYS } from './data/taxonomy';
 
 /**
  * Content collections for the template.
@@ -43,6 +44,10 @@ const seo = {
   canonical: z.url().optional(),
   ogImage: z.string().optional(),
   updated: z.coerce.date().optional(),
+  /** Renders <Faq /> AND the FAQPage JSON-LD from one array (src/lib/faqSchema.ts). */
+  faq: z.array(z.object({ q: z.string(), a: z.string() })).default([]),
+  /** Opt-in "On this page" anchor list for long entries (4+ h2s is the guideline). */
+  toc: z.boolean().default(false),
 };
 
 const blog = defineCollection({
@@ -65,9 +70,6 @@ const blog = defineCollection({
       'case-study',
     ]),
     sources: z.array(source).default([]),
-    faq: z
-      .array(z.object({ q: z.string(), a: z.string() }))
-      .default([]),
   }),
 });
 
@@ -78,11 +80,12 @@ const glossary = defineCollection({
     term: z.string(),
     aliases: z.array(z.string()).default([]),
     /**
-     * Free text here so the template builds with any vocabulary — tighten it
-     * to an enum per site once the category list settles, so a typo fails the
-     * build instead of creating a one-entry group on the index page.
+     * Closed vocabulary from src/data/taxonomy.ts — a typo'd category fails
+     * the build at the entry that carries it instead of shipping a one-entry
+     * group on the index page. Add categories THERE (one line); this enum and
+     * the index's group order both follow.
      */
-    category: z.string().min(2),
+    category: z.enum(GLOSSARY_CATEGORY_KEYS),
     /** The 40-word answer an LLM will lift. Keep it correct and quotable. */
     shortDefinition: z.string().min(40).max(300),
     related: z.array(z.string()).default([]),

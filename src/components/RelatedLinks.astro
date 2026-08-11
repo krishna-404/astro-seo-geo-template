@@ -1,0 +1,50 @@
+---
+/**
+ * The related-content block — rendered from build-time scoring
+ * (src/lib/related.ts), so every entry links its topical neighbours with zero
+ * client JS. `data-pagefind-ignore` keeps neighbours' titles out of this
+ * page's search index entry (otherwise every result surfaces its neighbours
+ * too and results muddy). Not part of the markdown twins: this is site
+ * chrome, not article content — agents get the full index from llms.txt.
+ */
+import type { RelatedCandidate } from '../lib/related';
+
+interface Props {
+  items: RelatedCandidate[];
+  heading?: string;
+}
+
+const { items, heading = 'Related reading' } = Astro.props;
+---
+
+{
+  items.length > 0 && (
+    <section class="related" aria-labelledby="related-heading" data-pagefind-ignore>
+      <h2 id="related-heading">{heading}</h2>
+      <ul>
+        {items.map((item) => (
+          <li>
+            <a href={`/${item.collection}/${item.id}`}>{item.title}</a> — {item.summary}
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+<style>
+  .related {
+    margin-top: 2.5rem;
+  }
+  .related ul {
+    padding-left: 1.1rem;
+    margin: 0;
+  }
+  .related li {
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+  }
+  .related a {
+    font-weight: 700;
+  }
+</style>

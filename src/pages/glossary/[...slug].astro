@@ -1,7 +1,14 @@
 ---
 import { getCollection, render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import Faq from '../../components/Faq.astro';
+import Toc from '../../components/Toc.astro';
+import RelatedLinks from '../../components/RelatedLinks.astro';
 import { SITE } from '../../data/site';
+import { isPublished } from '../../data/publishing.mjs';
+import { faqPageNode } from '../../lib/faqSchema';
+import { relatedFor, type RelatedCandidate } from '../../lib/related';
 
 /**
  * Canonical explainer, one URL per term.
@@ -11,27 +18,51 @@ import { SITE } from '../../data/site';
  * construction — `sources` is required by the schema, the TL;DR is
  * front-loaded so the answer sits in the first 30% of the page, and the
  * DefinedTerm + Article nodes make the definition machine-liftable.
+ *
+ * Related links: the curated `related` frontmatter ids rank first, in their
+ * curated order (a missing id drops out rather than rendering a dead link);
+ * the build-time scorer (src/lib/related.ts) fills the remaining slots from
+ * BOTH collections — curation beats correlation, the algorithm fills gaps.
  */
 export async function getStaticPaths() {
-  const entries = await getCollection('glossary', ({ data }) => !data.draft);
+  const [entries, blog] = await Promise.all([
+    getCollection('glossary', ({ data }) => isPublished(data)),
+    getCollection('blog', ({ data }) => isPublished(data)),
+  ]);
+
+  const candidateOf = (e: (typeof entries)[number]): RelatedCandidate => ({
+    id: e.id,
+    collection: 'glossary',
+    title: e.data.term,
+    summary: e.data.shortDefinition,
+    topics: [e.data.category, ...e.data.aliases],
+  });
+  const candidates: RelatedCandidate[] = [
+    ...entries.map(candidateOf),
+    ...blog.map((e) => ({
+      id: e.id,
+      collection: 'blog',
+      title: e.data.title,
+      summary: e.data.description,
+      topics: e.data.tags,
+      published: e.data.published,
+    })),
+  ];
+
   return entries.map((entry) => ({
     params: { slug: entry.id },
-    props: { entry },
+    props: {
+      entry,
+      related: relatedFor(candidateOf(entry), candidates, { seeds: entry.data.related }),
+    },
   }));
 }
 
-const { entry } = Astro.props;
+const { entry, related } = Astro.props;
 const { data } = entry;
-const { Content } = await render(entry);
+const { Content, headings } = await render(entry);
 
 const url = new URL(`/glossary/${entry.id}`, SITE.url).href;
-
-// Sibling terms for the related block — resolved by id so a missing id drops
-// out rather than rendering a dead link.
-const all = await getCollection('glossary', ({ data }) => !data.draft);
-const related = data.related
-  .map((id) => all.find((e) => e.id === id))
-  .filter((e) => e !== undefined);
 
 const schema = [
   {
@@ -82,6 +113,7 @@ const schema = [
       { '@type': 'ListItem', position: 2, name: data.term, item: url },
     ],
   },
+  ...(data.faq.length > 0 ? [faqPageNode(url, data.faq)] : []),
 ];
 ---
 
@@ -90,15 +122,24 @@ const schema = [
   description={data.description}
   ogType="article"
   ogImage={data.ogImage}
+  modifiedTime={data.updated}
   schema={schema}
 >
-  <article class="term">
-    <nav class="term__crumb" aria-label="Breadcrumb">
-      <a href="/glossary">Glossary</a> <span aria-hidden="true">/</span>
-      <span>{data.term}</span>
-    </nav>
+  <article class="term" data-pagefind-body>
+    <Breadcrumbs items={[{ label: 'Glossary', href: '/glossary' }, { label: data.term }]} />
 
     <h1>{data.title}</h1>
+
+    {
+      data.updated && (
+        <p class="term__meta">
+          Updated{' '}
+          <time datetime={data.updated.toISOString()}>
+            {data.updated.toISOString().slice(0, 10)}
+          </time>
+        </p>
+      )
+    }
 
     {/* The lift target. Front-loaded answer, visually distinct, first thing after h1. */}
     <p class="term__tldr">{data.tldr}</p>
@@ -108,24 +149,15 @@ const schema = [
       <dd>{data.shortDefinition}</dd>
     </dl>
 
+    {data.toc && <Toc headings={headings} />}
+
     <div class="term__body prose">
       <Content />
     </div>
 
-    {
-      related.length > 0 && (
-        <section class="term__related">
-          <h2>Related terms</h2>
-          <ul>
-            {related.map((r) => (
-              <li>
-                <a href={`/glossary/${r.id}`}>{r.data.term}</a> — {r.data.shortDefinition}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )
-    }
+    <RelatedLinks items={related} />
+
+    {data.faq.length > 0 && <Faq faq={data.faq} groupName={entry.id} />}
 
     <section class="term__sources">
       <h2>Sources</h2>
@@ -152,7 +184,7 @@ const schema = [
       </ol>
     </section>
 
-    <aside class="term__cta">
+    <aside class="term__cta" data-pagefind-ignore>
       <p>
         This entry is part of a sourced glossary — every definition cites where it came
         from. Spotted an error, or want a term added?
@@ -181,15 +213,15 @@ const schema = [
     margin: 0 auto;
     padding: 2rem 1.25rem 4rem;
   }
-  .term__crumb {
-    font-size: 0.875rem;
-    color: var(--ink-3);
-    margin-bottom: 1.5rem;
-  }
   .term h1 {
     font-size: 1.875rem;
     line-height: 1.15;
     margin: 0 0 1rem;
+  }
+  .term__meta {
+    font-size: 0.875rem;
+    color: var(--ink-3);
+    margin: -0.5rem 0 1rem;
   }
   /* The lift target. Front-loaded answer, visually distinct, first thing after h1. */
   .term__tldr {
@@ -211,13 +243,6 @@ const schema = [
   }
   .term__def dd {
     margin: 0;
-  }
-  .term__related ul {
-    padding-left: 1.1rem;
-  }
-  .term__related li {
-    margin-bottom: 0.5rem;
-    line-height: 1.6;
   }
   .term__sources {
     margin-top: 2.5rem;

@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { SITE, FACTS, FOUNDER, CONTACT } from '../data/site';
+import { isPublished } from '../data/publishing.mjs';
 
 /**
  * A brand brief for automated readers — the page an answer engine lands on
@@ -19,8 +20,8 @@ import { SITE, FACTS, FOUNDER, CONTACT } from '../data/site';
 const f = FACTS;
 
 const [glossary, blog] = await Promise.all([
-  getCollection('glossary', ({ data }) => !data.draft),
-  getCollection('blog', ({ data }) => !data.draft),
+  getCollection('glossary', ({ data }) => isPublished(data)),
+  getCollection('blog', ({ data }) => isPublished(data)),
 ]);
 
 const title = `${SITE.name} for LLMs — the site in one citable page`;

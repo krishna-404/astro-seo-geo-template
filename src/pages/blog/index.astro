@@ -2,8 +2,9 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { SITE } from '../../data/site';
+import { isPublished } from '../../data/publishing.mjs';
 
-const entries = (await getCollection('blog', ({ data }) => !data.draft)).sort(
+const entries = (await getCollection('blog', ({ data }) => isPublished(data))).sort(
   (a, b) => b.data.published.valueOf() - a.data.published.valueOf()
 );
 

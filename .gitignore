@@ -16,8 +16,10 @@ pnpm-debug.log*
 .env.production
 .env.local
 
-# editors
-.vscode/
+# editors — personal settings stay out, but the frontmatter snippets SHIP:
+# they mirror the zod schemas and are part of the authoring contract
+.vscode/*
+!.vscode/frontmatter.code-snippets
 .idea/
 .DS_Store
 

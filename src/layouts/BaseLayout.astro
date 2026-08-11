@@ -17,6 +17,10 @@ interface Props {
   ogImage?: string;
   ogType?: 'website' | 'article';
   noindex?: boolean;
+  /** Article dates → `article:published_time` / `article:modified_time` meta.
+   *  Only emitted when ogType is 'article'; scrapers ignore them elsewhere. */
+  publishedTime?: Date;
+  modifiedTime?: Date;
   /** Page-specific JSON-LD, appended to the site-wide Organization node. */
   schema?: Record<string, unknown> | Record<string, unknown>[];
 }
@@ -28,6 +32,8 @@ const {
   ogImage,
   ogType = 'website',
   noindex = false,
+  publishedTime,
+  modifiedTime,
   schema,
 } = Astro.props;
 
@@ -112,6 +118,12 @@ const graph = [organization, founder, ...pageSchemas];
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:locale" content={SITE.locale} />
+    {ogType === 'article' && publishedTime && (
+      <meta property="article:published_time" content={publishedTime.toISOString()} />
+    )}
+    {ogType === 'article' && modifiedTime && (
+      <meta property="article:modified_time" content={modifiedTime.toISOString()} />
+    )}
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
@@ -148,6 +160,9 @@ const graph = [organization, founder, ...pageSchemas];
       title={`${SITE.name} blog`}
       href={new URL('/rss.xml', SITE.url).href}
     />
+    {/* Free discovery hint — crawlers that read HTML before robots.txt find
+        the sitemap one hop sooner. */}
+    <link rel="sitemap" type="application/xml" href="/sitemap-index.xml" />
 
     <JsonLd schema={graph} />
 

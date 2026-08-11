@@ -1,0 +1,64 @@
+{
+  // Frontmatter scaffolds mirroring the zod schemas in src/content.config.ts —
+  // type `blog-post` or `glossary-entry` in an empty .md file and tab through.
+  // The strict schemas are the contract; these exist so a contributor never
+  // has to guess a required field and meet the error message instead.
+  // KEEP IN STEP with content.config.ts (and taxonomy.ts for the category
+  // choices) when either changes.
+  "Blog post frontmatter": {
+    "scope": "markdown,mdx",
+    "prefix": "blog-post",
+    "body": [
+      "---",
+      "title: ${1:Title (max 70 chars)}",
+      "description: ${2:Meta description, 50-200 chars — the SERP pitch}",
+      "tldr: ${3:Front-loaded answer, 40-400 chars — the quote an answer engine lifts}",
+      "published: ${4:$CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE}",
+      "author:",
+      "  name: ${5:Full Name}",
+      "  title: ${6:Role}",
+      "  sameAs:",
+      "    - ${7:https://www.linkedin.com/in/profile}",
+      "proprietary: ${8|original-data,first-hand-experience,original-analysis,expert-interview,case-study|}",
+      "tags: [${9}]",
+      "sources:",
+      "  - label: ${10:Source name}",
+      "    url: ${11:https://example.com/source}",
+      "    retrieved: ${12:$CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE}",
+      "faq:",
+      "  - q: ${13:Question a reader would actually ask?}",
+      "    a: ${14:The direct answer.}",
+      "toc: ${15|false,true|}",
+      "draft: ${16|true,false|}",
+      "---",
+      "",
+      "$0"
+    ],
+    "description": "Blog post frontmatter matching the strict zod schema (future `published` = scheduled)"
+  },
+  "Glossary entry frontmatter": {
+    "scope": "markdown,mdx",
+    "prefix": "glossary-entry",
+    "body": [
+      "---",
+      "title: ${1:What is X? (max 70 chars)}",
+      "description: ${2:Meta description, 50-200 chars}",
+      "tldr: ${3:Front-loaded answer, 40-400 chars}",
+      "term: ${4:X}",
+      "aliases: [${5}]",
+      "category: ${6|machine-readability,performance|}",
+      "shortDefinition: ${7:The 40-300 char definition an LLM will lift verbatim}",
+      "related: [${8}]",
+      "sources:",
+      "  - label: ${9:Source name}",
+      "    url: ${10:https://example.com/source}",
+      "    retrieved: ${11:$CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE}",
+      "toc: ${12|false,true|}",
+      "draft: ${13|true,false|}",
+      "---",
+      "",
+      "$0"
+    ],
+    "description": "Glossary entry frontmatter — category choices come from src/data/taxonomy.ts"
+  }
+}
