@@ -1,0 +1,37 @@
+{
+  "name": "astro-website-template",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro check && npm run sheets && npm run llms && astro build && npm run markdown-twins",
+    "build:ci": "npm run sheets && npm run llms && astro build && npm run markdown-twins",
+    "preview": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "check": "astro check",
+    "astro": "astro",
+    "sheets": "node scripts/fetch-sheets.mjs",
+    "llms": "node scripts/generate-llms.mjs",
+    "markdown-twins": "node scripts/markdown-twins.mjs",
+    "lastmod": "node scripts/lastmod.mjs",
+    "lastmod:check": "node scripts/check-lastmod.mjs",
+    "check:contrast": "node scripts/check-contrast.mjs",
+    "indexnow": "node scripts/indexnow.mjs",
+    "purge": "node scripts/purge-cache.mjs"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^7.0.5",
+    "@astrojs/rss": "^4.0.19",
+    "@astrojs/sitemap": "^3.7.3",
+    "astro": "^7.2.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "typescript": "^5.9.2",
+    "wrangler": "^4.0.0",
+    "yaml": "^2.9.0"
+  }
+}

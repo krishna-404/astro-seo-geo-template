@@ -1,0 +1,77 @@
+{
+  "$comment": "Inputs for /privacy-policy. Same discipline as facts.json: anything not verified is a TODO, never a guess. A privacy policy that states something untrue about where data goes is worse than one that admits a gap — it is a representation to regulators and customers. Every `TODO` string renders visibly on the page as [TO CONFIRM: …] and keeps `status.draft` meaningful. While status.draft is true the page renders noindex AND is excluded from the sitemap (astro.config.mjs) — flip one flag, both change together.",
+  "status": {
+    "draft": true,
+    "draftReason": "Template placeholder — fill in the controller, hosting and cookie facts for the real site, then flip draft to false to publish.",
+    "lastUpdated": "2026-08-11",
+    "effectiveFrom": "TODO — the date this policy takes effect"
+  },
+  "controller": {
+    "legalName": "TODO — the legal entity that operates this site",
+    "registeredAddress": "TODO — full registered address (street, city, postcode). A city alone is not a contactable address.",
+    "registrationNumber": "TODO — company registration number",
+    "tradingName": "Example Co",
+    "note": "If the site and any app/product are operated by different entities, this page has to say so explicitly."
+  },
+  "contact": {
+    "privacyEmail": "privacy@example.com",
+    "generalEmail": "hello@example.com",
+    "dpo": "TODO — named privacy contact (some laws, e.g. India's DPDP, require a named grievance officer)",
+    "dpoEmail": "privacy@example.com",
+    "responseTargetDays": 30
+  },
+  "hosting": {
+    "marketingSite": {
+      "what": "This website and the analytics behind it",
+      "where": "Cloudflare's global network (static files served at the edge); form submissions are processed by Google Apps Script and stored in a Google Sheet operated by us",
+      "verified": true
+    }
+  },
+  "subProcessors": {
+    "$comment": "GDPR Art.13 requires 'recipients or CATEGORIES of recipients'. Listing categories keeps the page truthful without pinning vendor names it would then have to keep current. Keep a real named list ready for security questionnaires, privately.",
+    "categories": [
+      {
+        "category": "Website hosting and delivery",
+        "what": "Serves the site's pages from a global content delivery network.",
+        "appliesTo": "site"
+      },
+      {
+        "category": "Website analytics",
+        "what": "Counts page views and clicks. Cookieless in the default configuration.",
+        "appliesTo": "site"
+      },
+      {
+        "category": "Enquiry handling",
+        "what": "Stores what you type into the contact form and emails it to us so we can reply.",
+        "appliesTo": "site"
+      }
+    ],
+    "namedListNote": "Kept privately, not published. Provided on request."
+  },
+  "retention": {
+    "$comment": "GDPR Art.13(2)(a) allows the CRITERIA used to determine the period where a fixed period cannot be given. Replace with concrete periods once they are set.",
+    "criteria": [
+      "Website analytics: kept only as long as useful for understanding demand, and deleted when it stops being.",
+      "Contact-form enquiries: kept while we are in touch and for a reasonable period after, so we have the history if you come back. Deleted on request.",
+      "Cookie consent (only if a cookie-setting vendor is enabled): 180 days, then we ask again."
+    ]
+  },
+  "cookies": [
+    {
+      "name": "site_consent",
+      "setBy": "This site",
+      "purpose": "Remembers whether you accepted or refused optional cookies. Only set at all if a cookie-setting vendor is enabled — in the default configuration this site sets no cookies whatsoever.",
+      "life": "180 days",
+      "essential": true
+    }
+  ],
+  "laws": [
+    {
+      "market": "European Economic Area and UK",
+      "law": "GDPR / UK GDPR, where a visitor is located there"
+    }
+  ],
+  "openQuestions": [
+    "TODO — list the privacy questions you have not yet answered, so the page's gaps are deliberate and visible to you rather than silent."
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "$comment": "Single source of truth for every number and claim published on the site. THE RULE: no figure is ever typed into markup — pages import from here, so a number that appears on four pages exists once. Every leaf carries a `source`; anything not independently verified carries `verified: false` and shows up in your risk review. If you need a number that isn't here, add it WITH a source or leave a TODO — never estimate.",
+  "meta": {
+    "lastReviewed": "2026-08-11",
+    "reviewedBy": "TODO — a named human"
+  },
+  "company": {
+    "founder": {
+      "name": "TODO Founder Name",
+      "linkedin": "https://www.linkedin.com/in/TODO",
+      "$comment": "The author profile behind the site-wide Person schema node and every blog post byline. Must be a real person with a real, linkable profile — E-E-A-T and answer engines both key on it."
+    }
+  },
+  "example": {
+    "$comment": "Delete this block. It exists to show the shape: value + source + retrieved date, and verified:false when you have not independently checked it.",
+    "customersServed": {
+      "value": 128,
+      "source": "Internal CRM export, 2026-08-01",
+      "verified": false
+    }
+  }
+}
