@@ -16,8 +16,9 @@ export const SITE = {
   domain: new URL(SITE_URL).host,
   url: SITE_URL,
   tagline: 'A one-line description of what this company does',
+  // 120–165 characters — CI enforces the bounds on every indexable page.
   description:
-    'A 150–200 character description used as the default meta description and in the Organization schema. Say what the company does, for whom, and the one thing that makes it different.',
+    'A 120–165 character description used as the default meta description and in the Organization schema. Say what you do, for whom, and what sets you apart.',
   locale: 'en',
   themeColor: '#0f4c81',
   ogImage: '/og/default.png',

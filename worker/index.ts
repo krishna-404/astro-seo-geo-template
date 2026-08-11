@@ -32,6 +32,7 @@
  */
 
 import sheetsConfig from '../src/data/sheets.config.json';
+import cspGenerated from './csp.generated.json';
 
 interface Env {
   ASSETS: { fetch(request: Request | string): Promise<Response> };
@@ -64,7 +65,15 @@ function withSecurityHeaders(h: Headers): Headers {
   h.set('x-content-type-options', 'nosniff');
   h.set('referrer-policy', 'strict-origin-when-cross-origin');
   h.set('x-frame-options', 'SAMEORIGIN');
-  h.set('permissions-policy', 'camera=(), microphone=(), geolocation=()');
+  h.set(
+    'permissions-policy',
+    'camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=(), interest-cohort=(), unload=()'
+  );
+  // Generated post-build from the built site's actual inline scripts
+  // (scripts/generate-csp.mjs) — the same value _headers serves for assets.
+  // Set unconditionally: CSP only affects rendered documents, so it is inert
+  // on the CSV/redirect/markdown responses and correct on the HTML ones.
+  h.set('content-security-policy', cspGenerated.csp);
   return h;
 }
 

@@ -68,6 +68,15 @@ jobs:
       # than at deploy.
       - run: npm run build
 
+      # The CSP is generated from the built site's inline scripts
+      # (scripts/generate-csp.mjs, runs inside `npm run build`) and the worker
+      # imports the COMMITTED copy. A build that changes an inline script
+      # changes the hashes — this diff fails until the new value is committed,
+      # so the worker and the asset layer can never serve two different
+      # policies. Same pattern as the lastmod map below.
+      - name: Check committed worker CSP is current
+        run: git diff --exit-code worker/csp.generated.json
+
       # The sitemap's <lastmod> comes from a committed map (see
       # scripts/lastmod.mjs for why). A committed file can go stale, so
       # regenerate it here — where full history exists — and compare. Runs
@@ -137,6 +146,71 @@ jobs:
             fail=1
           else
             echo "   ok"
+          fi
+
+          echo "→ page titles are unique"
+          # Two pages sharing a <title> compete for the same query and look
+          # like duplicates in every crawler report — always a copy-paste bug.
+          if ! node -e '
+            const fs = require("fs");
+            const seen = new Map();
+            let bad = 0;
+            for (const f of process.argv.slice(1)) {
+              const m = fs.readFileSync(f, "utf8").match(/<title>([^<]*)<\/title>/);
+              if (!m) continue;
+              if (seen.has(m[1])) {
+                console.log(`   FAIL: ${f} and ${seen.get(m[1])} share the title "${m[1]}"`);
+                bad = 1;
+              } else seen.set(m[1], f);
+            }
+            process.exit(bad);
+          ' $(find dist -name '*.html'); then
+            fail=1
+          else
+            echo "   ok"
+          fi
+
+          echo "→ meta descriptions present, unique, 70–165 chars on indexable pages"
+          # Google rewrites vague ones and truncates past ~165; a missing one
+          # surrenders the snippet entirely. Bounds apply to indexable pages
+          # only — noindex pages (404, thanks) never render a snippet.
+          if ! node -e '
+            const fs = require("fs");
+            const seen = new Map();
+            let bad = 0;
+            for (const f of process.argv.slice(1)) {
+              const html = fs.readFileSync(f, "utf8");
+              const m = html.match(/<meta name="description" content="([^"]*)"/);
+              if (!m) {
+                console.log(`   FAIL: ${f} has no meta description`);
+                bad = 1; continue;
+              }
+              if (seen.has(m[1])) {
+                console.log(`   FAIL: ${f} and ${seen.get(m[1])} share a meta description`);
+                bad = 1;
+              } else seen.set(m[1], f);
+              const noindex = /name="robots" content="noindex/.test(html);
+              if (!noindex && (m[1].length < 70 || m[1].length > 165)) {
+                console.log(`   FAIL: ${f} description is ${m[1].length} chars (want 70–165): "${m[1].slice(0, 80)}…"`);
+                bad = 1;
+              }
+            }
+            process.exit(bad);
+          ' $(find dist -name '*.html'); then
+            fail=1
+          else
+            echo "   ok"
+          fi
+
+          echo "→ dist/_headers carries the generated CSP"
+          # The generator replaces a marker comment; if the marker survives,
+          # the build pipeline was reordered or the csp step was dropped — the
+          # site would ship without a CSP and nothing else would notice.
+          if grep -q '^  Content-Security-Policy: ' dist/_headers; then
+            echo "   ok"
+          else
+            echo "   FAIL: no Content-Security-Policy in dist/_headers — did scripts/generate-csp.mjs run?"
+            fail=1
           fi
 
           echo "→ no broken internal links"
@@ -390,11 +464,32 @@ jobs:
       # Playwright is installed here rather than added to package.json on
       # purpose: it is a CI/publish-time tool, and keeping it out of the
       # manifest keeps a 300MB browser out of every `npm ci`.
+      # Structural HTML validity over the built output: duplicate ids, invalid
+      # nesting, malformed attributes — the classes browsers silently repair
+      # and crawlers silently don't. Config in .htmlvalidate.json; the one
+      # exclusion (role="region" divs) is the deliberate .table-scroll pattern,
+      # whose semantics have their own invariant above.
+      - name: Validate built HTML
+        run: |
+          npm install --no-save html-validate
+          npx html-validate "dist/**/*.html"
+
       - name: Check colour contrast
         run: |
           npm install --no-save playwright
           npx playwright install --with-deps chromium
           npm run check:contrast
+
+      # axe-core over every built page — the engine class the structural
+      # invariants and the source lint can't see: broken ARIA references,
+      # accessible-name computation, landmark structure. Fails on
+      # serious/critical; axe's colour-contrast rule is disabled in the script
+      # because the sweep above measures it properly (composited backgrounds).
+      # Reuses the browser the contrast step installed.
+      - name: Accessibility scan (axe-core)
+        run: |
+          npm install --no-save axe-core
+          npm run check:a11y
 
   deploy:
     needs: build

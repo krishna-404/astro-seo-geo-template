@@ -6,9 +6,10 @@ debugging so you don't have to). That ancestor's 66 recorded traps shaped
 everything here; the ones that are platform-specific to nginx are gone as
 mechanisms but kept as lessons where they transfer.
 
-**Three documents, three jobs.** `CHECKLIST.md` — every decision already baked
-in, and why. This file — the order of work and the operating knowledge.
-`AGENTS.md` — the standing rules for anyone editing the repo.
+**Four documents, four jobs.** `SETUP.md` — the ordered per-site walkthrough a
+new site starts with. `CHECKLIST.md` — every decision already baked in, and
+why. This file — the order of work and the operating knowledge. `AGENTS.md` —
+the standing rules for anyone editing the repo.
 
 Items marked ⚠ fail *silently* — they look fine and are not.
 
@@ -170,6 +171,28 @@ any change here in the same commit.
 - [ ] ⚠ Verify with `curl -I`, never the dashboard: exactly one
       `strict-transport-security` header on the live site.
 
+**DNS records** (Cloudflare → DNS; none of these have anything to do with
+serving pages, which is exactly why they get forgotten)
+- [ ] ⚠ **SPF + DMARC even though the domain sends no mail.** A domain
+      without them can be spoofed in email headers with nothing to contradict
+      the forgery — and the damage lands on the domain's reputation, not the
+      spoofer's. For a non-sending canonical domain the records are two
+      lines, both "reject everything":
+      `TXT @ "v=spf1 -all"` and `TXT _dmarc "v=DMARC1; p=reject"`.
+      (If the domain DOES send mail — e.g. Workspace — publish the
+      provider's SPF include and DKIM instead, and walk DMARC up to
+      `p=reject` once reports look clean. Cold-email sending domains are
+      separate domains with separate records — §0.)
+- [ ] **CAA record pinning your CA**: `CAA 0 issue "letsencrypt.org"` +
+      `CAA 0 issue "pki.goog"` (Cloudflare provisions edge certs via
+      LE/Google Trust Services — pin what is actually in use; check the
+      current cert issuer first with
+      `openssl s_client -connect DOMAIN:443 2>/dev/null | openssl x509 -noout -issuer`).
+      Any other CA is then refused issuance for the domain.
+- [ ] Verify all three from outside:
+      `dig +short TXT DOMAIN`, `dig +short TXT _dmarc.DOMAIN`,
+      `dig +short CAA DOMAIN`.
+
 **Rules**
 - [ ] Redirect Rule: `www.DOMAIN/*` → `https://DOMAIN/$1`, 301. ⚠ Then
       **curl it** — the ancestor site's www redirect lived in a doc and
@@ -241,6 +264,13 @@ header-scoping bugs)
 - [ ] Security set present on both; `Cache-Control` 300 on pages,
       `immutable` on `/_astro/*`
 - [ ] Exactly one HSTS header
+- [ ] `curl -sI https://DOMAIN/ | grep -ci content-security-policy` → `1`,
+      and the value contains `sha256-` hashes (the marker comment shipping
+      instead means the generator never ran). Check a worker route too
+      (`/hi/test`) — the worker emits the same policy from
+      `worker/csp.generated.json`. ⚠ Then open `/search` in a browser and
+      run a query: a CSP mistake breaks Pagefind's WebAssembly first, and
+      only the browser console will say so.
 - [ ] `curl -sI -H 'Accept: text/markdown' https://DOMAIN/blog/<slug>` →
       `content-type: text/markdown`, `vary: Accept`; without the header → HTML
 - [ ] `curl -sI https://DOMAIN/hi/test` → 200, `x-robots-tag: noindex`
@@ -273,7 +303,45 @@ header-scoping bugs)
       blamed on your site); read observed metrics, not the simulated
       headline; check what the LCP element actually IS before optimising it
 
-## 9. Inherited trap archive (the short version)
+## 9. Recurring cadence — the site is launched, now what
+
+Launch verification (§8) is a snapshot; these are the things that only fail
+with the passage of time. Small, boring, and each one is invisible until it
+has already cost something.
+
+**Weekly (5 minutes, GSC + Bing)**
+- [ ] GSC Page indexing report: new exclusions, especially "Duplicate,
+      Google chose a different canonical" and "Discovered – currently not
+      indexed" (canonical/internal-linking smells, §7).
+- [ ] GSC Security & Manual Actions: must be empty. This is the check where
+      finding something a week late is a disaster and a day late is fine.
+- [ ] AI-citation log (§5): run the target queries, note who got cited.
+
+**Monthly (automated + 10 minutes)**
+- [ ] The link-rot workflow ran on the 3rd
+      (`.github/workflows/linkrot.yml`) — read its result, don't assume it.
+      Fix, archive, or drop dead citations; never ignore-list casually.
+- [ ] Skim analytics for pages that stopped earning views (content decay);
+      refresh or consolidate rather than letting them thin out.
+
+**Quarterly (an hour)**
+- [ ] Full-crawl the live site (Screaming Frog free tier covers 500 URLs):
+      redirect chains, orphans, stray 404s.
+- [ ] Re-validate structured data on one page of each type (Rich Results
+      Test) — schema.org and Google's support lists both drift.
+- [ ] Review `robots.txt`'s AI-crawler list against new vendor bots (§7).
+
+**Annually (half a day)**
+- [ ] ⚠ `public/.well-known/security.txt` — `Expires` is ~1 year out by
+      design, so it lapses UNLESS someone renews it, and an expired file
+      reads as an unmaintained site to exactly the audience it exists for.
+      Re-date it, bump `Expires`, commit.
+- [ ] HSTS: consider raising max-age / preload submission (§6 caveats).
+- [ ] Domain + registrar: auto-renew on, lock on, contact email current.
+- [ ] Re-run the §8 verification battery top to bottom — headers and
+      dashboard settings drift silently, and dashboards have no diff.
+
+## 10. Inherited trap archive (the short version)
 
 Platform traps this architecture *eliminated* (kept here so nobody
 re-introduces the vulnerable pattern): nginx `add_header` non-merge ·
@@ -292,7 +360,7 @@ transparent apple-touch-icons → black squares · two HSTS emitters ·
 self-written review markup → manual action · collections without routes ·
 hidden-link cloaking · deploy races on indexing pings · `fetch-depth: 0`.
 
-## 10. Process lessons
+## 11. Process lessons
 
 Not about this codebase — about not wasting a day. Each cost the ancestor
 project exactly that:

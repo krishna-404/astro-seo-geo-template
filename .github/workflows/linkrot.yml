@@ -1,0 +1,56 @@
+name: External link rot
+
+# WHY THIS IS A SEPARATE, SCHEDULED WORKFLOW AND NOT A CI STEP. CI already
+# fails on broken INTERNAL links — those are this repo's bug. External links
+# rot on someone else's schedule: a citation that was alive at merge time dies
+# a year later, and no commit ever re-checks it. For a site whose content
+# strategy leans on cited `sources` (the GEO lever with evidence behind it),
+# a dead citation quietly undermines the exact credibility signal the schemas
+# enforce. Monthly is the right cadence — link rot is slow, and a flaky
+# third-party server should not be able to block a deploy, which is why this
+# never gates CI.
+#
+# On failure: read the log, then either fix the URL, point it at an archived
+# copy (web.archive.org), or drop the citation. Do not add ignores casually —
+# an ignored dead link is a dead link.
+
+on:
+  schedule:
+    - cron: '17 4 3 * *' # 04:17 UTC on the 3rd of each month
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Check the links the site actually ships, not the source files —
+      # markdown twins and generated surfaces carry links too.
+      - run: npm run build:ci
+
+      # --scheme http/https: external links only; internal root-relative links
+      # are CI's job and file:// resolution would double-report them.
+      # --accept 200..=299,403,429: some publishers bot-block (403) or
+      # rate-limit (429) HEAD requests from CI ranges — a page a human can
+      # open is not rot. Redirects are followed, not flagged.
+      - name: Check external links in built HTML
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --no-progress
+            --scheme https --scheme http
+            --accept '200..=299,403,429'
+            --max-concurrency 8
+            --timeout 20
+            --max-retries 2
+            'dist/**/*.html'
+          fail: true

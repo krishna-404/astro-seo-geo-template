@@ -1,0 +1,9 @@
+{
+  "extends": ["html-validate:recommended"],
+  "rules": {
+    "prefer-native-element": [
+      "error",
+      { "exclude": ["region"] }
+    ]
+  }
+}

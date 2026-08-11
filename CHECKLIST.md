@@ -5,9 +5,10 @@ reason. If a setting is not on this list, it was not decided — treat it as an
 open question, decide it, and add it here. **A setting nobody wrote down is
 indistinguishable from a setting nobody made.**
 
-Sibling documents: `README.md` is how to start a site from this. `PLAYBOOK.md`
-is how to build/operate it phase by phase, and the traps. `AGENTS.md` is the
-standing rules for anyone (human or agent) editing a site built from this.
+Sibling documents: `SETUP.md` is the ordered walkthrough for turning this into
+a real site (start there). `README.md` is the quickstart. `PLAYBOOK.md` is how
+to build/operate it phase by phase, and the traps. `AGENTS.md` is the standing
+rules for anyone (human or agent) editing a site built from this.
 
 Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site value ·
 ⬜ deliberately NOT decided (per-site choice, notes given).
@@ -82,7 +83,23 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
 - ✅ **Headers via `public/_headers`** (rules MERGE — the nginx
   "one `add_header` wipes the inherited set" trap class cannot happen).
   Security set: `nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`,
-  `X-Frame-Options: SAMEORIGIN`, `Permissions-Policy` (camera/mic/geo off).
+  `X-Frame-Options: SAMEORIGIN`, `Permissions-Policy` (camera/mic/geo/
+  payment/usb off, plus `browsing-topics`/`interest-cohort`/`unload` — the
+  ad-API opt-outs match the cookieless stance; `unload=()` protects bfcache).
+- ✅ **Content-Security-Policy, generated from the built site — never
+  hand-listed** (`scripts/generate-csp.mjs`, runs inside `npm run build`).
+  `script-src` = `'self'` + a sha256 hash per shipped inline script +
+  `'wasm-unsafe-eval'` (Pagefind's index is WebAssembly) + the Google origins
+  only when the consent banner actually shipped. Two emitters in lockstep:
+  the generator swaps the `# @generated-csp` marker in `dist/_headers`, and
+  the worker imports the COMMITTED `worker/csp.generated.json` (CI diffs it —
+  a changed inline script fails until the new hashes are committed).
+  Decided trade-offs: `style-src` keeps `'unsafe-inline'`
+  (`inlineStylesheets: 'always'` puts a per-page `<style>` on every page;
+  hashing would mean per-page policies for a vector that needs HTML injection
+  first); inline event handlers are BANNED — the generator fails the build if
+  one appears, because hashes cannot allow them; `frame-ancestors 'self'`
+  mirrors `X-Frame-Options: SAMEORIGIN` — change them together.
 - ✅ **HSTS has exactly ONE emitter: the Cloudflare zone setting.** It is
   deliberately absent from `_headers` — a browser honours only the FIRST
   Strict-Transport-Security header (RFC 6797). Verify with
@@ -207,12 +224,25 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
 ## 6. SEO (classic)
 
 - ✅ **Canonical, full OG set (+ `og:image` 1200×630 with declared
-  dimensions), Twitter card, JSON-LD — all from `BaseLayout`,** so no page
-  can forget them. Canonical strips `.html` (never canonicalise to a URL the
-  server doesn't hand out). Article pages also emit
+  dimensions and `og:image:alt`), Twitter card, JSON-LD — all from
+  `BaseLayout`,** so no page can forget them. Canonical strips `.html` (never
+  canonicalise to a URL the server doesn't hand out). `og:image:alt` /
+  `twitter:image:alt` default to the title — accurate because generated cards
+  RENDER the title; a page passing a custom `ogImage` should pass
+  `ogImageAlt` too. Article pages also emit
   `article:published_time`/`article:modified_time` (modified only when
   `updated` is actually later than `published`), and every page carries
   `<link rel="sitemap">` — a free discovery hint.
+- ✅ **`max-image-preview:large` robots meta on every indexable page** —
+  Google's stated requirement for large image previews in Discover and
+  result cards; without it images fall back to thumbnails. Noindex pages
+  keep their plain `noindex, nofollow` directive instead (one meta, never
+  both).
+- ✅ **`WebSite` schema carries a `SearchAction`** pointing at
+  `/search?q={search_term_string}` — honest by construction, because
+  `/search` really does answer `?q=` (Pagefind syncs the param). This is the
+  sitelinks-search-box eligibility signal; never emit it on a site whose
+  search page is removed.
 - ✅ **OG cards are skipped for pages that declare their own `ogImage`**
   (`render-pages.mjs` reads the built page's `og:image` meta) — an explicit
   image always wins in BaseLayout precedence, so a generated card for such a
@@ -231,7 +261,12 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   markup to reflect on-page navigation — index pages emit neither, on
   purpose). `FAQPage` and the on-page `<Faq />` accordion render from the ONE
   `faq` frontmatter array via `src/lib/faqSchema.ts` — the schema cannot
-  claim a question the page doesn't show.
+  claim a question the page doesn't show. Honest expectation: since 2023
+  Google shows FAQ rich results only for well-known government and health
+  sites, so for most sites this markup earns no SERP treatment — its value
+  here is AEO (extractable Q&A pairs for answer engines) and the
+  single-source consistency, which is why it stays. `HowTo` markup is fully
+  deprecated; don't add it expecting rich results.
 - ✅ **Opt-in TOC** (`toc: true` frontmatter, guideline 4+ h2s): plain
   crawlable anchors from Astro's extracted headings
   (`src/lib/toc.ts` + `<Toc />`), no scrollspy, no JS — the value is the
@@ -275,6 +310,14 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   two pages can never disagree; never add `review`/`aggregateRating` you
   wrote about yourself (self-serving review markup = policy violation, risks
   a manual action to clear an *optional* warning).
+- ⬜ **Internationalisation (hreflang, locale routes)** — deliberately out of
+  scope: this template is single-locale by design (`SITE.locale` feeds
+  `<html lang>` and `og:locale`, nothing else). Going multilingual is a
+  structural change, not a setting: locale-prefixed routes, a complete
+  reciprocal hreflang matrix with `x-default` (one-directional links are
+  ignored), self-canonical per locale (never canonicalise locales to one
+  URL), and one hreflang method only. If you need it, design it as its own
+  phase — a partial matrix is worse than none.
 
 ## 7. AEO / GEO (answer engines)
 
@@ -374,9 +417,31 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
 - ✅ **Content image refs resolve to real files**
   (`scripts/check-content-images.mjs`) — a frontmatter `ogImage` string or
   markdown image is not an import; a typo ships a 404 OG card silently.
-- ✅ `npm run build` = types + zod schemas + render + search index in one step.
+- ✅ `npm run build` = types + zod schemas + render + search index + CSP
+  generation in one step.
+- ✅ **Committed worker CSP is current** (`git diff` on
+  `worker/csp.generated.json` after the build) — a changed inline script
+  changes the hashes, and the worker must never serve a different policy
+  than the asset layer.
 - ✅ Committed lastmod map is current + covers the whole sitemap.
 - ✅ One `<h1>` per page · every `<table>` wrapped · `<title>` ≤ 60 chars.
+- ✅ **Page titles unique · meta descriptions present, unique, 70–165 chars**
+  (bounds on indexable pages only — noindex pages never render a snippet).
+  Two pages sharing a title compete for the same query; Google rewrites
+  vague descriptions and truncates past ~165.
+- ✅ **`dist/_headers` carries the generated CSP** — if the
+  `# @generated-csp` marker survives the build, the generator was dropped
+  from the pipeline and the site would ship with no CSP, silently.
+- ✅ **Built HTML validates** (`html-validate`, recommended preset):
+  duplicate ids, invalid nesting, malformed attributes — the classes
+  browsers silently repair and crawlers silently don't. One configured
+  exclusion: `role="region"` divs, which is the deliberate `.table-scroll`
+  pattern (its semantics have their own invariant).
+- ✅ **axe-core scan of every built page** (`scripts/check-a11y.mjs`), fails
+  on serious/critical: broken ARIA references, accessible-name computation,
+  landmark structure — the engine classes the structural greps can't see.
+  axe's colour-contrast rule is disabled there because the dedicated sweep
+  measures composited backgrounds properly; one defect, one verdict.
 - ✅ **No broken internal links** in built HTML (worker-only routes
   whitelisted — the whitelist doubles as the inventory of off-repo routes).
 - ✅ **Every CTA carries `data-umami-event`** (unmeasured conversions are
@@ -405,6 +470,12 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   no-match — the guard would kill the script on exactly the page it exists
   to catch) and collect every failure per run.
 - ✅ Deploy job runs only on green main (`needs: build`).
+- ✅ **External link rot is checked monthly, never in CI**
+  (`.github/workflows/linkrot.yml`, lychee over built HTML, external URLs
+  only). Citations rot on someone else's schedule and a flaky third-party
+  server must not block a deploy — but a dead `sources` link quietly
+  undermines the exact credibility signal the schemas enforce. Fix, archive
+  (web.archive.org), or drop; never ignore-list casually.
 
 ## 10. Repo conventions
 

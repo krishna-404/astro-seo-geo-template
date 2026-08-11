@@ -1,9 +1,11 @@
 # AGENTS.md — standing rules for working in a site built from this template
 
 This file is the source of truth for anyone — human or agent — editing this
-repo. `CHECKLIST.md` records every architectural decision already made and why;
-`PLAYBOOK.md` is the phase-by-phase build/operate runbook; `README.md` is the
-quickstart. **Update the relevant document in the same commit as any change to
+repo. `SETUP.md` is where a NEW site starts: the ordered walkthrough of every
+per-site value, before any content work. `CHECKLIST.md` records every
+architectural decision already made and why; `PLAYBOOK.md` is the
+phase-by-phase build/operate runbook; `README.md` is the quickstart.
+**Update the relevant document in the same commit as any change to
 structure, config, or a third-party dashboard** — a setting nobody wrote down
 is indistinguishable from a setting nobody made.
 
@@ -140,6 +142,7 @@ is indistinguishable from a setting nobody made.
 | Change | Also do |
 |---|---|
 | A page title | Re-run OG cards (`marketing/og/render-pages.mjs`) |
+| Any inline `<script is:inline>` | `npm run build` regenerates the CSP hashes; commit the changed `worker/csp.generated.json` (CI diffs it). Never add an inline `onclick=`-style handler — the CSP generator fails the build on those |
 | Brand colour / favicon.svg | Edit the literal `BRAND_BG` in BOTH `marketing/favicon.mjs` and `marketing/og/render-pages.mjs`, plus `--brand` in `marketing/og/default.html`; then `node marketing/favicon.mjs`, re-run OG cards, `npm run check:contrast` |
 | Any vendor or data collection | `src/data/privacy.json` in the same commit |
 | Domain | `src/data/origin.mjs` (one place) |

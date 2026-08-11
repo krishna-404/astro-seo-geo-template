@@ -32,6 +32,17 @@ const schema = [
     name: SITE.name,
     description: SITE.description,
     publisher: { '@id': `${SITE.url}/#organization` },
+    // Honest by construction: /search really does answer ?q= (Pagefind syncs
+    // the param — see search.astro). This is what makes a sitelinks search
+    // box eligible; never emit it for a site without a working /search.
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${SITE.url}/search?q={search_term_string}`,
+      },
+      'query-input': 'required name=search_term_string',
+    },
   },
   {
     '@type': 'FAQPage',

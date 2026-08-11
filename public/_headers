@@ -19,7 +19,12 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: SAMEORIGIN
-  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=(), interest-cohort=(), unload=()
+  # @generated-csp — replaced with the real Content-Security-Policy by
+  # scripts/generate-csp.mjs (runs inside `npm run build`; hashes derive from
+  # the built inline scripts, so the policy is never hand-listed). If this
+  # comment ships to production the generator did not run — the site still
+  # works, it just serves no CSP.
   Cache-Control: public, max-age=300, must-revalidate
   Link: </llms.txt>; rel="describedby"; type="text/plain"; title="LLM brief", </for-llms>; rel="service-doc"; title="For LLMs and AI assistants", </llms-full.txt>; rel="describedby"; type="text/plain"; title="LLM corpus"
 
