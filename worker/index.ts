@@ -40,6 +40,9 @@ interface Env {
   CONTACT_SCRIPT_ID?: string;
   /** e.g. https://umami.example.com — empty/unset disables the analytics proxy. */
   UMAMI_UPSTREAM?: string;
+  /** Rate-limit binding for /api/contact (wrangler.jsonc `ratelimits`). Optional
+   *  so a config without the binding degrades to "no limit", never a crash. */
+  CONTACT_RATE?: { limit(options: { key: string }): Promise<{ success: boolean }> };
 }
 
 interface Ctx {
@@ -48,14 +51,51 @@ interface Ctx {
 
 const SHEET_TABS: Record<string, { url: string }> = (sheetsConfig as { tabs: Record<string, { url: string }> }).tabs;
 
+/**
+ * Headers the platform will NOT add for us. public/_headers applies only to
+ * assets served directly by the static layer — Cloudflare documents that it is
+ * never applied to a response a worker returns, INCLUDING a pass-through of
+ * env.ASSETS.fetch(). So every return path in this file goes through this
+ * helper. The values must stay in lockstep with the `/*` block of
+ * public/_headers — change them together or curl will show two different sites
+ * depending on which layer answered.
+ */
+function withSecurityHeaders(h: Headers): Headers {
+  h.set('x-content-type-options', 'nosniff');
+  h.set('referrer-policy', 'strict-origin-when-cross-origin');
+  h.set('x-frame-options', 'SAMEORIGIN');
+  h.set('permissions-policy', 'camera=(), microphone=(), geolocation=()');
+  return h;
+}
+
+/** The AEO discovery hints nginx served on every response and _headers serves
+ *  on every asset — content responses from the worker carry them too. */
+const LLMS_LINK_HEADER =
+  '</llms.txt>; rel="describedby"; type="text/plain"; title="LLM brief", ' +
+  '</for-llms>; rel="service-doc"; title="For LLMs and AI assistants", ' +
+  '</llms-full.txt>; rel="describedby"; type="text/plain"; title="LLM corpus"';
+
+/** Upstream calls get a bounded wait (nginx ran 5s connect / 10s read): a hung
+ *  vendor must fail the one request, not hold worker invocations open. */
+const UPSTREAM_TIMEOUT_MS = 10_000;
+
 /** Same fixed-token device classification the nginx map used. Fixed tokens
  *  because the value travels on a query string and most servers (Apps Script
  *  included) cannot be trusted to handle an unescaped raw User-Agent. Never
- *  pass the raw UA. */
-function deviceClass(ua: string): 'bot' | 'mobile' | 'tablet' | 'desktop' {
-  if (/bot|crawler|spider|curl|wget|python|httpx|scrapy/i.test(ua)) return 'bot';
-  if (/ipad|tablet|kindle|silk/i.test(ua)) return 'tablet';
-  if (/mobi|android|iphone/i.test(ua)) return 'mobile';
+ *  pass the raw UA.
+ *
+ *  Order matters: bots first (plenty of crawlers claim to be an iPhone), then
+ *  phones, then tablets. Android phone vs tablet is decided by the token
+ *  "Mobile" — an Android UA WITHOUT "Mobile" is a tablet (the rule Google
+ *  documents; an earlier nginx version classified every Android phone as a
+ *  tablet by stopping the match too early, and this port once inverted it the
+ *  other way). */
+function deviceClass(ua: string): 'bot' | 'mobile' | 'tablet' | 'desktop' | 'none' {
+  if (!ua) return 'none';
+  if (/bot|crawl|spider|slurp|curl|wget|python|java|headless|monitor|preview|httpx|scrapy/i.test(ua))
+    return 'bot';
+  if (/iphone|ipod|windows phone|android.*mobile/i.test(ua)) return 'mobile';
+  if (/ipad|android|tablet|kindle|playbook|silk/i.test(ua)) return 'tablet';
   return 'desktop';
 }
 
@@ -74,7 +114,24 @@ export default {
     // ── 1. Contact form → Apps Script ────────────────────────────────────
     if (pathname === '/api/contact') {
       if (request.method !== 'POST') {
-        return new Response('Method Not Allowed', { status: 405, headers: { Allow: 'POST' } });
+        return new Response('Method Not Allowed', {
+          status: 405,
+          headers: withSecurityHeaders(new Headers({ allow: 'POST' })),
+        });
+      }
+      // Same budget nginx enforced in config (10 req/min/IP): a form endpoint
+      // with no limit is a free lever on the worker invocation quota and on
+      // Apps Script's daily mail quota. Binding absent = feature off, site up.
+      if (env.CONTACT_RATE) {
+        const { success } = await env.CONTACT_RATE.limit({
+          key: request.headers.get('cf-connecting-ip') ?? 'unknown',
+        });
+        if (!success) {
+          return new Response('Too Many Requests', {
+            status: 429,
+            headers: withSecurityHeaders(new Headers({ 'retry-after': '60' })),
+          });
+        }
       }
       const scriptId = env.CONTACT_SCRIPT_ID ?? '';
       // Read the body BEFORE returning: a fire-and-forget upstream call still
@@ -91,6 +148,11 @@ export default {
         upstream.searchParams.set('_ip', request.headers.get('cf-connecting-ip') ?? '');
         upstream.searchParams.set('_cc', cf?.country ?? '');
         upstream.searchParams.set('_dev', deviceClass(request.headers.get('user-agent') ?? ''));
+        // The visitor is already on the thanks page and is not the audience
+        // for an outage — but the OPERATOR is: nginx kept a dedicated
+        // contact_delivery log for exactly this call because its failure is
+        // invisible in any response. console.* is what Workers observability
+        // records, so log both failure shapes (thrown and non-2xx).
         ctx.waitUntil(
           fetch(upstream.toString(), {
             method: 'POST',
@@ -102,16 +164,28 @@ export default {
             // Apps Script answers with a 302 to script.googleusercontent.com;
             // follow it so the execution actually completes, then discard it.
             redirect: 'follow',
-          }).catch(() => {
-            // Nothing to tell the visitor — they are already on the thanks
-            // page, and they are not the right audience for our outage.
-            // Apps Script's own Filtered/error paths are the durable record.
+            signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
           })
+            .then((r) => {
+              if (!r.ok) console.error(`contact delivery: upstream answered ${r.status}`);
+            })
+            .catch((e: unknown) => {
+              console.error(
+                `contact delivery failed: ${e instanceof Error ? e.message : String(e)}`
+              );
+            })
         );
       }
       // The visitor's response is OURS regardless of what upstream does or
       // whether it is configured at all. 303 turns the POST into a GET.
-      return Response.redirect(new URL('/contact/thanks', url).toString(), 303);
+      // (Hand-built rather than Response.redirect(): that helper's headers
+      // are immutable, and this response needs the security set too.)
+      return new Response(null, {
+        status: 303,
+        headers: withSecurityHeaders(
+          new Headers({ location: new URL('/contact/thanks', url).toString() })
+        ),
+      });
     }
 
     // ── 2. Published-sheet data for the client-side silent refresh ───────
@@ -121,7 +195,7 @@ export default {
         ? SHEET_TABS[tab]
         : undefined;
       if (!entry || request.method !== 'GET') {
-        return new Response('Not found', { status: 404 });
+        return new Response('Not found', { status: 404, headers: withSecurityHeaders(new Headers()) });
       }
       // Edge-cache the Google response for 5 minutes: LiveData refreshes are
       // then nearly always cache hits — fast, and Google never sees the
@@ -129,15 +203,19 @@ export default {
       // "how stale can the site be" has one answer everywhere.
       const upstream = await fetch(entry.url, {
         cf: { cacheTtl: 300, cacheEverything: true },
-      } as RequestInit);
-      if (!upstream.ok) return new Response('Upstream error', { status: 502 });
+        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+      } as RequestInit).catch(() => null);
+      if (!upstream?.ok) {
+        return new Response('Upstream error', { status: 502, headers: withSecurityHeaders(new Headers()) });
+      }
       return new Response(upstream.body, {
         status: 200,
-        headers: {
-          'content-type': 'text/csv; charset=utf-8',
-          'cache-control': 'public, max-age=300, must-revalidate',
-          'x-content-type-options': 'nosniff',
-        },
+        headers: withSecurityHeaders(
+          new Headers({
+            'content-type': 'text/csv; charset=utf-8',
+            'cache-control': 'public, max-age=300, must-revalidate',
+          })
+        ),
       });
     }
 
@@ -146,13 +224,16 @@ export default {
     if (umami && pathname === '/s.js') {
       const upstream = await fetch(`${umami}/script.js`, {
         cf: { cacheTtl: 3600, cacheEverything: true },
+        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
       } as RequestInit);
       return new Response(upstream.body, {
         status: upstream.status,
-        headers: {
-          'content-type': 'application/javascript; charset=utf-8',
-          'cache-control': 'public, max-age=3600',
-        },
+        headers: withSecurityHeaders(
+          new Headers({
+            'content-type': 'application/javascript; charset=utf-8',
+            'cache-control': 'public, max-age=3600',
+          })
+        ),
       });
     }
     if (umami && pathname === '/api/send') {
@@ -164,21 +245,30 @@ export default {
         headers.set('x-forwarded-for', ip);
         headers.set('x-real-ip', ip);
       }
-      return fetch(`${umami}/api/send`, {
+      const upstream = await fetch(`${umami}/api/send`, {
         method: request.method,
         headers,
         body: request.body,
+        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
       });
+      // Our response, not Umami's: nginx stripped the collector's Cache-Control
+      // and forced no-store (a cached analytics beacon is silently lost data),
+      // and vendor headers have no business on this origin.
+      const h = withSecurityHeaders(new Headers({ 'cache-control': 'no-store' }));
+      const ct = upstream.headers.get('content-type');
+      if (ct) h.set('content-type', ct);
+      return new Response(upstream.body, { status: upstream.status, headers: h });
     }
 
     // ── 3. /hi/<code> — attribution rewrite ──────────────────────────────
     if (HI_RE.test(pathname)) {
       // A rewrite, never a redirect: the URL in the address bar IS the data.
       const page = await env.ASSETS.fetch(new URL('/contact', url).toString());
-      const h = new Headers(page.headers);
+      const h = withSecurityHeaders(new Headers(page.headers));
       // These URLs are per-recipient; they must never appear in a search
       // result. Header-level noindex because the HTML is the contact page's.
       h.set('x-robots-tag', 'noindex, nofollow');
+      h.set('link', LLMS_LINK_HEADER);
       return new Response(page.body, { status: page.status, headers: h });
     }
 
@@ -194,13 +284,15 @@ export default {
         if (twin.ok) {
           return new Response(twin.body, {
             status: 200,
-            headers: {
-              'content-type': 'text/markdown; charset=utf-8',
-              'cache-control': 'public, max-age=300, must-revalidate',
-              // Same URL, two bodies — caches must key on Accept.
-              vary: 'Accept',
-              'x-content-type-options': 'nosniff',
-            },
+            headers: withSecurityHeaders(
+              new Headers({
+                'content-type': 'text/markdown; charset=utf-8',
+                'cache-control': 'public, max-age=300, must-revalidate',
+                // Same URL, two bodies — caches must key on Accept.
+                vary: 'Accept',
+                link: LLMS_LINK_HEADER,
+              })
+            ),
           });
         }
         // No twin on disk (index pages, or the generator has not run):
@@ -208,14 +300,19 @@ export default {
         // for a page that exists.
       }
       const page = await env.ASSETS.fetch(request);
-      const h = new Headers(page.headers);
+      const h = withSecurityHeaders(new Headers(page.headers));
       h.set('vary', 'Accept'); // the HTML answer varies too, or caches mix bodies
+      if (!h.has('cache-control')) h.set('cache-control', 'public, max-age=300, must-revalidate');
+      if (!h.has('link')) h.set('link', LLMS_LINK_HEADER);
       return new Response(page.body, { status: page.status, headers: h });
     }
 
     // ── Everything else: the free, unmetered path ────────────────────────
     // (Only reachable for routes in run_worker_first that matched nothing
-    // above, e.g. /s.js with the proxy disabled — serve assets normally.)
-    return env.ASSETS.fetch(request);
+    // above, e.g. /s.js with the proxy disabled — serve assets normally.
+    // Still wrapped: _headers does not decorate worker-returned responses.)
+    const page = await env.ASSETS.fetch(request);
+    const h = withSecurityHeaders(new Headers(page.headers));
+    return new Response(page.body, { status: page.status, headers: h });
   },
 };

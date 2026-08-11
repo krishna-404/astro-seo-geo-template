@@ -13,8 +13,8 @@ import committed from '../data/lastmod.json';
  * answer, and it is already recorded.
  *
  * WHY IT IS ALLOWED TO RETURN NOTHING. On a shallow clone — which is what a CI
- * or Dokploy checkout often is — `git log` can return an empty string for a
- * file whose history was not fetched. The right response is to omit lastmod for
+ * checkout is by default — `git log` can return an empty string for a file
+ * whose history was not fetched. The right response is to omit lastmod for
  * that URL, not to substitute a date we cannot support. An absent lastmod is
  * simply no claim; a wrong one is a false claim that teaches crawlers to
  * discount every other one.
@@ -22,8 +22,8 @@ import committed from '../data/lastmod.json';
  * AUDIT NOTE: an external SEO review once flagged a site on this stack as
  * carrying "@astrojs/sitemap but zero lastmod." That is not what ships — every
  * route's <lastmod> is derived here, from the real last-commit date, with the
- * CI-checked src/data/lastmod.json fallback below for the git-less Docker
- * build. Confirm with `curl -s https://<your-domain>/sitemap-0.xml | grep -c lastmod`
+ * CI-checked src/data/lastmod.json fallback below for builds where git history
+ * is absent. Confirm with `curl -s https://<your-domain>/sitemap-0.xml | grep -c lastmod`
  * before treating such a finding as live.
  */
 

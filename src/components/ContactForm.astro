@@ -218,7 +218,10 @@ const { source, heading = 'Send us a message' } = Astro.props;
     color: var(--ink-3);
   }
 
-  .cf :is(input[type='text'], input[type='email'], textarea) {
+  /* `select` is styled although the template ships none: a qualification
+     dropdown is the first field most sites add back, and an unstyled select
+     renders short of the 44px touch target. */
+  .cf :is(input[type='text'], input[type='email'], select, textarea) {
     width: 100%;
     min-height: 44px; /* touch target */
     padding: 0.55rem 0.7rem;
@@ -235,7 +238,7 @@ const { source, heading = 'Send us a message' } = Astro.props;
     resize: vertical;
   }
 
-  .cf :is(input, textarea):focus-visible {
+  .cf :is(input, select, textarea):focus-visible {
     outline: 2px solid var(--brand);
     outline-offset: 1px;
     border-color: var(--brand);

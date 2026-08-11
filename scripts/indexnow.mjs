@@ -26,10 +26,15 @@ const HOST = new URL(ORIGIN).host;
 /**
  * The IndexNow key. Two sources, tried in order:
  *
- *   1. The INDEXNOW_KEY env var (what CI sets).
+ *   1. The INDEXNOW_KEY env var (what CI sets — see .github/workflows/indexnow.yml).
  *   2. Discovery: a `public/<key>.txt` whose content is exactly its own
  *      basename — the shape IndexNow requires the key file to have anyway,
  *      so committing the key file once makes local runs need no setup.
+ *
+ * To generate one (any 8–128 chars of a–z, A–Z, 0–9 and hyphen work; hex is
+ * the convention):
+ *
+ *   k=$(openssl rand -hex 16); printf %s "$k" > "public/$k.txt"
  *
  * The key is not a secret (it is served publicly by design — its only job is
  * proving you control the host), so committing it is fine.
@@ -39,7 +44,10 @@ function discoverKey() {
   const pub = resolve(dirname(fileURLToPath(import.meta.url)), '../public');
   if (!existsSync(pub)) return null;
   for (const f of readdirSync(pub)) {
-    const m = /^([a-f0-9]{16,64})\.txt$/i.exec(f);
+    // The name pattern is loose on purpose (IndexNow allows more than hex);
+    // the REAL filter is the content check — llms-full.txt matches the
+    // pattern but its content is not its own basename, so it never wins.
+    const m = /^([A-Za-z0-9-]{8,128})\.txt$/.exec(f);
     if (m && readFileSync(resolve(pub, f), 'utf8').trim() === m[1]) return m[1];
   }
   return null;
@@ -47,10 +55,15 @@ function discoverKey() {
 
 const KEY = discoverKey();
 if (!KEY) {
-  console.error(
-    'indexnow: no key — set INDEXNOW_KEY, or commit public/<key>.txt containing exactly the key'
+  // A skip, not a failure: a fresh clone of the template has no key yet, and
+  // a permanently red IndexNow workflow teaches people to ignore red. The
+  // loud message is the safeguard against this skip hiding a real misconfig.
+  console.log(
+    'indexnow: no key configured — skipping submission.\n' +
+      '  To enable: k=$(openssl rand -hex 16); printf %s "$k" > "public/$k.txt"\n' +
+      '  and commit it (or set the INDEXNOW_KEY secret for CI). See PLAYBOOK.'
   );
-  process.exit(1);
+  process.exit(0);
 }
 const KEY_LOCATION = `${ORIGIN}/${KEY}.txt`;
 

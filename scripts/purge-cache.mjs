@@ -6,11 +6,12 @@
  *   npm run purge -- /contact /about      # just those URLs
  *
  * WHY THIS EXISTS. Pages are served with `Cache-Control: public, max-age=300,
- * must-revalidate` and the Cloudflare cache rule honours it, so an edit reaches
- * readers within five minutes on its own. That is fine for content and wrong
- * for a deploy: the moment you have shipped a fix you want it live, not live in
- * a few minutes, and you certainly do not want to be told "it works for me"
- * because your own browser revalidated first.
+ * must-revalidate` (public/_headers), so an edit reaches readers within five
+ * minutes on its own — a Workers-assets deploy needs no cache rule for that.
+ * This script is the escape hatch for the case where five minutes is wrong:
+ * you have shipped a fix and want it live NOW, and you certainly do not want
+ * to be told "it works for me" because your own browser revalidated first.
+ * Routine deploys do not need it.
  *
  * CREDENTIALS COME FROM THE ENVIRONMENT AND MUST NEVER BE COMMITTED:
  *

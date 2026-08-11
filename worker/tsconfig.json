@@ -1,0 +1,18 @@
+{
+  // The worker is excluded from the root tsconfig (astro check must not treat
+  // server code as site code), which left the one piece of server-side logic
+  // type-checked by NOTHING — wrangler's esbuild strips types without checking
+  // them. `npm run check:worker` (wired into `npm run build`, so CI gates it)
+  // closes that hole.
+  "extends": "../tsconfig.json",
+  "include": ["./**/*.ts"],
+  "exclude": [],
+  "compilerOptions": {
+    // Workers runtime is fetch-shaped like a service worker, not a DOM page.
+    // The few Cloudflare extensions the code touches (request.cf, the cf fetch
+    // option, the ratelimit binding) are typed inline at their use sites, so
+    // no @cloudflare/workers-types dependency is needed.
+    "lib": ["ESNext", "WebWorker"],
+    "noEmit": true
+  }
+}

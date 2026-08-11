@@ -1,9 +1,16 @@
-# dodocket.com — RFC 9116
+# RFC 9116 security contact.
+#
+# EDIT FOR YOUR SITE (this file is static — nothing generates it):
+#   Contact:   your real inbox
+#   Canonical: https://<your-domain>/.well-known/security.txt — RFC 9116 makes
+#              this assert which host the file belongs to, so a wrong value is
+#              worse than none
+#   Expires:   RFC 9116 requires it; set ~1 year out and refresh when it passes
 #
 # There is no bug-bounty programme. This exists so a researcher who finds
 # something has an obvious, correct address to send it to, instead of
 # guessing at hello@ or opening a public GitHub issue on a security finding.
-Contact: mailto:hello@dodocket.com
+Contact: mailto:hello@example.com
 Expires: 2027-08-10T00:00:00.000Z
 Preferred-Languages: en
-Canonical: https://dodocket.com/.well-known/security.txt
+Canonical: https://example.com/.well-known/security.txt

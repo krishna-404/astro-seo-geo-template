@@ -1,8 +1,9 @@
 /**
- * Docket contact form — Google Apps Script Web App.
+ * Contact form backend — Google Apps Script Web App.
  *
- * Receives the POST from dodocket.com/api/contact, appends a row to the sheet,
- * and emails the enquiry to us. Setup instructions are in DEPLOY.md § 7d.
+ * Receives the POST the edge worker forwards from /api/contact, appends a row
+ * to the sheet, and emails the enquiry to you. Setup instructions are in
+ * README.md step 6.
  *
  * THIS FILE IS THE SOURCE OF TRUTH. Apps Script lives in Google's editor, which
  * has no diffs, no review and no history anyone will read. Change it here, then
@@ -29,6 +30,17 @@
  * ------------------------------------------------------------------------
  */
 
+/**
+ * ─── EDIT FOR YOUR SITE ─────────────────────────────────────────────────────
+ * Apps Script cannot import site.ts, so the values it needs live here. Change:
+ *   SHEET_ID   — the spreadsheet this script writes to
+ *   NOTIFY_TO  — where enquiry emails go
+ *   NOTIFY_BCC — colleagues copied on every enquiry
+ *   THANKS     — your live thank-you page URL
+ * plus the 'Example Co' placeholder in the email subjects (sendNotification,
+ * lastResort, selfTest) and the doGet() title.
+ */
+
 /** The spreadsheet's ID — the long string in its URL between /d/ and /edit. */
 var SHEET_ID = 'PASTE_THE_SPREADSHEET_ID_HERE';
 
@@ -43,10 +55,10 @@ var TAB = 'Leads';
  * buyers increasingly send an AI agent to do the first pass of vendor research,
  * and an agent fills every field in the form because it is reading the DOM, not
  * looking at the page. So a tripped honeypot is now a mix of spam AND of exactly
- * the technically-forward importer we most want to talk to.
+ * the technically-forward buyer we most want to talk to.
  *
- * We are selling agents that do desk work. Discarding a submission because an
- * agent made it would be a strange way to run this company.
+ * Discarding a submission purely because an agent made it would be a strange
+ * way to treat that buyer.
  *
  * So: filtered rows are stored with a reason, and they do NOT email anyone. The
  * inbox stays clean and quiet, which is what the filter is for; the evidence
@@ -68,12 +80,12 @@ var FILTERED_TAB = 'Filtered';
  * 1,500 — at two names, ~50 or ~750 enquiries a day. Far above current volume,
  * but it is what breaks first if this list grows.
  */
-var NOTIFY_TO = 'hello@dodocket.com';
-var NOTIFY_BCC = 'krishna@teziapp.com';
+var NOTIFY_TO = 'hello@example.com';
+var NOTIFY_BCC = 'colleague@example.com';
 
-/** Must match the live page. The nginx proxy normally redirects before the
+/** Must match the live page. The edge worker normally redirects before the
  *  browser ever sees this, so it is the fallback path — see below. */
-var THANKS = 'https://dodocket.com/contact/thanks';
+var THANKS = 'https://example.com/contact/thanks';
 
 /**
  * Columns, in the order a person reading the sheet wants them: who, then what
@@ -88,7 +100,6 @@ var HEADERS = [
   'Email',
   'Email domain',
   'Company',
-  'Containers / month',
   'Message',
   'Source',
   'Marketing opt-in',
@@ -156,11 +167,10 @@ function buildRow(p, e) {
     email,
     // Split out so the sheet can be sorted and de-duplicated by company, and so
     // a free-mail address is obvious at a glance. Someone writing from
-    // gmail.com about a 300-container desk is worth a different first reply
-    // from someone writing from their own trading company's domain.
+    // gmail.com is worth a different first reply from someone writing from
+    // their own company's domain.
     (email.split('@')[1] || '').toLowerCase(),
     trim(p.company, 160),
-    band(p.containers),
     trim(p.message, 4000),
     trim(p.source, 60),
     p.optin === 'yes' ? 'yes' : 'no',
@@ -170,8 +180,8 @@ function buildRow(p, e) {
     // the first referrer is not recoverable here.
     trim(p.ref, 300),
     trim(p.campaign, 120),
-    // These three come from nginx, not the browser — see the note on
-    // proxyValue() and the /api/contact block in nginx.conf.
+    // These three come from the edge worker, not the browser — see the note
+    // on proxyValue() and the /api/contact block in worker/index.ts.
     proxyValue(e, '_cc', 8),
     proxyValue(e, '_ip', 64),
     proxyValue(e, '_dev', 16),
@@ -206,15 +216,15 @@ function selfTest() {
   MailApp.sendEmail({
     to: NOTIFY_TO,
     bcc: NOTIFY_BCC,
-    subject: 'Docket contact form \u2014 self test',
+    subject: 'Example Co contact form \u2014 self test',
     body: 'If you are reading this, the script can reach Gmail and the sheet.',
   });
   console.log('Mail sent. Remaining quota today: ' + MailApp.getRemainingDailyQuota());
 
   doPost({
     parameter: {
-      name: 'Self test', email: 'selftest@dodocket.com', company: 'Docket',
-      containers: '300-plus', message: 'Written by selfTest()', source: 'self-test',
+      name: 'Self test', email: 'selftest@example.com', company: 'Example Co',
+      message: 'Written by selfTest()', source: 'self-test',
     },
     parameters: { _cc: ['SG'], _ip: ['127.0.0.1'], _dev: ['desktop'] },
   });
@@ -223,7 +233,7 @@ function selfTest() {
   // And the filtered path, so both tabs are proven in one run.
   doPost({
     parameter: { hp: 'filled-by-a-bot-or-an-agent', name: 'Filter test',
-                 email: 'filtertest@dodocket.com', source: 'self-test' },
+                 email: 'filtertest@example.com', source: 'self-test' },
     parameters: {},
   });
   console.log('Filtered path exercised \u2014 check the Filtered tab.');
@@ -234,7 +244,7 @@ function selfTest() {
  * Say nothing about what this is or what it writes to.
  */
 function doGet() {
-  return HtmlService.createHtmlOutput('<!doctype html><title>Docket</title>');
+  return HtmlService.createHtmlOutput('<!doctype html><title>Example Co</title>');
 }
 
 /* ---------------------------------------------------------------- helpers */
@@ -260,12 +270,12 @@ function ref() {
 }
 
 /**
- * Read one of the values nginx appended to the proxied URL.
+ * Read one of the values the edge worker appended to the proxied URL.
  *
  * APPS SCRIPT CANNOT SEE REQUEST HEADERS AT ALL — doPost's event object carries
  * parameter, postData, contentLength and little else. There is no way to read
- * the client IP or User-Agent from in here. So nginx, which does have them,
- * puts them on the query string of the URL it proxies to.
+ * the client IP or User-Agent from in here. So the worker, which does have
+ * them, puts them on the query string of the URL it proxies to.
  *
  * e.parameter merges the query string with the form body, which means a
  * determined submitter could put `_ip` in their own POST and muddy the record.
@@ -278,17 +288,6 @@ function proxyValue(e, key, max) {
   var all = (e && e.parameters && e.parameters[key]) || [];
   if (all.length > 1) return 'spoofed?';
   return trim(all[0], max);
-}
-
-/** Map the form's values to something readable in the sheet. */
-function band(v) {
-  var labels = {
-    'under-50': 'Under 50',
-    '50-300': '50 – 300',
-    '300-plus': '300+',
-    unsure: 'Not sure',
-  };
-  return labels[v] || '';
 }
 
 function append(tab, headers, row) {
@@ -322,12 +321,9 @@ function sendNotification(row) {
   try {
     var email = cell(row, 'Email');
     var subject =
-      'Docket enquiry — ' +
+      'Example Co enquiry — ' +
       (cell(row, 'Name') || 'someone') +
-      (cell(row, 'Company') ? ' \u00b7 ' + cell(row, 'Company') : '') +
-      (cell(row, 'Containers / month')
-        ? ' \u00b7 ' + cell(row, 'Containers / month') + ' containers/mo'
-        : '');
+      (cell(row, 'Company') ? ' \u00b7 ' + cell(row, 'Company') : '');
 
     var lines = [];
     for (var i = 0; i < HEADERS.length; i++) {
@@ -370,7 +366,7 @@ function lastResort(p, err) {
     MailApp.sendEmail({
       to: NOTIFY_TO,
       bcc: NOTIFY_BCC,
-      subject: 'Docket contact form FAILED \u2014 payload inside',
+      subject: 'Example Co contact form FAILED \u2014 payload inside',
       body:
         'Both the sheet write and the notification failed. Raw submission:\n\n' +
         JSON.stringify(p, null, 2) +
@@ -385,11 +381,10 @@ function lastResort(p, err) {
 /**
  * What the browser gets back.
  *
- * Normally nobody sees this: nginx has proxy_intercept_errors on and turns the
- * Apps Script response into a 303 to /contact/thanks, so the visitor never
- * leaves dodocket.com. This is the belt to that braces — if Apps Script answers
- * 200 instead of redirecting, nginx cannot intercept it and this HTML is what
- * renders. The meta refresh works with JavaScript off; the link covers the case
+ * Normally nobody sees this: the edge worker answers the visitor with its own
+ * 303 to /contact/thanks and forwards the POST in the background, so the
+ * visitor never leaves your domain. This is the belt to those braces — if the
+ * form is ever pointed at the script URL directly, this HTML is what renders. The meta refresh works with JavaScript off; the link covers the case
  * where even that is blocked.
  */
 function thanksPage() {

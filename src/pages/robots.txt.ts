@@ -1,17 +1,26 @@
-# dodocket.com
-#
-# Everything is open. The wildcard below already permits every crawler, so the
-# named groups that follow grant no extra access — they exist to document
-# intent, so nobody later "tightens" this file without knowing what it costs.
-#
-# The policy: the numbers on this site are sourced and checkable, and we would
-# rather be quoted correctly than not quoted at all. Being cited by an answer
-# engine is a distribution channel here, not a leak.
+import { SITE } from '../data/site';
+
+/**
+ * robots.txt, generated at build time so the Sitemap URL derives from
+ * origin.mjs like every other absolute URL on the site. (Its ancestor was a
+ * static file in public/ — which shipped inside a template still pointing
+ * crawlers at the ancestor site's sitemap. A URL nothing generates is a URL
+ * nothing updates.)
+ *
+ * Everything is open. The wildcard already permits every crawler, so the named
+ * groups that follow grant no extra access — they exist to document intent, so
+ * nobody later "tightens" this file without knowing what it costs.
+ *
+ * The policy: the numbers on this site are sourced and checkable, and we would
+ * rather be quoted correctly than not quoted at all. Being cited by an answer
+ * engine is a distribution channel here, not a leak.
+ */
+const body = `# ${SITE.domain}
 
 User-agent: *
 Allow: /
 
-Sitemap: https://dodocket.com/sitemap-index.xml
+Sitemap: ${SITE.url}/sitemap-index.xml
 
 
 # ─── Search indexes ───────────────────────────────────────────────────────────
@@ -103,3 +112,10 @@ Allow: /
 
 User-agent: Bytespider
 Allow: /
+`;
+
+export function GET() {
+  return new Response(body, {
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+  });
+}

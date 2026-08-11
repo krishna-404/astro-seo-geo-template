@@ -18,10 +18,13 @@
     "directory": "./dist",
     "binding": "ASSETS",
     // Must agree with astro.config.mjs: build.format 'file' emits /page.html,
-    // and "drop-trailing-slash" serves it at /page while 301-redirecting
-    // /page/ → /page (matching trailingSlash: 'never'). If a site switches
-    // Astro to build.format 'directory', change this to "auto-trailing-slash"
-    // — one without the other breaks every route.
+    // and "drop-trailing-slash" serves it at /page while redirecting
+    // /page/ → /page (matching trailingSlash: 'never'). The platform emits a
+    // 307 for that redirect and the status is not configurable — an accepted
+    // trade documented in CHECKLIST.md (canonicals + sitemap carry the
+    // permanence signal a 301 would). If a site switches Astro to
+    // build.format 'directory', change this to "auto-trailing-slash" — one
+    // without the other breaks every route.
     "html_handling": "drop-trailing-slash",
     // Serves dist/404.html with a 404 status for unknown paths.
     "not_found_handling": "404-page",
@@ -42,5 +45,17 @@
     // proxy at /s.js and /api/send. Empty string = proxy disabled.
     "UMAMI_UPSTREAM": ""
   },
+  // /api/contact budget — the same 10 req/min/IP nginx enforced. Per-edge-
+  // location counting (approximate, which is fine: this protects quotas, it
+  // is not a security boundary). `period` may only be 10 or 60. The worker
+  // treats a missing binding as "no limit", so deleting this block degrades
+  // gracefully.
+  "ratelimits": [
+    {
+      "name": "CONTACT_RATE",
+      "namespace_id": "1001",
+      "simple": { "limit": 10, "period": 60 }
+    }
+  ],
   "observability": { "enabled": true }
 }
