@@ -107,6 +107,28 @@ being checked is not a reason to ignore it here; the prose carries the WHY.
     content sections need `data-pagefind-body` on the article and
     `data-pagefind-ignore` on their chrome.
 
+18. **Found a digression from the architecture or these rules? Fix it AND
+    mechanize it — but only if it is architecture-level.** The bar: could
+    the same defect recur on another page, component, or config without
+    anyone noticing? If yes — a rule class ("every page must…", "these two
+    configs must agree", "this generated surface must cover…") — add a
+    check at the cheapest rung that can see it:
+    - source/config level → `scripts/check-parity.mjs` or
+      `scripts/check-source-rules.mjs` (these run at pre-commit — keep them
+      fast, no build, no network)
+    - built output → `scripts/check-invariants.mjs`
+    - worker behavior → `scripts/smoke-worker.mjs`
+    - visible only at the live edge → `scripts/smoke-live.mjs`
+    Then prove the check works by breaking the thing once and watching it go
+    red before restoring (a check that has never failed has never been
+    tested), and record it in CHECKLIST §9 with its one-line WHY — the WHY
+    is what stops a future editor from deleting a check whose defect they
+    have never seen.
+    If no — a typo, one page's copy, a single wrong link — just fix it. A
+    check that guards one page is noise: it dilutes the battery, slows every
+    run, and teaches people that failures are usually somebody else's
+    special case.
+
 ## Content rules
 
 - Blog posts: named human author with a real `sameAs` profile; a required

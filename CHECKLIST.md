@@ -419,6 +419,12 @@ disagree:
 - **CI** (`.github/workflows/ci.yml`): the backstop — hooks are advisory
   (`--no-verify` exists), CI is not.
 
+The ladder is self-extending by AGENTS rule 18: any digression from the
+architecture that could RECUR gets fixed and then mechanized at the cheapest
+rung that can see it, proven red once, and recorded here with its WHY.
+Single-page defects get fixed, not checked — a check that guards one page
+dilutes the battery.
+
 `.github/workflows/ci.yml`, in order:
 
 - ✅ Checkout with `fetch-depth: 0` (lastmod derives from `git log`; depth 1
