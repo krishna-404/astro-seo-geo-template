@@ -32,6 +32,13 @@ jobs:
       # `npm ci`, not `npm install` — the lockfile is the contract.
       - run: npm ci
 
+      # Source-level a11y lint (jsx-a11y-strict over .astro templates) — the
+      # defect class the built-HTML checks below can't see: malformed ARIA,
+      # roles on wrong elements, non-interactive tabindex. Runs before the
+      # build because it needs no artifact.
+      - name: Lint templates (a11y-strict)
+        run: npx eslint .
+
       # A route for every collection, checked BEFORE the build: a collection
       # with entries and no route renders nowhere, indefinitely, without any
       # error — the original site shipped a glossary that way for weeks.
@@ -48,10 +55,17 @@ jobs:
           [ "$fail" -eq 0 ] && echo "ok: every collection has a route"
           exit $fail
 
-      # `npm run build` is `astro check && sheets && llms && astro build &&
-      # markdown-twins`, so this covers types, the zod content schemas and the
-      # actual render in one step. A post whose frontmatter is missing
-      # `sources` fails here rather than at deploy.
+      # Frontmatter ogImage strings and markdown image refs are not imports —
+      # Astro never verifies them, so a typo'd path ships a 404 OG card
+      # silently. Runs before the build because it reads src, not dist.
+      - name: Check content image references
+        run: node scripts/check-content-images.mjs
+
+      # `npm run build` is `astro check && check:worker && sheets && llms &&
+      # astro build && markdown-twins && search:index`, so this covers types,
+      # the zod content schemas, the actual render and the search index in one
+      # step. A post whose frontmatter is missing `sources` fails here rather
+      # than at deploy.
       - run: npm run build
 
       # The sitemap's <lastmod> comes from a committed map (see
@@ -177,6 +191,181 @@ jobs:
                 const leaves = /href="(tel:|mailto:)/.test(tag);
                 if ((isCta || leaves) && !/data-umami-event=/.test(tag)) {
                   console.log(`   FAIL: ${f} unmeasured CTA: ${tag.slice(0, 120)}`);
+                  bad = 1;
+                }
+              }
+            }
+            process.exit(bad);
+          ' $(find dist -name '*.html'); then
+            fail=1
+          else
+            echo "   ok"
+          fi
+
+          echo "→ every <img> has an alt attribute"
+          # Empty alt is fine (a decision: decorative); a MISSING alt is the
+          # forgotten case screen readers read as the filename.
+          if ! node -e '
+            const fs = require("fs");
+            let bad = 0;
+            for (const f of process.argv.slice(1)) {
+              const html = fs.readFileSync(f, "utf8");
+              for (const m of html.matchAll(/<img\s[^>]*>/g)) {
+                if (!/\salt\s*=/.test(m[0])) {
+                  console.log(`   FAIL: ${f} img without alt: ${m[0].slice(0, 100)}`);
+                  bad = 1;
+                }
+              }
+            }
+            process.exit(bad);
+          ' $(find dist -name '*.html'); then
+            fail=1
+          else
+            echo "   ok"
+          fi
+
+          echo "→ target=_blank links announce the new tab and carry noopener"
+          if ! node -e '
+            const fs = require("fs");
+            let bad = 0;
+            for (const f of process.argv.slice(1)) {
+              const html = fs.readFileSync(f, "utf8");
+              for (const m of html.matchAll(/<a\s[^>]*target="_blank"[^>]*>(.*?)<\/a>/gs)) {
+                const relOk = /rel="[^"]*noopener[^"]*"/.test(m[0]);
+                const announced = /new tab/i.test(m[1]);
+                if (!relOk || !announced) {
+                  console.log(`   FAIL: ${f} _blank link needs rel=noopener + "new tab" in its accessible name: ${m[0].slice(0, 120)}`);
+                  bad = 1;
+                }
+              }
+            }
+            process.exit(bad);
+          ' $(find dist -name '*.html'); then
+            fail=1
+          else
+            echo "   ok"
+          fi
+
+          echo "→ no noindex page in the sitemap"
+          # Mechanizes the iron rule (noindex ⇔ out of sitemap) that was
+          # previously enforced only by convention.
+          if ! node -e '
+            const fs = require("fs"), path = require("path");
+            let bad = 0;
+            const xml = fs.readFileSync("dist/sitemap-0.xml", "utf8");
+            for (const m of xml.matchAll(/<loc>([^<]+)<\/loc>/g)) {
+              const p = new URL(m[1]).pathname.replace(/\/$/, "") || "/";
+              const clean = p === "/" ? "/index" : p;
+              const file = [path.join("dist", clean + ".html"), path.join("dist", clean, "index.html")]
+                .find((c) => fs.existsSync(c));
+              if (!file) continue; // coverage is the lastmod check\x27s job
+              if (/name="robots" content="noindex/.test(fs.readFileSync(file, "utf8"))) {
+                console.log(`   FAIL: ${m[1]} is in the sitemap but renders noindex`);
+                bad = 1;
+              }
+            }
+            process.exit(bad);
+          '; then
+            fail=1
+          else
+            echo "   ok"
+          fi
+
+          echo "→ pagefind index exists and covers every data-pagefind-body page"
+          if ! node -e '
+            const fs = require("fs");
+            const entry = JSON.parse(fs.readFileSync("dist/pagefind/pagefind-entry.json", "utf8"));
+            const indexed = Object.values(entry.languages).reduce((n, l) => n + l.page_count, 0);
+            const expected = process.argv.slice(1).filter((f) =>
+              fs.readFileSync(f, "utf8").includes("data-pagefind-body")).length;
+            if (indexed !== expected) {
+              console.log(`   FAIL: pagefind indexed ${indexed} pages, but ${expected} pages carry data-pagefind-body`);
+              process.exit(1);
+            }
+          ' $(find dist -name '*.html'); then
+            fail=1
+          else
+            echo "   ok"
+          fi
+
+          echo "→ no orphan content pages (related links present)"
+          # Only enforced once a collection has >= 2 published entries — a
+          # site with one post cannot link it to a sibling.
+          if ! node -e '
+            const fs = require("fs");
+            let bad = 0;
+            for (const dir of ["blog", "glossary"]) {
+              const pages = fs.readdirSync(`dist/${dir}`).filter((f) => f.endsWith(".html"));
+              if (pages.length < 2) continue;
+              for (const p of pages) {
+                const html = fs.readFileSync(`dist/${dir}/${p}`, "utf8");
+                const rel = html.match(/<section class="related"[\s\S]*?<\/section>/);
+                if (!rel || !/href="\/(blog|glossary)\//.test(rel[0])) {
+                  console.log(`   FAIL: ${dir}/${p} has no related-content links — an orphan page`);
+                  bad = 1;
+                }
+              }
+            }
+            process.exit(bad);
+          '; then
+            fail=1
+          else
+            echo "   ok"
+          fi
+
+          echo "→ visible breadcrumbs mirror BreadcrumbList JSON-LD"
+          if ! node -e '
+            const fs = require("fs");
+            let bad = 0;
+            for (const f of process.argv.slice(1)) {
+              const html = fs.readFileSync(f, "utf8");
+              if (!html.includes("\"BreadcrumbList\"")) continue;
+              const ld = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+              const graph = JSON.parse(ld[1].replaceAll("\\u003C", "<"));
+              const list = (graph["@graph"] ?? [graph]).find((n) => n["@type"] === "BreadcrumbList");
+              const nav = html.match(/<nav class="crumbs"[^>]*>[\s\S]*?<\/nav>/);
+              if (!nav) {
+                console.log(`   FAIL: ${f} emits BreadcrumbList but renders no visible trail`);
+                bad = 1; continue;
+              }
+              const lis = (nav[0].match(/<li[\s>]/g) ?? []).length;
+              if (lis !== list.itemListElement.length) {
+                console.log(`   FAIL: ${f} BreadcrumbList has ${list.itemListElement.length} items, visible trail has ${lis}`);
+                bad = 1; continue;
+              }
+              // Names appear in order. Compare against the DECODED nav text —
+              // Astro entity-escapes text nodes (e.g. apostrophe → &#39;).
+              const decoded = nav[0]
+                .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(n))
+                .replace(/&quot;/g, "\"").replace(/&lt;/g, "<")
+                .replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+              let pos = 0;
+              for (const item of list.itemListElement) {
+                const at = decoded.indexOf(item.name, pos);
+                if (at === -1) {
+                  console.log(`   FAIL: ${f} breadcrumb "${item.name}" missing or out of order in the visible trail`);
+                  bad = 1; break;
+                }
+                pos = at;
+              }
+            }
+            process.exit(bad);
+          ' $(find dist -name '*.html'); then
+            fail=1
+          else
+            echo "   ok"
+          fi
+
+          echo "→ every .table-scroll wrapper is a labelled keyboard-scrollable region"
+          if ! node -e '
+            const fs = require("fs");
+            let bad = 0;
+            for (const f of process.argv.slice(1)) {
+              const html = fs.readFileSync(f, "utf8");
+              for (const m of html.matchAll(/<div[^>]*class="[^"]*table-scroll[^"]*"[^>]*>/g)) {
+                const tag = m[0];
+                if (!/tabindex="0"/.test(tag) || !/role="region"/.test(tag) || !/aria-label="[^"]+"/.test(tag)) {
+                  console.log(`   FAIL: ${f} table-scroll without tabindex/role/aria-label: ${tag.slice(0, 120)}`);
                   bad = 1;
                 }
               }

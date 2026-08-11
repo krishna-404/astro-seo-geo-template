@@ -14,6 +14,20 @@ Items marked ⚠ fail *silently* — they look fine and are not.
 
 ---
 
+## 0. Decide before writing code
+
+Three decisions that are cheap now and unrecoverable later:
+
+- **One buyer, one primary conversion action.** Every page's CTA hierarchy
+  falls out of this; decided late, every page gets re-argued.
+- **Pick ONE canonical domain and never serve content on two hosts.** Every
+  other host — www, legacy, vanity — 301s to it. Splitting authority is
+  unrecoverable without a migration.
+- **Cold-email sending domains stay entirely separate.** Never link the site
+  to them, never host anything on them. Their reputation is a different
+  asset with a different lifecycle, and a burned sending domain must not
+  take the canonical domain's standing with it.
+
 ## 1. The shape of it
 
 ```
@@ -48,6 +62,7 @@ hand-edit the output:
 | `src/data/sheets/*.json` | published Google Sheet tabs | `scripts/fetch-sheets.mjs` | pre-build |
 | `llms.txt`, `llms-full.txt` | site config + content collections | `scripts/generate-llms.mjs` | pre-build |
 | `.md` twin per content page | the same MDX the page renders | `scripts/markdown-twins.mjs` | post-build |
+| `dist/pagefind/` search index | the built `[data-pagefind-body]` HTML | `pagefind --site dist` (`npm run search:index`) | post-build, every build |
 | sitemap `<lastmod>` | git commit dates (committed map) | `scripts/lastmod.mjs` | on content change; CI verifies |
 | favicons (ico + PNGs + apple) | `public/favicon.svg` | `marketing/favicon.mjs` | on brand change |
 | OG cards (per page + default) | titles read from **built HTML** | `marketing/og/render-pages.mjs` | on title/page change |
@@ -55,6 +70,14 @@ hand-edit the output:
 ⚠ Anything that checks for a generated file at build time needs **two
 builds**: one to emit what the generator reads, one to pick up the result.
 OG cards land on the build after they're generated.
+
+**Scheduled posts**: give a blog post a future `published` date and it stays
+off every surface (pages, sitemap, RSS, llms.txt, twins, lastmod — one filter,
+`src/data/publishing.mjs`) until a build runs on or after that date. A static
+site has no runtime clock: the post appears on the FIRST BUILD after the
+instant passes, so schedule a rebuild for launch-time posts (a
+`workflow_dispatch` run of CI, or a per-site cron trigger on the deploy
+workflow). Date-only YAML (`published: 2026-09-01`) means midnight UTC.
 
 ## 3. Serve-time architecture (Workers static assets)
 
@@ -119,6 +142,11 @@ Lessons encoded (each cost the ancestor site a bug):
 - Attribution is last-touch and that is a hard limit, not a shortcut —
   first-touch needs storage, and storage is banned. `/hi/<code>` covers
   outbound campaigns cookielessly.
+- Before organic traffic exists, the metric that matters is **AI citations**:
+  keep a list of target queries, periodically run each in ChatGPT,
+  Perplexity and Google AI Overviews, and log who got cited. Rankings and
+  pageviews say nothing yet; citations move weeks before the traffic
+  reports do.
 
 ## 6. Cloudflare dashboard — setting by setting
 
@@ -163,6 +191,13 @@ any change here in the same commit.
 - ⚠ Mostly NOT needed here — Workers assets serve from Cloudflare's own
   store; there is no origin to protect and no cache rule required. Do not
   add a "Cache Everything" page rule: it would cache `/api/*`.
+- `npm run purge` (`scripts/purge-cache.mjs`) is the escape hatch, not part
+  of the deploy. Pages ship `max-age=300`, so a routine deploy self-heals at
+  the edge within five minutes and needs nothing; run the purge when a stale
+  cached response must go **now** (a bad page shipped, a wrong header got
+  cached). Takes optional paths (`npm run purge -- /about`); needs
+  `CLOUDFLARE_ZONE_ID` plus a **scoped** token (Zone · Cache Purge · Purge,
+  nothing else — never the Global API Key). Details in the script header.
 
 ## 7. Search engines, indexing, AI answers
 
@@ -177,9 +212,12 @@ any change here in the same commit.
 - [ ] IndexNow: key file at `public/<key>.txt` containing exactly the key;
       `indexnow.yml` submits automatically after each green deploy. Google
       does not participate — the sitemap covers Google.
-- [ ] robots.txt already names every AI crawler with intent comments — keep
-      it reviewed; ⚠ understand what each governs before blocking anything
-      (Google-Extended = Gemini answers, NOT search ranking).
+- [ ] robots.txt is a generated route — the AI-crawler list (with intent
+      comments) lives in `src/pages/robots.txt.ts` and the Sitemap URL
+      derives from `origin.mjs`, so a domain change needs no manual edit.
+      Keep the crawler list reviewed; ⚠ understand what each governs before
+      blocking anything (Google-Extended = Gemini answers, NOT search
+      ranking).
 - [ ] After favicon/title/major changes: request indexing of `/` (a nudge,
       not a lever; favicon recrawl takes days–weeks regardless).
 - [ ] ⚠ Per page, "in the sitemap / indexable / linked" are THREE decisions.
@@ -212,6 +250,9 @@ header-scoping bugs)
       `/apple-touch-icon.png` 200 and opaque
 - [ ] `/robots.txt`, `/llms.txt`, `/llms-full.txt`, `/rss.xml`,
       `/.well-known/security.txt`, IndexNow key file — all 200
+- [ ] `/pagefind/pagefind-entry.json` → 200 with a sane `page_count`;
+      `/search?q=<a real term>` returns results in a browser; `/search`
+      absent from the sitemap
 - [ ] Sitemap: URL count sane; noindex pages absent; every URL has a
       `lastmod` and they are not all identical ⚠
 - [ ] Canonicals match served URLs (no `.html`, no trailing slash)
@@ -250,3 +291,25 @@ git-dates-not-build-dates · SVG-only favicons → grey globe in SERPs ·
 transparent apple-touch-icons → black squares · two HSTS emitters ·
 self-written review markup → manual action · collections without routes ·
 hidden-link cloaking · deploy races on indexing pings · `fetch-depth: 0`.
+
+## 10. Process lessons
+
+Not about this codebase — about not wasting a day. Each cost the ancestor
+project exactly that:
+
+- **Read the whole command output.** A piped `| tail -2` showed the check
+  passing while the build it gated never ran — and the next check read a
+  stale `dist/` and passed too.
+- **Verify the failure path, not just the happy path.** Two form designs
+  both redirected perfectly; only a logging stand-in revealed that one of
+  them delivered nothing.
+- **Test against a committed state, not the working tree.** A negative test
+  passed because the generator had regenerated the file before the diff ran.
+- **Squash merges make branches look permanently unmerged.** The original
+  commits never become ancestors of main, so "N commits ahead" persists
+  forever with zero content difference — compare trees, not commit counts.
+  Corollaries: never stack branches on a squash-merging repo (the same
+  content arriving from two ancestries is a guaranteed conflict; branch off
+  main every time), and after a squash neither `git diff main branch` nor
+  `git diff main...branch` answers "is this merged" — compare the branch
+  tree against the main commit it merged into.

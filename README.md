@@ -6,7 +6,12 @@ and CI battery of a site that learned everything the hard way.
 
 - **Stack**: Astro 7 (static) · MDX content collections with zod schemas ·
   one small Cloudflare Worker · Google Sheets (data) · Google Apps Script
-  (forms + email) · Umami (cookieless analytics, optional GA4).
+  (forms + email) · Umami (cookieless analytics, optional GA4) · Pagefind
+  site search (build-time index, loads only on `/search`).
+- **Content machinery**: scheduled publishing (future-date a post, one filter
+  covers every surface) · related-links + prev/next internal linking by
+  construction · opt-in TOC · zero-JS FAQ accordion single-sourced with its
+  FAQPage JSON-LD · visible breadcrumbs mirroring BreadcrumbList (CI-checked).
 - **Hosting**: Cloudflare Workers with static assets — static requests are
   free and *unlimited*, the worker's 100k free invocations/day cover the few
   dynamic routes. No servers, no Docker, nothing to patch at 3am.
@@ -19,7 +24,7 @@ and CI battery of a site that learned everything the hard way.
 ```bash
 npm install
 npm run dev          # local dev at localhost:4321
-npm run build        # typecheck + sheets + llms.txt + build + markdown twins
+npm run build        # typecheck + sheets + llms.txt + build + twins + search index
 npm run preview      # wrangler dev — serves dist/ WITH the worker (forms, twins)
 ```
 
@@ -49,10 +54,11 @@ need the worker, so use `npm run build && npm run preview` to test those.
    `npm run deploy` for a first `*.workers.dev` deploy. Attach the custom
    domain (Workers → your worker → Domains & Routes).
 8. **Dashboard settings** (no diff, no history — that's why they're written
-   down): PLAYBOOK.md Phase 6. The critical ones: SSL Full (Strict), Always
+   down): PLAYBOOK.md §6. The critical ones: SSL Full (Strict), Always
    Use HTTPS, zone HSTS ON (the origin sends none — one emitter), www→apex
-   Redirect Rule, WAF rate-limit on `/api/contact`, Email Obfuscation OFF,
-   Rocket Loader OFF.
+   Redirect Rule, Email Obfuscation OFF, Rocket Loader OFF. (Rate limiting
+   on `/api/contact` ships in `wrangler.jsonc` — a WAF rule on top is
+   optional belt-and-braces.)
 9. **CI/CD**: push to GitHub; add repo secret `CLOUDFLARE_API_TOKEN` (scoped:
    Edit Workers). Every PR runs the checks; green main deploys.
 10. **Search engines**: Search Console (domain property via DNS TXT), Bing
@@ -61,7 +67,7 @@ need the worker, so use `npm run build && npm run preview` to test those.
 11. **Data (optional)**: publish a Sheet tab as CSV (two-tab privacy pattern
     — see CHECKLIST §3), add it to `src/data/sheets.config.json`, mark
     elements with `data-live`, include `<LiveData />` on that page.
-12. **Verify against the live site**: run the curl list in PLAYBOOK Phase 10.
+12. **Verify against the live site**: run the curl list in PLAYBOOK §8.
     Most of what this template encodes is invisible until something in front
     of the origin breaks it.
 
@@ -98,7 +104,8 @@ src/pages/       one file per route; [...slug].astro per collection
 src/components/  Header/Footer/ContactForm/ConsentBanner/LiveData/…
 src/styles/      global.css — measured design tokens, mobile-first utilities
 worker/          index.ts — forms proxy, sheet data, /hi rewrites, md twins
-public/          _headers _redirects robots.txt favicons .well-known/
+public/          _headers _redirects favicons .well-known/ (robots.txt is
+                 generated — src/pages/robots.txt.ts derives it from origin.mjs)
 scripts/         CI-run: sheets, llms, twins, lastmod, contrast, indexnow
 marketing/       human-run: favicon gen, OG cards, apps-script source
 .github/         ci.yml (checks + gated deploy) · indexnow.yml

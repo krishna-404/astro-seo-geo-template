@@ -9,8 +9,11 @@
 # (dashboard → SSL/TLS → Edge Certificates). Enable it there, then verify with
 # `curl -sI https://DOMAIN/ | grep -ci strict-transport` → exactly 1.
 #
-# Worker-generated responses (/api/*, negotiated .md) do NOT pass through this
-# file — the worker sets its own headers in code.
+# Worker-generated responses (anything on wrangler.jsonc's run_worker_first
+# list — /api/*, /hi, negotiated .md, and their pass-throughs) do NOT go
+# through this file — the worker's withSecurityHeaders() sets the same values
+# in code. The two MUST stay in lockstep: change the security set or the Link
+# header here and in worker/index.ts together.
 
 /*
   X-Content-Type-Options: nosniff
@@ -18,7 +21,47 @@
   X-Frame-Options: SAMEORIGIN
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   Cache-Control: public, max-age=300, must-revalidate
-  Link: </llms.txt>; rel="describedby"; type="text/plain"; title="LLM brief", </llms-full.txt>; rel="describedby"; type="text/plain"; title="LLM corpus"
+  Link: </llms.txt>; rel="describedby"; type="text/plain"; title="LLM brief", </for-llms>; rel="service-doc"; title="For LLMs and AI assistants", </llms-full.txt>; rel="describedby"; type="text/plain"; title="LLM corpus"
+
+# Extension-class assets: any image dropped into public/ outside the
+# fingerprinted pipeline gets the same refreshable week nginx gave the class,
+# not the 5-minute page TTL. These rules sit BEFORE /_astro/* on purpose —
+# rules apply in file order, so /_astro re-detaches Cache-Control afterwards
+# and fingerprinted images keep their immutable year.
+/*.svg
+  ! Cache-Control
+  Cache-Control: public, max-age=604800
+/*.png
+  ! Cache-Control
+  Cache-Control: public, max-age=604800
+/*.jpg
+  ! Cache-Control
+  Cache-Control: public, max-age=604800
+/*.jpeg
+  ! Cache-Control
+  Cache-Control: public, max-age=604800
+/*.webp
+  ! Cache-Control
+  Cache-Control: public, max-age=604800
+/*.ico
+  ! Cache-Control
+  Cache-Control: public, max-age=604800
+/*.woff2
+  ! Cache-Control
+  Cache-Control: public, max-age=604800
+
+# Pagefind's index chunks are content-hashed (index/ and fragment/ filenames
+# change when content does) — immutable, same rationale as /_astro/*. The
+# loader files (pagefind.js, the wasm, pagefind-entry.json) live at STABLE
+# URLs and inherit the 5-minute page rule from /* — pagefind-entry.json is the
+# version manifest that names the hashed chunks, so it MUST stay short-TTL or
+# a deploy strands visitors on a stale index.
+/pagefind/index/*
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+/pagefind/fragment/*
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
 
 # Fingerprinted build output: the hash in the filename IS the cache key, so
 # cache forever. Astro's image pipeline output lands here too.
