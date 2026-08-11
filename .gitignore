@@ -20,3 +20,7 @@ pnpm-debug.log*
 .vscode/
 .idea/
 .DS_Store
+
+# wrangler
+.wrangler/
+.dev.vars

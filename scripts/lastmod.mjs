@@ -102,8 +102,9 @@ function discoverPages() {
   for (const entry of readdirSync(pagesDir, { withFileTypes: true })) {
     if (entry.isFile() && entry.name.endsWith('.astro')) {
       const base = entry.name.replace(/\.astro$/, '');
-      // A bracketed filename is a dynamic route; its slugs come from data and
-      // are handled below, not from the filename.
+      // A bracketed filename is a dynamic route; its slugs come from the
+      // content collections and are handled by the walk above, not from the
+      // filename.
       if (base.includes('[')) continue;
       found[base === 'index' ? '/' : `/${base}`] = `src/pages/${entry.name}`;
     } else if (entry.isDirectory()) {

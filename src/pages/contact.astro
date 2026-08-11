@@ -71,8 +71,12 @@ const schema = [
             <li class="card way">
               <h2 class="way__h">WhatsApp</h2>
               <p class="way__p">The quickest route if you already live in WhatsApp.</p>
+              {/* Plain .btn on purpose: the template dropped .btn--wa because
+                  WhatsApp's brand green fails AA behind white text (1.98:1).
+                  If you reintroduce a branded variant, use a DARK label and
+                  run check:contrast — see the note in global.css. */}
               <a
-                class="btn btn--wa"
+                class="btn"
                 href={CONTACT.whatsappPrefilled || CONTACT.whatsapp}
                 rel="noopener"
                 data-umami-event="cta-whatsapp"
