@@ -165,7 +165,7 @@ const schema = [
       )
     }
 
-    {data.faq.length > 0 && <Faq faq={data.faq} groupName={entry.id} />}
+    {data.faq.length > 0 && <Faq faq={data.faq} groupName={entry.id} place={`blog:${entry.id}`} />}
 
     {
       data.sources.length > 0 && (

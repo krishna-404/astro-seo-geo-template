@@ -14,18 +14,7 @@ echo "pre-commit: fast source checks (full battery runs at push via npm run veri
 node scripts/check-parity.mjs
 node scripts/check-source-rules.mjs
 
-node -e '
-  const fs = require("fs");
-  let fail = 0;
-  for (const dir of fs.readdirSync("src/content", { withFileTypes: true })) {
-    if (!dir.isDirectory()) continue;
-    if (!fs.existsSync("src/pages/" + dir.name + "/[...slug].astro")) {
-      console.log("FAIL: collection " + dir.name + " has no route");
-      fail = 1;
-    }
-  }
-  process.exit(fail);
-'
+node scripts/check-collection-routes.mjs
 
 node scripts/check-content-images.mjs
 

@@ -62,8 +62,9 @@ Three things are produced at build time and never hand-edited:
 1. **The sitemap**, via `@astrojs/sitemap`, minus anything `noindex` or draft.
 2. **The RSS feed** at `/rss.xml` — blog only, with each item's `tldr` as its
    description.
-3. **`llms.txt` and `llms-full.txt`**, an index and a full-corpus file for machine
-   readers, plus the human-readable brief at [/for-llms](/for-llms).
+3. **[`llms.txt`](/glossary/llms-txt) and `llms-full.txt`**, an index and a
+   full-corpus file for machine readers, plus the human-readable brief at
+   [/for-llms](/for-llms).
 
 Counts and lists on those surfaces come from `getCollection()` at build time, so they
 cannot disagree with the site.

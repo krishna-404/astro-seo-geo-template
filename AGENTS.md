@@ -136,6 +136,12 @@ being checked is not a reason to ignore it here; the prose carries the WHY.
   on anything factual; `tldr` front-loads the answer (that's the GEO lever
   with actual evidence behind it — alongside citations, quotes and
   statistics; keyword stuffing measurably hurts).
+- Blog cadence and interlinking (enforced by `check-source-rules`): no two
+  posts share a `published` date and no ISO week carries more than 5 — a
+  same-day batch reads as generated content to anyone who checks. Every post
+  carries at least 2 contextual in-body internal links, anchored on the
+  phrase a searcher types ("goes to demurrage", not "click here"); a
+  generated related-posts footer does not count.
 - Programmatic pages (glossary etc.) auto-publish but must be built from real
   data — `sources` min 1 is schema-enforced. A programmatic page with no
   unique data is what scaled-content policies penalise.

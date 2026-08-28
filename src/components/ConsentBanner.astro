@@ -63,9 +63,18 @@ const script = `
       try {
         var el = e.target && e.target.closest && e.target.closest('[data-umami-event]');
         if (!el || typeof window.gtag !== 'function') return;
-        window.gtag('event', el.getAttribute('data-umami-event'), {
-          place: el.getAttribute('data-umami-event-place') || '',
-        });
+        // Forward every data-umami-event-* attribute as an event property, so
+        // markup that adds a dimension (like the FAQ accordion's question)
+        // needs no change here. NB: this whole script is a template literal —
+        // no backticks or dollar-brace interpolation, even in comments.
+        var props = {};
+        for (var i = 0; i < el.attributes.length; i += 1) {
+          var a = el.attributes[i];
+          if (a.name.indexOf('data-umami-event-') === 0) {
+            props[a.name.slice('data-umami-event-'.length)] = a.value;
+          }
+        }
+        window.gtag('event', el.getAttribute('data-umami-event'), props);
       } catch (err) { /* Analytics is never worth breaking a click for. */ }
     });
   }

@@ -143,6 +143,18 @@ origin breaks it.
       `wrangler.jsonc` — both hops or neither. GA4 instead: `measurementId`
       arms the consent banner automatically; update
       `src/data/privacy.json` in the same commit (AGENTS rule 4).
+- [ ] **Insights read-back** (`npm run insights`): a read-only pull of the
+      three measurement surfaces — Umami (what humans with JS did), Search
+      Console (what Google showed and what got clicked, the only source that
+      sees demand you did NOT convert), Cloudflare edge (every request,
+      crawlers and answer engines included). Each section soft-skips until
+      its credentials exist, all read-only, all env vars, never committed:
+      `UMAMI_URL` + `UMAMI_WEBSITE_ID` + `UMAMI_BEARER_TOKEN` (or
+      `UMAMI_USERNAME`/`UMAMI_PASSWORD`); `GSC_SA_KEY` (base64 of a Google
+      service-account JSON key, the SA email added as a restricted user on
+      the `sc-domain:` property); `CLOUDFLARE_READ_ANALYTICS` (token scoped
+      Zone:Read + Analytics:Read only). `--inspect` runs URL Inspection over
+      the live sitemap and explains any page that is not indexed.
 - [ ] **Privacy page**: clear the `privacy.json` TODOs, then flip
       `status.draft` to `false` — one flag publishes it and its
       indexability together.
@@ -160,9 +172,15 @@ nothing), JS-off still renders and submits.
 
 ## Phase 5 — content, and staying healthy
 
-Now write. The rules that bite are AGENTS § Content: named human author with
+Now write — and pick what to write from evidence, not guesswork:
+`npm run insights` (Phase 4) shows the queries, positions and indexing state;
+impressions at position 4–20 are the shortlist, impressions at position 50+
+mean the page needs links and authority, not a better title. The rules that
+bite are AGENTS § Content: named human author with
 a real profile, `tldr` front-loads the answer, `sources` on anything factual,
-FAQ answers only in frontmatter, `toc: true` at 4+ headings. Scheduled posts:
+FAQ answers only in frontmatter, `toc: true` at 4+ headings, dates spread
+(no two posts share a `published` date) and at least 2 in-body internal
+links per post — the last two are enforced by `check-source-rules`. Scheduled posts:
 future-date `published` and schedule a build for that day (PLAYBOOK §2).
 
 From here the rhythm is PLAYBOOK §9 (weekly GSC glance, monthly link-rot

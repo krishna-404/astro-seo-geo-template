@@ -72,4 +72,52 @@ for (const f of files) {
 }
 if (!found) console.log('   ok');
 
+console.log('→ blog cadence and in-body interlinks (AGENTS § Content rules)');
+// Inherited from the ancestor site's first month of Search Console data: its
+// first six posts shipped all dated the same day and with zero in-body links.
+// Both were fixed by hand and both are the kind of defect that regrows
+// silently as posts are added. Dates: unique per post, at most 5 per ISO
+// week. Links: at least 2 contextual in-body internal links per post — a
+// generated related-posts footer does not count, which is why this reads the
+// markdown body, not the built page.
+const isoWeek = (d) => {
+  const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  return `${t.getUTCFullYear()}-W${Math.ceil(((t - yearStart) / 864e5 + 1) / 7)}`;
+};
+found = 0;
+const byDate = {};
+const byWeek = {};
+for (const f of readdirSync('src/content/blog').filter((n) => /\.mdx?$/.test(n))) {
+  const p = join('src/content/blog', f);
+  const text = readFileSync(p, 'utf8');
+  if (/^draft:\s*true$/m.test(text)) continue;
+  const date = text.match(/^published:\s*['"]?(\d{4}-\d{2}-\d{2})['"]?\s*$/m)?.[1];
+  if (!date) {
+    bad(`${p} has no parseable "published: YYYY-MM-DD" line`);
+    found = 1;
+    continue;
+  }
+  (byDate[date] ??= []).push(p);
+  (byWeek[isoWeek(new Date(date))] ??= []).push(p);
+  const body = text.replace(/^---\n[\s\S]*?\n---\n/, '');
+  const links = [...body.matchAll(/\]\(\/[a-z]/g)].length;
+  if (links < 2) {
+    bad(`${p} has ${links} in-body internal link(s) — minimum 2, anchored on the phrase a searcher types (AGENTS § Content rules)`);
+    found = 1;
+  }
+}
+for (const [date, ps] of Object.entries(byDate))
+  if (ps.length > 1) {
+    bad(`${ps.length} posts share published date ${date} (${ps.join(', ')}) — spread the dates, a same-day batch reads as generated content`);
+    found = 1;
+  }
+for (const [week, ps] of Object.entries(byWeek))
+  if (ps.length > 5) {
+    bad(`${ps.length} posts published in ${week} — cap is 5/week (AGENTS § Content rules)`);
+    found = 1;
+  }
+if (!found) console.log('   ok');
+
 process.exit(fail);

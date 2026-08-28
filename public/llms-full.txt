@@ -41,8 +41,9 @@ Three things are produced at build time and never hand-edited:
 1. **The sitemap**, via `@astrojs/sitemap`, minus anything `noindex` or draft.
 2. **The RSS feed** at `/rss.xml` — blog only, with each item's `tldr` as its
    description.
-3. **`llms.txt` and `llms-full.txt`**, an index and a full-corpus file for machine
-   readers, plus the human-readable brief at [/for-llms](/for-llms).
+3. **[`llms.txt`](/glossary/llms-txt) and `llms-full.txt`**, an index and a
+   full-corpus file for machine readers, plus the human-readable brief at
+   [/for-llms](/for-llms).
 
 Counts and lists on those surfaces come from `getCollection()` at build time, so they
 cannot disagree with the site.
@@ -70,7 +71,9 @@ The same study found keyword stuffing *reduced* visibility. This template turns 
 findings into schema requirements rather than advice:
 
 - Every blog post and glossary entry requires a `tldr` — the front-loaded answer that
-  sits in the first 30% of the page, styled as the lift target.
+  sits in the first 30% of the page, styled as the lift target (the
+  [SEO machinery tour](/blog/how-the-seo-machinery-works) shows where each piece
+  renders).
 - Glossary entries require `sources` with at least one entry. No source, no page — the
   build fails.
 - Blog posts require a `proprietary` field naming what in the post an LLM could not
@@ -81,7 +84,8 @@ findings into schema requirements rather than advice:
 
 The glossary schema caps `shortDefinition` at 300 characters for a reason: that string
 is what an answer engine lifts, what the index page shows, and what the `DefinedTerm`
-JSON-LD carries. Write it as a complete, quotable sentence that survives being read
+JSON-LD carries — the [llms.txt entry](/glossary/llms-txt) is a live example of the
+shape. Write it as a complete, quotable sentence that survives being read
 with no page around it. Then let the body add the depth.
 
 ## A named human author, everywhere

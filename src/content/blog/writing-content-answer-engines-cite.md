@@ -2,7 +2,7 @@
 title: 'Writing content that answer engines actually cite'
 description: 'The three evidence-backed GEO levers — citations, quotable definitions and front-loaded answers — and how this template''s schemas force you to use them.'
 tldr: 'Cited sources, quotations from authorities and statistics measurably improve how often generative engines cite a page; keyword stuffing measurably hurts. This template hard-codes those findings: every entry requires a front-loaded tldr, and glossary entries will not build without at least one source.'
-published: 2026-08-11
+published: 2026-08-04
 author:
   name: 'TODO Founder Name'
   title: 'Founder'
@@ -34,7 +34,9 @@ The same study found keyword stuffing *reduced* visibility. This template turns 
 findings into schema requirements rather than advice:
 
 - Every blog post and glossary entry requires a `tldr` — the front-loaded answer that
-  sits in the first 30% of the page, styled as the lift target.
+  sits in the first 30% of the page, styled as the lift target (the
+  [SEO machinery tour](/blog/how-the-seo-machinery-works) shows where each piece
+  renders).
 - Glossary entries require `sources` with at least one entry. No source, no page — the
   build fails.
 - Blog posts require a `proprietary` field naming what in the post an LLM could not
@@ -45,7 +47,8 @@ findings into schema requirements rather than advice:
 
 The glossary schema caps `shortDefinition` at 300 characters for a reason: that string
 is what an answer engine lifts, what the index page shows, and what the `DefinedTerm`
-JSON-LD carries. Write it as a complete, quotable sentence that survives being read
+JSON-LD carries — the [llms.txt entry](/glossary/llms-txt) is a live example of the
+shape. Write it as a complete, quotable sentence that survives being read
 with no page around it. Then let the body add the depth.
 
 ## A named human author, everywhere

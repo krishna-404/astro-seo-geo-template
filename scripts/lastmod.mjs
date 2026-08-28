@@ -117,8 +117,17 @@ function discoverPages() {
       if (base.includes('[')) continue;
       found[base === 'index' ? '/' : `/${base}`] = `src/pages/${entry.name}`;
     } else if (entry.isDirectory()) {
-      const index = join('src/pages', entry.name, 'index.astro');
-      if (existsSync(resolve(root, index))) found[`/${entry.name}`] = index;
+      // A directory contributes its index as the section route, and every
+      // other non-bracketed .astro file as a static child route — this loop
+      // originally only looked for index.astro, so a page like
+      // /contact/thanks carried no lastmod until check-lastmod caught it.
+      for (const name of readdirSync(resolve(pagesDir, entry.name)).filter(
+        (n) => n.endsWith('.astro') && !n.includes('[')
+      )) {
+        const base = name.replace(/\.astro$/, '');
+        const route = base === 'index' ? `/${entry.name}` : `/${entry.name}/${base}`;
+        found[route] = join('src/pages', entry.name, name);
+      }
     }
   }
   return found;
