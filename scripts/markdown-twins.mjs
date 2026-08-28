@@ -30,7 +30,7 @@
  * recorded in CHECKLIST §6/§7 — don't "complete" the twins by duplicating
  * the scorer here.
  */
-import { writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readCollection } from './lib/readContent.mjs';
@@ -60,11 +60,29 @@ const sourcesSection = (sources) => {
   return `\n\n## Sources\n\n${lines.join('\n')}`;
 };
 
+/** Byline mirrors the HTML page: author name linked to /author/<slug> (the
+ *  registry match cannot fail on published posts — check-source-rules
+ *  enforces it), then the dates. Machine readers get the same verifiable
+ *  credential the HTML page carries. */
+const AUTHORS = JSON.parse(readFileSync(resolve(root, 'src/data/authors.json'), 'utf8')).authors;
 const bylineFor = (data) => {
   if (!data.published) return '';
+  const parts = [];
+  if (data.author?.name) {
+    const reg = AUTHORS.find(
+      (a) =>
+        a.sameAs.some((s) => (data.author.sameAs ?? []).includes(s)) || a.name === data.author.name
+    );
+    parts.push(
+      reg
+        ? `By [${data.author.name}](${SITE_URL}/author/${reg.slug}), ${data.author.title}`
+        : `By ${data.author.name}, ${data.author.title}`
+    );
+  }
   const published = String(data.published).slice(0, 10);
   const updated = data.updated ? String(data.updated).slice(0, 10) : null;
-  return `\n\n*Published ${published}${updated && updated !== published ? ` · Updated ${updated}` : ''}*`;
+  parts.push(`Published ${published}${updated && updated !== published ? ` · Updated ${updated}` : ''}`);
+  return `\n\n*${parts.join(' · ')}*`;
 };
 
 let written = 0;

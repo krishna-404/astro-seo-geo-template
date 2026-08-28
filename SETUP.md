@@ -200,9 +200,12 @@ loop, and three marketing files are its memory:
    engine has no strategy to execute.
 2. Run **/interview** whenever you have been out in the world — meetings,
    calls, things noticed. It captures dated entries in
-   `marketing/field-notes.md`: the proprietary fuel. **The fuel rule:** the
-   engine only writes a post when it can cite a field note, a primary-source
-   news event (`marketing/news-log.md`), or an insights finding — no fuel,
+   `marketing/field-notes.md`: the richest proprietary fuel — and an
+   add-on, never a gate. **The fuel rule:** every post cites its fuel — a
+   field note, a primary-source news event (`marketing/news-log.md`), a
+   verified social-sweep finding, or an insights finding. The engine keeps
+   running whether or not you ever run /interview; skipping it just means
+   the internet-derived channels carry the whole load. No fuel anywhere,
    no filler.
 3. Schedule **/content-cadence** as a recurring Routine (claude.ai → your
    site's repo environment → schedule a Routine, or ask Claude Code to

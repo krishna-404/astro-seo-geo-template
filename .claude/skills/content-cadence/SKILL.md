@@ -23,8 +23,8 @@ guessed at. All changes land as PRs; nothing merges or publishes itself.
 2. **Shortlist.** The report's "request indexing" list: the 10 URLs from the
    `--inspect` shortlist (never-crawled first). These need the owner's hands
    — the GSC API cannot request indexing.
-3. **Scan.** A light news check of the site's clusters: log genuinely new
-   candidates to `marketing/news-log.md` as `noted, held for weekly` — do
+3. **Scan.** A light news and social check of the site's clusters: log
+   genuinely new candidates to `marketing/news-log.md` as `noted, held for weekly` — do
    not write pieces on a daily run. Exception: a candidate that is clearly
    time-critical for the site's readers goes in the report as a flagged
    question, for the owner to trigger /write-content early.
@@ -40,8 +40,10 @@ guessed at. All changes land as PRs; nothing merges or publishes itself.
    sweep of the latest posts for newly landed tells).
 7. **Writing run.** Run /write-content (its own PR: drafts with spread
    dates, page updates, interlinks, news-log entry). The fuel rule holds —
-   a week with no fuel produces updates and an honest "wrote nothing new"
-   line, not filler.
+   field notes are an add-on, never a gate: news, social and insights fuel
+   keep the engine writing without them, and only a week where every
+   channel is dry produces updates and an honest "wrote nothing new" line
+   instead of filler.
 
 ## The report (every run, last step)
 
@@ -53,8 +55,9 @@ Compose markdown with these sections, then send it:
 - **Actions taken** — PRs opened (links), pages swept, posts scheduled and
   their dates, rules changed.
 - **Needs you** — the 10-URL request-indexing list, PRs awaiting merge,
-  decisions flagged, field-notes running dry (ask for an /interview when
-  the unused count hits zero).
+  decisions flagged. When unused field notes hit zero, add a one-line nudge
+  that an /interview would enrich the next runs — a nudge only: the engine
+  keeps writing from news, social and insights fuel regardless.
 
 Send via the site's own form route — POST
 `https://<site>/api/contact` (form-encoded):

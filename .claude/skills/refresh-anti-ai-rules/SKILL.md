@@ -16,10 +16,18 @@ were written when that tell was not yet on the list.
 - https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing — the primary
   source; read every section (vocabulary by era, structural patterns,
   formatting, citation issues).
-- Any additional sources listed in `voice.json → base.sources`.
-- Optionally search for substantial new work on AI-writing detection since
-  `base.updated`; add a source entry (label, url, retrieved) for anything
-  adopted from it. Never adopt a rule you cannot attribute.
+- https://en.wikipedia.org/wiki/Wikipedia:WikiProject_AI_Cleanup — the
+  project that maintains the signs page; new tells and discussion often
+  land here (and on the signs page's talk page) before the article
+  stabilises.
+- Every other source listed in `voice.json → base.sources`.
+- **Grow the source list**: each run, also search for substantial new work
+  on AI-writing detection since `base.updated` — academic studies, detector
+  vendors' published tell lists, editor-community style guides. Adopt a
+  rule only with a source entry (label, url, retrieved) added alongside it;
+  a source that proves consistently useful stays in `base.sources` so the
+  next run checks it too. Never adopt a rule you cannot attribute, and
+  verify a candidate source's URL resolves before recording it.
 
 ## 2. Diff against the base layer
 

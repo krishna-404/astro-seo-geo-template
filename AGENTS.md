@@ -157,9 +157,12 @@ being checked is not a reason to ignore it here; the prose carries the WHY.
   `marketing/VOICE-GUIDE.md` § ship checklist, run by hand on every piece —
   a green script run is not a pass.
 - **The fuel rule.** A new post exists only when its `proprietary`
-  frontmatter can point at a `marketing/field-notes.md` entry, a
-  `marketing/news-log.md` event with primary sources, or an insights
-  finding. No fuel → that cycle does updates and interlinking instead. The
+  frontmatter names something real: a `marketing/field-notes.md` entry, a
+  `marketing/news-log.md` event with primary sources, a verified
+  social-sweep finding, or an insights finding. Field notes are an add-on,
+  never a gate — the engine keeps writing from the internet-derived
+  channels without them; only when every channel is dry does that cycle do
+  updates and interlinking instead. The
   content engine (skills: /onboard-marketing, /interview, /write-content,
   /refresh-anti-ai-rules, /content-cadence) delivers everything as PRs; a
   human merges, nothing auto-publishes.

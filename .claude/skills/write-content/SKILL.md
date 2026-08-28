@@ -1,16 +1,24 @@
 ---
 name: write-content
-description: The evidence-fueled writing run — pick targets from insights, field notes and a primary-source news sweep, then draft, check, interlink and schedule content as one reviewable PR. Used by /content-cadence's weekly run; also use when the user asks to write blog posts or update pages based on what would perform best.
+description: The evidence-fueled writing run — pick targets from insights, field notes, a primary-source news sweep and a social sweep, then draft, check, interlink and schedule content as one reviewable PR. Used by /content-cadence's weekly run; also use when the user asks to write blog posts or update pages based on what would perform best.
 ---
 
 # Write content, from evidence
 
-**The fuel rule, absolute:** a new post exists only when its `proprietary`
-frontmatter can point at (a) a `marketing/field-notes.md` entry, (b) a
-`marketing/news-log.md` event with primary sources, or (c) a finding from
-`npm run insights` plus verified source data. No fresh fuel → this run does
-updates, interlinking and page fixes instead, and says so. Publishing nothing
-is a valid outcome; publishing filler never is.
+**The fuel rule:** every new post carries something real and checkable, and
+its `proprietary` frontmatter names it. Fuel comes from any of these
+channels, and the engine runs on whichever have something this week:
+
+- (a) a `marketing/field-notes.md` entry — the richest fuel when present,
+  and strictly an ADD-ON: the engine never waits for interviews and never
+  stalls because field notes are empty or stale;
+- (b) a `marketing/news-log.md` event with primary sources;
+- (c) a social-sweep finding (below) — real demand, verified before use;
+- (d) an `npm run insights` finding plus verified source data.
+
+Only when every channel is genuinely dry does the run do updates,
+interlinking and page fixes instead of a new post — and it says so.
+Publishing nothing is a valid outcome; publishing filler never is.
 
 ## 1. Gather (read before writing anything)
 
@@ -31,6 +39,16 @@ is a valid outcome; publishing filler never is.
   for our reader → dropped, with the reason logged. Log the whole sweep
   (published + dropped + verification catches) to `marketing/news-log.md`
   in its documented format.
+- **Social sweep**: search the platforms where this site's readers actually
+  talk (X, LinkedIn, Reddit, Hacker News, industry forums — STRATEGY.md
+  names which) for the week's discussions in the site's clusters. What to
+  keep: repeated questions (three people asking is a page that should
+  exist), live disputes, misconceptions worth correcting, vocabulary the
+  audience uses that the site does not. A thread is a DEMAND SIGNAL and an
+  angle — never a source: every claim in the resulting piece still traces
+  to a primary source, and no post quotes or identifies a private
+  individual's post without their consent. Log kept and dropped candidates
+  in the news-log entry alongside the news sweep.
 
 ## 2. Decide
 
