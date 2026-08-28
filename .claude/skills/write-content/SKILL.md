@@ -50,13 +50,23 @@ Publishing nothing is a valid outcome; publishing filler never is.
   individual's post without their consent. Log kept and dropped candidates
   in the news-log entry alongside the news sweep.
 
-## 2. Decide
+## 2. Decide — the funnel ladder (STRATEGY.md § Content strategy)
 
-Rank candidate work by expected impact: fixing a page at position 4–20 for a
-real query usually beats a new post; a news event with a genuine hook beats
-both while it is fresh. Cap new posts at what the week's fuel honestly
-supports (never more than the cadence in STRATEGY.md; the hard cap is
-5/week, enforced).
+Order every cycle's work bottom-up; impressions alone are worth nothing:
+
+1. **Convert what already lands**: any ranking page whose measured next
+   step is weak or missing (CTA events ÷ entrances, the path to this
+   site's conversion) gets fixed before anything else.
+2. **CTR where the site already ranks**: position ≤20 (above all ≤10) with
+   impressions and few clicks — titles/descriptions in the searcher's own
+   words. Highest-probability clicks on the board.
+3. **Impressions last**: new content targets the highest-search keywords
+   within a winnable cluster, only after rungs 1–2 hold. A fresh news event
+   with a genuine hook may jump the queue while fresh; it still ships with
+   its conversion path and snippet done, not as bare reach.
+
+Cap new posts at what the week's fuel honestly supports (never more than
+the cadence in STRATEGY.md; the hard cap is 5/week, enforced).
 
 ## 3. Draft
 

@@ -80,6 +80,39 @@ const known = new Set([...staticRoutes, ...contentRoutes, ...collectionIndexes])
 const JUNK = /^(here|click here|this|this page|this post|this article|read more|link|see here|more)$/i;
 const inbound = new Map(entries.map((e) => [e.route, 0]));
 
+// Hand-written links from .astro pages and components are intentional
+// curation too — a solutions page linked from the homepage's Jobs section is
+// anything but an orphan. Only LITERAL href="/x/y" attributes count: a
+// dynamically built href (a nav dropdown rendering a whole collection) is
+// generated, not chosen, and must not mask a page nobody actually linked.
+(function walkAstro(dir) {
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const p = join(dir, e.name);
+    if (e.isDirectory()) walkAstro(p);
+    else if (e.name.endsWith('.astro')) {
+      const src = readFileSync(p, 'utf8');
+      for (const m of src.matchAll(/href="(\/[a-z0-9-]+\/[a-z0-9.-]+)"/g)) {
+        const t = m[1].replace(/\/$/, '');
+        if (inbound.has(t)) inbound.set(t, inbound.get(t) + 1);
+        else if (!known.has(t)) bad(`${p} links to ${t} — no such route`);
+      }
+    }
+  }
+})('src/pages');
+(function walkComponents(dir) {
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const p = join(dir, e.name);
+    if (e.isDirectory()) walkComponents(p);
+    else if (e.name.endsWith('.astro')) {
+      const src = readFileSync(p, 'utf8');
+      for (const m of src.matchAll(/href="(\/[a-z0-9-]+\/[a-z0-9.-]+)"/g)) {
+        const t = m[1].replace(/\/$/, '');
+        if (inbound.has(t)) inbound.set(t, inbound.get(t) + 1);
+      }
+    }
+  }
+})('src/components');
+
 for (const e of entries) {
   const links = [...e.body.matchAll(/\[([^\]]*)\]\((\/[^)#?\s]*)[^)]*\)/g)];
   let internal = 0;

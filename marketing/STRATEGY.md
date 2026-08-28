@@ -28,6 +28,21 @@
 
 ## 5. Content strategy
 
+**The funnel ladder — the standing order of work.** Impressions alone are
+worth nothing; every cycle's work is ordered bottom-up:
+
+1. **Convert what already lands.** Every page that receives visitors has a
+   working, measured next step (CTA events per entrance, the path to
+   whatever this site's conversion is). Fix this before anything else.
+2. **Then CTR where the site already ranks.** Position ≤20 — above all
+   ≤10 — with impressions and few clicks is the highest-probability work on
+   the board: titles and descriptions in the searcher's own words. (Getting
+   indexed and to page one is this rung's precondition.)
+3. **Impressions last.** New content targets the highest-search keywords
+   within a winnable cluster — consistent work, but only after rungs 1–2
+   hold on what exists; new pages then enter rung 2's CTR loop as they
+   rank.
+
 - The cadence: <!-- TODO: e.g. 1–3 pieces/week, weekly news run, monthly
   refresh — set the interval the /content-cadence Routine runs on. -->
 - The clusters: <!-- TODO: 3–8 named topic clusters. New pieces extend

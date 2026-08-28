@@ -108,6 +108,31 @@ out.push('|---|---|');
 for (const p of staticPages) out.push(`| ${SITE_URL}${p.route === '/' ? '' : p.route} | \`${p.path}\` |`);
 out.push('');
 
+const OUT = 'marketing/content-inventory.md';
+const rendered = out.join('\n');
+
+// --check: fail when the committed inventory no longer matches the repo,
+// ignoring the volatile "Generated <date>" line — so any content change that
+// forgets `npm run inventory` is caught at the fast tier instead of the
+// inventory quietly answering "does this exist?" wrong until the next
+// cadence run.
+const stripDate = (t) => t.replace(/^Generated \d{4}-\d{2}-\d{2} /m, 'Generated ');
+if (process.argv.includes('--check')) {
+  let committed = '';
+  try {
+    committed = readFileSync(OUT, 'utf8');
+  } catch {
+    console.log(`FAIL: ${OUT} does not exist — run \`npm run inventory\` and commit it.`);
+    process.exit(1);
+  }
+  if (stripDate(committed) !== stripDate(rendered)) {
+    console.log(`FAIL: ${OUT} is stale — content changed without regenerating. Run \`npm run inventory\` and commit the result.`);
+    process.exit(1);
+  }
+  console.log(`ok: ${OUT} matches the repo.`);
+  process.exit(0);
+}
+
 mkdirSync('marketing', { recursive: true });
-writeFileSync('marketing/content-inventory.md', out.join('\n'));
-console.log(`marketing/content-inventory.md: ${totalLive} live pieces + ${staticPages.length} static pages, ${totalWords.toLocaleString('en-US')} words.`);
+writeFileSync(OUT, rendered);
+console.log(`${OUT}: ${totalLive} live pieces + ${staticPages.length} static pages, ${totalWords.toLocaleString('en-US')} words.`);

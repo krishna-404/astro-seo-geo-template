@@ -105,9 +105,12 @@ for (const f of files) {
 
   // ── quantitative thresholds (fail) ───────────────────────────────────────
   const emDashes = (prose.match(/—/g) ?? []).length;
-  const emPer1000 = words ? (emDashes / words) * 1000 : 0;
-  if (emPer1000 > quant.emDashPer1000Words)
-    problems.push(`${emDashes} em-dashes in ${words} words (${emPer1000.toFixed(1)}/1000; cap ${quant.emDashPer1000Words})`);
+  // Density cap with an absolute floor of 1: a 250-word entry whose title
+  // legitimately carries one em-dash (an HS heading, a compound name) must
+  // not fail a per-1000 ratio that only makes sense at essay length.
+  const emAllowed = Math.max(1, (words / 1000) * quant.emDashPer1000Words);
+  if (emDashes > emAllowed)
+    problems.push(`${emDashes} em-dashes in ${words} words (allowed ${emAllowed < 2 ? '1' : Math.floor(emAllowed)}; cap ${quant.emDashPer1000Words}/1000 with a floor of 1)`);
   const emoji = (prose.match(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu) ?? []).length;
   if (emoji > quant.maxEmoji) problems.push(`${emoji} emoji (cap ${quant.maxEmoji})`);
 
@@ -115,7 +118,10 @@ for (const f of files) {
   let run = 0;
   let maxRun = 0;
   for (const line of lines) {
-    if (/^\s*(?:[-*+]|\d+\.)\s+\*\*[^*]+\*\*[:.]?/.test(line) || /^\*\*[^*]+:\*\*/.test(line)) {
+    // Only the COLON shape counts: "**Clarity:** keep it clear" is the
+    // machine tell. "**Applicant.** The importer." is a definition list — a
+    // table in list form, bold as the scanning aid the voice guide sanctions.
+    if (/^\s*(?:[-*+]|\d+\.)\s+\*\*[^*]+:\*\*/.test(line) || /^\s*(?:[-*+]|\d+\.)\s+\*\*[^*]+\*\*:/.test(line) || /^\*\*[^*]+:\*\*/.test(line)) {
       run += 1;
       maxRun = Math.max(maxRun, run);
     } else if (line.trim() !== '') run = 0;
@@ -143,7 +149,10 @@ for (const f of files) {
     if (!quant.allowTitleCaseHeadings) {
       const ws = h[2].replace(/[`*_]/g, '').split(/\s+/).filter((w) => /^[A-Za-z]/.test(w));
       const caps = ws.filter((w) => /^[A-Z]/.test(w) && !STOP.has(w.toLowerCase()));
-      if (ws.length >= 3 && caps.length === ws.filter((w) => !STOP.has(w.toLowerCase())).length && caps.length >= 3)
+      // >=4 capitalised non-stop words: a heading like "What is a Bill of
+      // Entry?" carries a 3-word proper noun and is fine; real Title Case
+      // capitalises everything and runs longer.
+      if (ws.length >= 3 && caps.length === ws.filter((w) => !STOP.has(w.toLowerCase())).length && caps.length >= 4)
         problems.push(`Title Case heading "${h[2].trim()}" — sentence case below the h1`);
     }
   }
