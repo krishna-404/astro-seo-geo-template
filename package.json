@@ -30,6 +30,9 @@
     "check:contrast": "node scripts/check-contrast.mjs",
     "indexnow": "node scripts/indexnow.mjs",
     "insights": "node scripts/insights.mjs",
+    "check:voice": "node scripts/check-voice.mjs",
+    "check:links": "node scripts/check-link-graph.mjs",
+    "inventory": "node scripts/content-inventory.mjs",
     "purge": "node scripts/purge-cache.mjs"
   },
   "dependencies": {

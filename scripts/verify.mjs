@@ -68,6 +68,8 @@ function ensureAll(pkgs) {
 
 // ── fast source tier (same as the pre-commit hook) ─────────────────────────
 run('config parity + source rules', 'node scripts/check-parity.mjs && node scripts/check-source-rules.mjs');
+run('mechanical voice check (anti-AI rules)', 'node scripts/check-voice.mjs');
+run('site-wide link graph (orphans, dead links, junk anchors)', 'node scripts/check-link-graph.mjs');
 run('collection routes exist', 'node scripts/check-collection-routes.mjs');
 run('content image references', 'node scripts/check-content-images.mjs');
 run('types + worker + lint', 'npm run check');

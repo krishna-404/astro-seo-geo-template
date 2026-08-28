@@ -63,6 +63,19 @@ jobs:
           node scripts/check-parity.mjs
           node scripts/check-source-rules.mjs
 
+      # The mechanical half of the anti-AI defence: banned vocabulary and
+      # shapes, em-dash density, stacked bold lead-ins, Title Case headings —
+      # every rule in src/data/voice.json a regex can see. The judgement half
+      # is the ship checklist in marketing/VOICE-GUIDE.md.
+      - name: Mechanical voice check (anti-AI rules)
+        run: node scripts/check-voice.mjs
+
+      # Interlinking as a graph: no orphan content pages, no dead internal
+      # links, no junk anchor text. Per-page outbound minimums live in
+      # check-source-rules; this sees the shape no single page can.
+      - name: Site-wide link graph
+        run: node scripts/check-link-graph.mjs
+
       # `npm run build` is `astro check && check:worker && sheets && llms &&
       # astro build && markdown-twins && search:index`, so this covers types,
       # the zod content schemas, the actual render and the search index in one

@@ -240,7 +240,23 @@ async function gscInspect() {
 
   const byState = {};
   for (const r of results) (byState[r.state] ??= []).push(r);
-  return { total: urls.length, byState };
+
+  // The manual-submission shortlist: at this site's size, requesting indexing
+  // by hand in Search Console measurably shortens time-to-index, and the GSC
+  // API has no endpoint for it — a person pastes each URL into the top search
+  // box and clicks "Request indexing" (daily quota is roughly a dozen, hence
+  // 10). Priority: never-crawled first, then discovered-but-not-indexed, then
+  // crawled-but-not-indexed — the order in which a manual nudge helps most.
+  const PRIORITY = [/unknown to google/i, /discovered/i, /crawled/i, /excluded|not indexed/i];
+  const unindexed = results.filter((r) => !/^submitted and indexed$/i.test(r.state) && !r.state.startsWith('error'));
+  unindexed.sort((a, b) => {
+    const rank = (r) => {
+      const i = PRIORITY.findIndex((p) => p.test(r.state));
+      return i === -1 ? PRIORITY.length : i;
+    };
+    return rank(a) - rank(b);
+  });
+  return { total: urls.length, byState, requestIndexing: unindexed.slice(0, 10).map((r) => r.url) };
 }
 
 /** ---------- Cloudflare edge ---------- */
@@ -379,6 +395,11 @@ if (ins) {
   if (ins.skipped || ins.error) out.push(`_${ins.skipped ?? ins.error}_`);
   else {
     out.push(`${ins.total} URLs in the sitemap.\n`);
+    if (ins.requestIndexing?.length) {
+      out.push(`**Request indexing manually — today's list** (paste each into the Search Console top bar → Request indexing; ~a dozen/day is the quota)\n`);
+      ins.requestIndexing.forEach((u, i) => out.push(`${i + 1}. ${u}`));
+      out.push('');
+    }
     for (const [state, rows] of Object.entries(ins.byState).sort((a, b) => b[1].length - a[1].length)) {
       out.push(`**${state}** — ${rows.length}\n`);
       table(['URL', 'Last crawl', 'Google chose different canonical'],

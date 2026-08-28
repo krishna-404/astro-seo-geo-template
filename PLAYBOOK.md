@@ -244,7 +244,10 @@ serving pages, which is exactly why they get forgotten)
       Copilot/DuckDuckGo/ChatGPT search): verify via `VERIFICATION.bing`
       meta, submit sitemap.
 - [ ] IndexNow: key file at `public/<key>.txt` containing exactly the key;
-      `indexnow.yml` submits automatically after each green deploy. Google
+      `indexnow.yml` submits automatically after each green deploy — only the
+      URLs that deploy changed (`--changed` derives routes from the commit's
+      diff; a layout/style/data change falls back to the full sitemap, and a
+      manual dispatch always submits everything). Google
       does not participate — the sitemap covers Google.
 - [ ] robots.txt is a generated route — the AI-crawler list (with intent
       comments) lives in `src/pages/robots.txt.ts` and the Sitemap URL
@@ -338,6 +341,12 @@ has already cost something.
       the work shortlist; position 50+ means links and authority, not a
       better title. Match titles/headings to the query language the report
       shows — never phrasing a keyword tool invented.
+- [ ] The /content-cadence Routine does most of this section for you when
+      scheduled (SETUP Phase 5): daily insights snapshot + emailed report
+      with the manual request-indexing shortlist; weekly anti-AI rules
+      refresh (with a sweep of the latest posts for newly landed tells) and
+      the evidence-fueled writing run. Its output is PRs — the human half of
+      the cadence is merging them and pasting the shortlist into GSC.
 
 **Monthly (automated + 10 minutes)**
 - [ ] The link-rot workflow ran on the 3rd

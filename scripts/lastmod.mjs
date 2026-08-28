@@ -26,7 +26,7 @@
  * silently — the same treatment the other site invariants get.
  */
 import { execFileSync } from 'node:child_process';
-import { writeFileSync, readdirSync, existsSync } from 'node:fs';
+import { writeFileSync, readFileSync, readdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join } from 'node:path';
 import { readCollection } from './lib/readContent.mjs';
@@ -76,6 +76,20 @@ for (const [route, folder] of Object.entries(COLLECTIONS)) {
     if (!file) continue;
     const date = newestCommit([file]);
     if (date) map[`/${route}/${entry.slug}`] = date;
+  }
+}
+
+// Author pages: one route per registry entry. An author page changes when the
+// registry changes (bio, profiles), when its template changes, or when any
+// blog post changes — the page lists the author's posts, and attributing a
+// post to a different author moves two author pages at once, so the whole
+// collection is an input rather than a per-author slice.
+{
+  const AUTHOR_SOURCES = ['src/data/authors.json', 'src/pages/author/[...slug].astro', 'src/content/blog'];
+  const { authors } = JSON.parse(readFileSync(resolve(root, 'src/data/authors.json'), 'utf8'));
+  for (const a of authors) {
+    const date = newestCommit(AUTHOR_SOURCES);
+    if (date) map[`/author/${a.slug}`] = date;
   }
 }
 

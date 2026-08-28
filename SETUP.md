@@ -143,6 +143,14 @@ origin breaks it.
       `wrangler.jsonc` — both hops or neither. GA4 instead: `measurementId`
       arms the consent banner automatically; update
       `src/data/privacy.json` in the same commit (AGENTS rule 4).
+- [ ] **Cadence report email**: the content engine's run report reuses the
+      form's Apps Script — no new vendor. In `contact-form.gs`, set
+      `REPORT_TOKEN` to a long random string (`openssl rand -hex 24`) and
+      re-deploy the web app; give the cadence session the same value as the
+      `CADENCE_REPORT_TOKEN` env var. Each run then POSTs
+      `action=report` to `/api/contact`, which emails the summary to
+      `NOTIFY_TO` and appends it to the sheet's Reports tab. Token unset =
+      channel off; attempts land quarantined in Filtered.
 - [ ] **Insights read-back** (`npm run insights`): a read-only pull of the
       three measurement surfaces — Umami (what humans with JS did), Search
       Console (what Google showed and what got clicked, the only source that
@@ -182,6 +190,32 @@ FAQ answers only in frontmatter, `toc: true` at 4+ headings, dates spread
 (no two posts share a `published` date) and at least 2 in-body internal
 links per post — the last two are enforced by `check-source-rules`. Scheduled posts:
 future-date `published` and schedule a build for that day (PLAYBOOK §2).
+
+**The content engine.** Five skills in `.claude/skills/` run the whole
+loop, and three marketing files are its memory:
+
+1. Run **/onboard-marketing** once — it interviews you and fills
+   `marketing/STRATEGY.md`, `VOICE-GUIDE.md`, `writer-brief.md` and the
+   `voice.json` site layer. Until then those files carry TODOs and the
+   engine has no strategy to execute.
+2. Run **/interview** whenever you have been out in the world — meetings,
+   calls, things noticed. It captures dated entries in
+   `marketing/field-notes.md`: the proprietary fuel. **The fuel rule:** the
+   engine only writes a post when it can cite a field note, a primary-source
+   news event (`marketing/news-log.md`), or an insights finding — no fuel,
+   no filler.
+3. Schedule **/content-cadence** as a recurring Routine (claude.ai → your
+   site's repo environment → schedule a Routine, or ask Claude Code to
+   create one) with a prompt like:
+   > Run /content-cadence. Daily mode on weekdays; weekly mode on Monday.
+   Daily runs measure (insights snapshot + deltas), log news candidates,
+   and email you the report — including the 10 URLs to paste into Search
+   Console's "Request indexing" by hand, which the API cannot do. Weekly
+   runs additionally refresh the anti-AI rules from their public sources
+   (sweeping the latest posts for newly landed tells) and do the writing
+   run. Everything lands as PRs; **you merge — nothing auto-publishes.**
+   Give the Routine's environment the insights credentials and
+   `CADENCE_REPORT_TOKEN` (both above).
 
 From here the rhythm is PLAYBOOK §9 (weekly GSC glance, monthly link-rot
 run, quarterly crawl, annual security.txt/HSTS/domain review) — put the

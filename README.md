@@ -83,7 +83,12 @@ public/          _headers _redirects favicons .well-known/ (robots.txt is
                  generated — src/pages/robots.txt.ts derives it from origin.mjs)
 scripts/         CI-run: sheets, llms, twins, lastmod, csp, invariants,
                  parity, worker/live smoke, contrast, a11y, verify, indexnow
-marketing/       human-run: favicon gen, OG cards, apps-script source
+marketing/       human-run: favicon gen, OG cards, apps-script source ·
+                 the content engine's memory: STRATEGY, VOICE-GUIDE,
+                 writer-brief, field-notes, news-log, generated inventory
+.claude/skills/  the content engine: onboard-marketing · interview ·
+                 write-content · refresh-anti-ai-rules · content-cadence
+                 (see SETUP Phase 5 — schedule content-cadence as a Routine)
 .githooks/       pre-commit (fast tier) · pre-push (npm run verify) —
                  activated automatically by npm install
 .github/         ci.yml (checks + gated deploy + live smoke) · indexnow.yml ·

@@ -13,6 +13,8 @@ echo "pre-commit: fast source checks (full battery runs at push via npm run veri
 
 node scripts/check-parity.mjs
 node scripts/check-source-rules.mjs
+node scripts/check-voice.mjs
+node scripts/check-link-graph.mjs
 
 node scripts/check-collection-routes.mjs
 

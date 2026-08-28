@@ -131,6 +131,10 @@ being checked is not a reason to ignore it here; the prose carries the WHY.
 
 ## Content rules
 
+- Every blog author lives in `src/data/authors.json` (enforced): the byline
+  links to `/author/<slug>` — the verifiable credential behind the name — and
+  a guest author gets their own entry with a real profile and bio, never a
+  borrowed one.
 - Blog posts: named human author with a real `sameAs` profile; a required
   `proprietary` field naming what an LLM could not have produced; `sources`
   on anything factual; `tldr` front-loads the answer (that's the GEO lever
@@ -141,7 +145,26 @@ being checked is not a reason to ignore it here; the prose carries the WHY.
   same-day batch reads as generated content to anyone who checks. Every post
   carries at least 2 contextual in-body internal links, anchored on the
   phrase a searcher types ("goes to demurrage", not "click here"); a
-  generated related-posts footer does not count.
+  generated related-posts footer does not count. Site-wide, the link graph
+  is also checked (`check-link-graph`): no orphan content pages (an
+  intentional inbound link from another page — the auto-scorer does not
+  count), no dead internal links, no junk anchors.
+- The voice standard has two halves. Mechanical: `npm run check:voice`
+  enforces `src/data/voice.json` (banned AI-tell vocabulary and shapes,
+  em-dash density, stacked bold lead-ins, Title Case headings) at all three
+  rungs; the base layer is refreshed from its published sources by the
+  /refresh-anti-ai-rules skill, via PR, never silently. Judgement:
+  `marketing/VOICE-GUIDE.md` § ship checklist, run by hand on every piece —
+  a green script run is not a pass.
+- **The fuel rule.** A new post exists only when its `proprietary`
+  frontmatter can point at a `marketing/field-notes.md` entry, a
+  `marketing/news-log.md` event with primary sources, or an insights
+  finding. No fuel → that cycle does updates and interlinking instead. The
+  content engine (skills: /onboard-marketing, /interview, /write-content,
+  /refresh-anti-ai-rules, /content-cadence) delivers everything as PRs; a
+  human merges, nothing auto-publishes.
+- `marketing/content-inventory.md` is generated (`npm run inventory`) —
+  never hand-edit it; regenerate.
 - Programmatic pages (glossary etc.) auto-publish but must be built from real
   data — `sources` min 1 is schema-enforced. A programmatic page with no
   unique data is what scaled-content policies penalise.

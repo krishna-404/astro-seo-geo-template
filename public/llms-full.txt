@@ -8,20 +8,20 @@
 
 # How this template's SEO machinery works
 
-Every page in this template gets a canonical URL, Open Graph tags and JSON-LD from BaseLayout automatically; the sitemap, RSS feed and llms.txt are generated at build time. You write content and frontmatter — the machinery is already wired.
+Every page in this template gets a canonical URL, Open Graph tags and JSON-LD from BaseLayout automatically; the sitemap, RSS feed and llms.txt are generated at build time. You write content and frontmatter; the machinery is already wired.
 
 ## One layout owns the head
 
 Every page in this template renders through `src/layouts/BaseLayout.astro`, and that is
 where all of the SEO plumbing lives. A page passes `title`, `description` and optionally
-`schema`, `ogImage`, `canonical` or `noindex` — the layout does the rest:
+`schema`, `ogImage`, `canonical` or `noindex`. The layout does the rest:
 
-- **Canonical URL** — derived from the route and `SITE.url`. Because the build emits
+- **Canonical URL**, derived from the route and `SITE.url`. Because the build emits
   `.html` files but the server serves extensionless URLs, the layout strips the suffix
   before building the canonical. Don't bypass it.
-- **Open Graph and Twitter tags** — from the same title and description, with an image
+- **Open Graph and Twitter tags**, from the same title and description, with an image
   precedence of explicit prop → generated card for the route → site default.
-- **JSON-LD** — a site-wide `Organization` node and a `Person` node for the founder
+- **JSON-LD**: a site-wide `Organization` node and a `Person` node for the founder
   (`#founder`) on every page, plus whatever page-specific nodes you pass via the
   `schema` prop. Blog and glossary templates already pass `BlogPosting`, `Article`,
   `DefinedTerm`, `BreadcrumbList` and `FAQPage` nodes for you.
@@ -31,15 +31,16 @@ where all of the SEO plumbing lives. A page passes `title`, `description` and op
 `src/content.config.ts` gives each collection a zod schema, and the schema is doing SEO
 work: `title` is capped at 70 characters so it doesn't truncate in results, `description`
 must be 50–200 characters so it works as a meta description, and `tldr` is required so
-every content page front-loads its answer — the one GEO lever with real evidence behind
-it. If frontmatter is wrong, the build fails. That is the feature.
+every content page front-loads its answer, the one
+[GEO lever with real evidence behind it](/blog/writing-content-answer-engines-cite).
+If frontmatter is wrong, the build fails. That is the feature.
 
 ## Generated surfaces
 
 Three things are produced at build time and never hand-edited:
 
 1. **The sitemap**, via `@astrojs/sitemap`, minus anything `noindex` or draft.
-2. **The RSS feed** at `/rss.xml` — blog only, with each item's `tldr` as its
+2. **The RSS feed** at `/rss.xml`: blog only, with each item's `tldr` as its
    description.
 3. **[`llms.txt`](/glossary/llms-txt) and `llms-full.txt`**, an index and a
    full-corpus file for machine readers, plus the human-readable brief at
@@ -51,7 +52,7 @@ cannot disagree with the site.
 ## What you actually do per page
 
 Write the markdown, fill in the frontmatter, keep the body headings starting at `##`
-(the template renders the frontmatter title as the page's single `<h1>`). That's it —
+(the template renders the frontmatter title as the page's single `<h1>`). That's it;
 if it builds, the machinery is on.
 
 Source: https://example.com/blog/how-the-seo-machinery-works
@@ -70,11 +71,11 @@ engine answers: **citing sources**, **quoting authorities**, and **adding statis
 The same study found keyword stuffing *reduced* visibility. This template turns those
 findings into schema requirements rather than advice:
 
-- Every blog post and glossary entry requires a `tldr` — the front-loaded answer that
+- Every blog post and glossary entry requires a `tldr`: the front-loaded answer that
   sits in the first 30% of the page, styled as the lift target (the
   [SEO machinery tour](/blog/how-the-seo-machinery-works) shows where each piece
   renders).
-- Glossary entries require `sources` with at least one entry. No source, no page — the
+- Glossary entries require `sources` with at least one entry. No source, no page: the
   build fails.
 - Blog posts require a `proprietary` field naming what in the post an LLM could not
   have produced: original data, first-hand experience, original analysis, an expert
@@ -84,7 +85,7 @@ findings into schema requirements rather than advice:
 
 The glossary schema caps `shortDefinition` at 300 characters for a reason: that string
 is what an answer engine lifts, what the index page shows, and what the `DefinedTerm`
-JSON-LD carries — the [llms.txt entry](/glossary/llms-txt) is a live example of the
+JSON-LD carries. The [llms.txt entry](/glossary/llms-txt) is a live example of the
 shape. Write it as a complete, quotable sentence that survives being read
 with no page around it. Then let the body add the depth.
 
@@ -98,7 +99,7 @@ pages reference by `@id`.
 
 ## What to do with this template
 
-Replace this post. Seriously — it exists to show a valid frontmatter block, a working
+Replace this post. Seriously: it exists to show a valid frontmatter block, a working
 Sources section, and the tldr treatment. Your first real post should say something only
 you can say, and the `proprietary` field is where you declare what that is.
 
@@ -112,11 +113,11 @@ Core Web Vitals are Google's three field metrics for page experience: Largest Co
 
 ## The three metrics
 
-- **LCP — Largest Contentful Paint.** How long until the biggest thing in the viewport
+- **LCP, Largest Contentful Paint.** How long until the biggest thing in the viewport
   is painted. Good is under 2.5 seconds at the 75th percentile of real visits.
-- **INP — Interaction to Next Paint.** How quickly the page responds to a tap or
+- **INP, Interaction to Next Paint.** How quickly the page responds to a tap or
   keypress. Good is under 200 milliseconds. INP replaced FID in March 2024.
-- **CLS — Cumulative Layout Shift.** How much the layout jumps around while loading.
+- **CLS, Cumulative Layout Shift.** How much the layout jumps around while loading.
   Good is under 0.1.
 
 Google measures these in the field (Chrome UX Report), not in the lab, and uses them
@@ -126,11 +127,11 @@ as part of its page experience signals.
 
 The template makes three structural choices that buy the metrics before any tuning:
 
-1. **Static HTML, no client JavaScript on content pages** — nothing to hydrate, so INP
+1. **Static HTML, no client JavaScript on content pages.** Nothing to hydrate, so INP
    has almost nothing to measure.
-2. **CSS inlined into each page** — no render-blocking stylesheet request, which is
+2. **CSS inlined into each page.** No render-blocking stylesheet request, which is
    usually the LCP bottleneck on small sites.
-3. **No layout-shifting embeds** — images get intrinsic dimensions, and there are no
+3. **No layout-shifting embeds.** Images get intrinsic dimensions, and there are no
    late-loading banners pushing content down, so CLS stays near zero.
 
 The way to lose this is to add things: a web font without `font-display`, a script in
@@ -156,7 +157,7 @@ the whole corpus in one fetch.
 ## How this template handles it
 
 Both files are **generated at build time** from the same content collections that
-render the pages — never hand-maintained. That is the property that matters: a
+render the pages, never hand-maintained. That is the property that matters: a
 hand-written brand summary drifts; a generated one cannot say something the site does
 not. The human-readable companion is the [/for-llms](/for-llms) page, which carries
 the same brief as a real, linked, indexable page.
@@ -165,7 +166,7 @@ the same brief as a real, linked, indexable page.
 
 No. The honest evidence as of 2026 is that few AI crawlers demonstrably honour
 `llms.txt`, so do not build strategy around it. But generation costs minutes and the
-downside is zero, which is why the template ships it anyway — as a cheap bet, not a
+downside is zero, which is why the template ships it anyway: as a cheap bet, not a
 moat. The durable levers are on the pages themselves: sourced claims, quotable
 definitions, and front-loaded answers.
 

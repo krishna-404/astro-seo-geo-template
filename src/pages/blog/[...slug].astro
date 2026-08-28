@@ -9,6 +9,7 @@ import { SITE } from '../../data/site';
 import { isPublished } from '../../data/publishing.mjs';
 import { faqPageNode } from '../../lib/faqSchema';
 import { relatedFor, type RelatedCandidate } from '../../lib/related';
+import authorsData from '../../data/authors.json';
 
 /**
  * Blog post template.
@@ -76,6 +77,15 @@ const { Content, headings } = await render(entry);
 
 const url = new URL(`/blog/${entry.id}`, SITE.url).href;
 
+/** The byline links to the author's page (/author/<slug>) — the verifiable
+ *  credential behind the name. Matched by a shared sameAs URL first (names
+ *  collide; profile URLs don't), then exact name. check-source-rules fails
+ *  any published post whose author is not in src/data/authors.json, so this
+ *  lookup cannot come back empty on a shipped page. */
+const authorEntry = authorsData.authors.find(
+  (a) => a.sameAs.some((s) => data.author.sameAs.includes(s)) || a.name === data.author.name
+);
+
 const published = data.published.toISOString();
 const modified = (data.updated ?? data.published).toISOString();
 /** Only a LATER `updated` is a real revision — sample content ships with
@@ -96,6 +106,7 @@ const schema = [
       name: data.author.name,
       jobTitle: data.author.title,
       sameAs: data.author.sameAs,
+      ...(authorEntry ? { url: `${SITE.url}/author/${authorEntry.slug}` } : {}),
     },
     publisher: { '@id': `${SITE.url}/#organization` },
     ...(data.tags.length > 0 ? { keywords: data.tags.join(', ') } : {}),
@@ -141,7 +152,16 @@ const schema = [
     <h1>{data.title}</h1>
 
     <p class="post__byline">
-      By <strong>{data.author.name}</strong>, {data.author.title} ·
+      By{' '}
+      {
+        authorEntry ? (
+          <a href={`/author/${authorEntry.slug}`}>
+            <strong>{data.author.name}</strong>
+          </a>
+        ) : (
+          <strong>{data.author.name}</strong>
+        )
+      }, {data.author.title} ·
       <time datetime={published}>{published.slice(0, 10)}</time>
       {wasUpdated && <span> · updated {modified.slice(0, 10)}</span>}
     </p>
