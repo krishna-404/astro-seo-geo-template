@@ -131,11 +131,50 @@ being checked is not a reason to ignore it here; the prose carries the WHY.
 
 ## Content rules
 
+- Every blog author lives in `src/data/authors.json` (enforced): the byline
+  links to `/author/<slug>` — the verifiable credential behind the name — and
+  a guest author gets their own entry with a real profile and bio, never a
+  borrowed one.
 - Blog posts: named human author with a real `sameAs` profile; a required
   `proprietary` field naming what an LLM could not have produced; `sources`
   on anything factual; `tldr` front-loads the answer (that's the GEO lever
   with actual evidence behind it — alongside citations, quotes and
   statistics; keyword stuffing measurably hurts).
+- Blog cadence and interlinking (enforced by `check-source-rules`): no two
+  posts share a `published` date and no ISO week carries more than 5 — a
+  same-day batch reads as generated content to anyone who checks. Every post
+  carries at least 2 contextual in-body internal links, anchored on the
+  phrase a searcher types ("goes to demurrage", not "click here"); a
+  generated related-posts footer does not count. Site-wide, the link graph
+  is also checked (`check-link-graph`): no orphan content pages (an
+  intentional inbound link from another page — the auto-scorer does not
+  count), no dead internal links, no junk anchors.
+- The voice standard has two halves. Mechanical: `npm run check:voice`
+  enforces `src/data/voice.json` (banned AI-tell vocabulary and shapes,
+  em-dash density, stacked bold lead-ins, Title Case headings) at all three
+  rungs; the base layer is refreshed from its published sources by the
+  /refresh-anti-ai-rules skill, via PR, never silently. Judgement:
+  `marketing/VOICE-GUIDE.md` § ship checklist, run by hand on every piece —
+  a green script run is not a pass.
+- **The fuel rule.** A new post exists only when its `proprietary`
+  frontmatter names something real: a `marketing/field-notes.md` entry, a
+  `marketing/news-log.md` event with primary sources, a verified
+  social-sweep finding, or an insights finding. Field notes are an add-on,
+  never a gate — the engine keeps writing from the internet-derived
+  channels without them; only when every channel is dry does that cycle do
+  updates and interlinking instead. The
+  content engine (skills: /onboard-marketing, /interview, /write-content,
+  /refresh-anti-ai-rules, /content-cadence) delivers everything as PRs; a
+  human merges, nothing auto-publishes.
+- `marketing/content-inventory.md` is generated (`npm run inventory`) —
+  never hand-edit it; regenerate.
+- **Glossary upkeep rides every content change.** A post that introduces a
+  term adds its glossary entry in the same PR; an update that changes a
+  fact a glossary entry states corrects the entry in the same PR (`updated`
+  bumped, source added). Interactive tools/calculators are built only on
+  converging demand signals and the owner's go-ahead: deterministic code
+  over a sourced data file, prefill via query params, the /search JS
+  pattern — a model never generates a number a reader can check.
 - Programmatic pages (glossary etc.) auto-publish but must be built from real
   data — `sources` min 1 is schema-enforced. A programmatic page with no
   unique data is what scaled-content policies penalise.

@@ -16,6 +16,7 @@
  * Zero dependencies, so it runs from a clean checkout with nothing installed.
  */
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { SITE_URL } from '../src/data/origin.mjs';
@@ -77,6 +78,46 @@ const expectIdx = args.indexOf('--expect');
 const expectPath = expectIdx !== -1 ? args[expectIdx + 1] : null;
 const minIdx = args.indexOf('--min-urls');
 const minUrls = minIdx !== -1 ? Number(args[minIdx + 1]) : 0;
+const changedIdx = args.indexOf('--changed');
+const changedRange = changedIdx !== -1 ? args[changedIdx + 1] : null;
+
+/**
+ * --changed <git-range>: submit only the URLs this deploy actually changed,
+ * not the whole sitemap. IndexNow is for URLs that changed; re-submitting an
+ * unchanged corpus on every deploy wastes the ping and erodes the host's
+ * standing with the endpoint. Routes are derived from the diff:
+ *
+ *   src/content/<coll>/<slug>.md → /<coll>/<slug>
+ *   src/pages/foo.astro          → /foo   (index.astro → the directory route)
+ *
+ * A change anywhere that rewrites every page (layouts, components, styles,
+ * shared data, astro config, public/) falls back to the full sitemap — the
+ * honest answer when everything changed. Deleted pages drop out naturally:
+ * only URLs still present in the LIVE sitemap are ever submitted.
+ */
+function changedRoutes(range) {
+  let names;
+  try {
+    names = execSync(`git diff --name-only ${range}`, { encoding: 'utf8' }).trim().split('\n').filter(Boolean);
+  } catch (e) {
+    console.log(`  git diff ${range} failed (${e.message.split('\n')[0]}) — falling back to full sitemap`);
+    return null;
+  }
+  const routes = new Set();
+  for (const f of names) {
+    let m;
+    if ((m = /^src\/content\/([^/]+)\/(.+)\.mdx?$/.exec(f))) routes.add(`/${m[1]}/${m[2]}`);
+    else if ((m = /^src\/pages\/(.+)\.astro$/.exec(f))) {
+      if (m[1].includes('[')) return null; // a template change touches every page it renders
+      const base = m[1].replace(/\/index$/, '');
+      routes.add(base === 'index' ? '/' : `/${base}`);
+    } else if (/^(src\/(layouts|components|styles|data|content\.config)|astro\.config|public\/)/.test(f)) {
+      return null; // site-wide change — everything may have new markup
+    }
+    // scripts/, worker/, docs, workflows: no rendered-page effect; ignored.
+  }
+  return routes;
+}
 
 const fail = (msg) => {
   console.error(`indexnow: ${msg}`);
@@ -165,6 +206,26 @@ if (minUrls && urlList.length < minUrls) {
 }
 
 if (!urlList.length) fail('sitemap contained no URLs');
+
+// Narrow to this deploy's changes when asked. null = site-wide change or an
+// unreadable diff, both of which honestly mean "everything": keep the full list.
+if (changedRange) {
+  const routes = changedRoutes(changedRange);
+  if (routes === null) {
+    console.log(`  --changed ${changedRange}: site-wide change — submitting the full sitemap`);
+  } else {
+    const narrowed = urlList.filter((u) => {
+      const p = new URL(u).pathname.replace(/\/$/, '') || '/';
+      return routes.has(p);
+    });
+    console.log(`  --changed ${changedRange}: ${routes.size} changed route(s), ${narrowed.length} live in the sitemap`);
+    if (!narrowed.length) {
+      console.log('  nothing this deploy changed is in the live sitemap — nothing to submit.');
+      process.exit(0);
+    }
+    urlList = narrowed;
+  }
+}
 // IndexNow rejects the whole batch if any URL is off-host.
 const offHost = urlList.filter((u) => new URL(u).host !== HOST);
 if (offHost.length) fail(`off-host URLs would fail the batch: ${offHost.join(', ')}`);

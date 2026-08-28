@@ -26,7 +26,7 @@
  * silently — the same treatment the other site invariants get.
  */
 import { execFileSync } from 'node:child_process';
-import { writeFileSync, readdirSync, existsSync } from 'node:fs';
+import { writeFileSync, readFileSync, readdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join } from 'node:path';
 import { readCollection } from './lib/readContent.mjs';
@@ -79,6 +79,20 @@ for (const [route, folder] of Object.entries(COLLECTIONS)) {
   }
 }
 
+// Author pages: one route per registry entry. An author page changes when the
+// registry changes (bio, profiles), when its template changes, or when any
+// blog post changes — the page lists the author's posts, and attributing a
+// post to a different author moves two author pages at once, so the whole
+// collection is an input rather than a per-author slice.
+{
+  const AUTHOR_SOURCES = ['src/data/authors.json', 'src/pages/author/[...slug].astro', 'src/content/blog'];
+  const { authors } = JSON.parse(readFileSync(resolve(root, 'src/data/authors.json'), 'utf8'));
+  for (const a of authors) {
+    const date = newestCommit(AUTHOR_SOURCES);
+    if (date) map[`/author/${a.slug}`] = date;
+  }
+}
+
 // Plain pages, DISCOVERED rather than listed.
 //
 // This was a hand-maintained map until 10 Aug 2026, and /contact shipped
@@ -117,8 +131,17 @@ function discoverPages() {
       if (base.includes('[')) continue;
       found[base === 'index' ? '/' : `/${base}`] = `src/pages/${entry.name}`;
     } else if (entry.isDirectory()) {
-      const index = join('src/pages', entry.name, 'index.astro');
-      if (existsSync(resolve(root, index))) found[`/${entry.name}`] = index;
+      // A directory contributes its index as the section route, and every
+      // other non-bracketed .astro file as a static child route — this loop
+      // originally only looked for index.astro, so a page like
+      // /contact/thanks carried no lastmod until check-lastmod caught it.
+      for (const name of readdirSync(resolve(pagesDir, entry.name)).filter(
+        (n) => n.endsWith('.astro') && !n.includes('[')
+      )) {
+        const base = name.replace(/\.astro$/, '');
+        const route = base === 'index' ? `/${entry.name}` : `/${entry.name}/${base}`;
+        found[route] = join('src/pages', entry.name, name);
+      }
     }
   }
   return found;

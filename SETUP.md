@@ -143,6 +143,26 @@ origin breaks it.
       `wrangler.jsonc` — both hops or neither. GA4 instead: `measurementId`
       arms the consent banner automatically; update
       `src/data/privacy.json` in the same commit (AGENTS rule 4).
+- [ ] **Cadence report email**: the content engine's run report reuses the
+      form's Apps Script — no new vendor. In `contact-form.gs`, set
+      `REPORT_TOKEN` to a long random string (`openssl rand -hex 24`) and
+      re-deploy the web app; give the cadence session the same value as the
+      `CADENCE_REPORT_TOKEN` env var. Each run then POSTs
+      `action=report` to `/api/contact`, which emails the summary to
+      `NOTIFY_TO` and appends it to the sheet's Reports tab. Token unset =
+      channel off; attempts land quarantined in Filtered.
+- [ ] **Insights read-back** (`npm run insights`): a read-only pull of the
+      three measurement surfaces — Umami (what humans with JS did), Search
+      Console (what Google showed and what got clicked, the only source that
+      sees demand you did NOT convert), Cloudflare edge (every request,
+      crawlers and answer engines included). Each section soft-skips until
+      its credentials exist, all read-only, all env vars, never committed:
+      `UMAMI_URL` + `UMAMI_WEBSITE_ID` + `UMAMI_BEARER_TOKEN` (or
+      `UMAMI_USERNAME`/`UMAMI_PASSWORD`); `GSC_SA_KEY` (base64 of a Google
+      service-account JSON key, the SA email added as a restricted user on
+      the `sc-domain:` property); `CLOUDFLARE_READ_ANALYTICS` (token scoped
+      Zone:Read + Analytics:Read only). `--inspect` runs URL Inspection over
+      the live sitemap and explains any page that is not indexed.
 - [ ] **Privacy page**: clear the `privacy.json` TODOs, then flip
       `status.draft` to `false` — one flag publishes it and its
       indexability together.
@@ -160,10 +180,45 @@ nothing), JS-off still renders and submits.
 
 ## Phase 5 — content, and staying healthy
 
-Now write. The rules that bite are AGENTS § Content: named human author with
+Now write — and pick what to write from evidence, not guesswork:
+`npm run insights` (Phase 4) shows the queries, positions and indexing state;
+impressions at position 4–20 are the shortlist, impressions at position 50+
+mean the page needs links and authority, not a better title. The rules that
+bite are AGENTS § Content: named human author with
 a real profile, `tldr` front-loads the answer, `sources` on anything factual,
-FAQ answers only in frontmatter, `toc: true` at 4+ headings. Scheduled posts:
+FAQ answers only in frontmatter, `toc: true` at 4+ headings, dates spread
+(no two posts share a `published` date) and at least 2 in-body internal
+links per post — the last two are enforced by `check-source-rules`. Scheduled posts:
 future-date `published` and schedule a build for that day (PLAYBOOK §2).
+
+**The content engine.** Five skills in `.claude/skills/` run the whole
+loop, and three marketing files are its memory:
+
+1. Run **/onboard-marketing** once — it interviews you and fills
+   `marketing/STRATEGY.md`, `VOICE-GUIDE.md`, `writer-brief.md` and the
+   `voice.json` site layer. Until then those files carry TODOs and the
+   engine has no strategy to execute.
+2. Run **/interview** whenever you have been out in the world — meetings,
+   calls, things noticed. It captures dated entries in
+   `marketing/field-notes.md`: the richest proprietary fuel — and an
+   add-on, never a gate. **The fuel rule:** every post cites its fuel — a
+   field note, a primary-source news event (`marketing/news-log.md`), a
+   verified social-sweep finding, or an insights finding. The engine keeps
+   running whether or not you ever run /interview; skipping it just means
+   the internet-derived channels carry the whole load. No fuel anywhere,
+   no filler.
+3. Schedule **/content-cadence** as a recurring Routine (claude.ai → your
+   site's repo environment → schedule a Routine, or ask Claude Code to
+   create one) with a prompt like:
+   > Run /content-cadence. Daily mode on weekdays; weekly mode on Monday.
+   Daily runs measure (insights snapshot + deltas), log news candidates,
+   and email you the report — including the 10 URLs to paste into Search
+   Console's "Request indexing" by hand, which the API cannot do. Weekly
+   runs additionally refresh the anti-AI rules from their public sources
+   (sweeping the latest posts for newly landed tells) and do the writing
+   run. Everything lands as PRs; **you merge — nothing auto-publishes.**
+   Give the Routine's environment the insights credentials and
+   `CADENCE_REPORT_TOKEN` (both above).
 
 From here the rhythm is PLAYBOOK §9 (weekly GSC glance, monthly link-rot
 run, quarterly crawl, annual security.txt/HSTS/domain review) — put the

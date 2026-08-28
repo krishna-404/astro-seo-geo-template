@@ -1,0 +1,138 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { SITE } from '../../data/site';
+import { isPublished } from '../../data/publishing.mjs';
+import authorsData from '../../data/authors.json';
+
+/**
+ * One page per registered author (src/data/authors.json): the verifiable
+ * credential behind every byline. E-E-A-T and answer engines key on a real,
+ * checkable human — a byline that links nowhere is a name, not a credential.
+ * Every blog byline links here (matched by sameAs, then exact name), and
+ * check-source-rules fails any post whose author is not in the registry.
+ */
+export async function getStaticPaths() {
+  const posts = await getCollection('blog', ({ data }) => isPublished(data));
+  return authorsData.authors.map((author) => ({
+    params: { slug: author.slug },
+    props: {
+      author,
+      posts: posts
+        .filter(
+          (p) =>
+            p.data.author.sameAs.some((s) => author.sameAs.includes(s)) ||
+            p.data.author.name === author.name
+        )
+        .sort((a, b) => b.data.published.valueOf() - a.data.published.valueOf()),
+    },
+  }));
+}
+
+const { author, posts } = Astro.props;
+
+/** Meta description, built to the site invariant (70–165 chars): name and
+ *  role first, then as much of the bio as fits, clamped at a word boundary. */
+const descBase = `${author.name}, ${author.title}: ${author.bio} Profiles and every post, on one page.`;
+const description =
+  descBase.length <= 165 ? descBase : `${descBase.slice(0, 164).replace(/\s+\S*$/, '')}…`;
+
+const schema = [
+  {
+    '@type': 'ProfilePage',
+    mainEntity: {
+      '@type': 'Person',
+      '@id': `${SITE.url}/#author-${author.slug}`,
+      name: author.name,
+      jobTitle: author.title,
+      description: author.bio,
+      sameAs: author.sameAs,
+      url: `${SITE.url}/author/${author.slug}`,
+    },
+  },
+];
+---
+
+<BaseLayout
+  title={`${author.name} — ${author.title}`}
+  description={description}
+  schema={schema}
+>
+  <div class="author">
+    <Breadcrumbs items={[{ label: 'Blog', href: '/blog' }, { label: author.name }]} />
+    <h1>{author.name}</h1>
+    <p class="author__role">{author.title}</p>
+    <p class="author__bio">{author.bio}</p>
+    <p class="author__profiles">
+      {
+        author.sameAs.map((url) => (
+          <a href={url} rel="me noopener" target="_blank">
+            {new URL(url).hostname.replace(/^www\./, '')}
+            <span class="visually-hidden"> (opens in new tab)</span>
+          </a>
+        ))
+      }
+    </p>
+
+    <h2>Everything by {author.name}</h2>
+    {posts.length === 0 && <p>No posts published yet.</p>}
+    <ul class="author__list">
+      {
+        posts.map((p) => (
+          <li>
+            <a href={`/blog/${p.id}`}>{p.data.title}</a>
+            <p class="author__meta">
+              <time datetime={p.data.published.toISOString()}>
+                {p.data.published.toISOString().slice(0, 10)}
+              </time>
+            </p>
+            <p class="author__desc">{p.data.description}</p>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</BaseLayout>
+
+<style>
+  .author {
+    max-width: 46rem;
+    margin-inline: auto;
+    padding: 1.5rem 1rem 3rem;
+  }
+  .author__role {
+    color: var(--ink-2, inherit);
+    margin-top: -0.5rem;
+  }
+  .author__bio {
+    max-width: 40rem;
+  }
+  .author__profiles {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .author__list {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 1.25rem;
+  }
+  .author__meta {
+    color: var(--ink-2, inherit);
+    font-size: 0.875rem;
+    margin: 0.125rem 0;
+  }
+  .author__desc {
+    margin: 0;
+  }
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+</style>

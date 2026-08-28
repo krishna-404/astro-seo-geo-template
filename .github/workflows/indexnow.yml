@@ -33,7 +33,13 @@ jobs:
     # 10 minutes is generous headroom for the build step here.
     timeout-minutes: 10
     steps:
+      # Depth 2 so `git diff HEAD^..HEAD` can derive the changed routes for
+      # --changed below (a multi-commit push under-narrows to its last commit;
+      # the site-wide fallback and the next push both self-correct that).
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 2
 
       - uses: actions/setup-node@v7
         with:
@@ -70,7 +76,19 @@ jobs:
       # public/<key>.txt (the zero-setup path), or the INDEXNOW_KEY repo secret
       # wired here. With neither, the script logs a loud skip and exits green —
       # a fresh template clone must not have a permanently red workflow.
+      # After a deploy, submit only what the deploy changed (--changed derives
+      # routes from the commit's diff; layout/style/data changes fall back to
+      # the full sitemap since every page's markup moved). A manual dispatch
+      # submits everything — that is what dispatch is for. Known gap, accepted:
+      # a multi-commit push narrows to its last commit's diff, so a page added
+      # earlier in the same push may miss this ping; the sitemap still carries
+      # it and a dispatch covers it immediately.
       - name: Submit to IndexNow
         env:
           INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
-        run: node scripts/indexnow.mjs --min-urls "${{ steps.expected.outputs.count }}"
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            node scripts/indexnow.mjs --min-urls "${{ steps.expected.outputs.count }}" --changed 'HEAD^..HEAD'
+          else
+            node scripts/indexnow.mjs --min-urls "${{ steps.expected.outputs.count }}"
+          fi

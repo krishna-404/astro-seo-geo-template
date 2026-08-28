@@ -68,18 +68,9 @@ function ensureAll(pkgs) {
 
 // ── fast source tier (same as the pre-commit hook) ─────────────────────────
 run('config parity + source rules', 'node scripts/check-parity.mjs && node scripts/check-source-rules.mjs');
-run('collection routes exist', `node -e "
-  const fs = require('fs');
-  let fail = 0;
-  for (const dir of fs.readdirSync('src/content', { withFileTypes: true })) {
-    if (!dir.isDirectory()) continue;
-    if (!fs.existsSync('src/pages/' + dir.name + '/[...slug].astro')) {
-      console.log('FAIL: collection ' + dir.name + ' has no route');
-      fail = 1;
-    }
-  }
-  process.exit(fail);
-"`);
+run('mechanical voice check (anti-AI rules)', 'node scripts/check-voice.mjs');
+run('site-wide link graph (orphans, dead links, junk anchors)', 'node scripts/check-link-graph.mjs');
+run('collection routes exist', 'node scripts/check-collection-routes.mjs');
 run('content image references', 'node scripts/check-content-images.mjs');
 run('types + worker + lint', 'npm run check');
 

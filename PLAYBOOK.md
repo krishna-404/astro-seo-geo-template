@@ -143,6 +143,17 @@ Lessons encoded (each cost the ancestor site a bug):
 - Attribution is last-touch and that is a hard limit, not a shortcut —
   first-touch needs storage, and storage is banned. `/hi/<code>` covers
   outbound campaigns cookielessly.
+- FAQ accordions are measured the same declarative way: every `<summary>`
+  toggle fires the `faq` event with the question text and a `place`
+  (`Faq.astro`) — the only first-party signal about which questions visitors
+  actually relate to. Counts include closes; the first click is always an
+  open, so read it as engagement, not a precise open-count.
+- `npm run insights` reads all three surfaces back — Umami, Search Console
+  (queries/pages/CTR/position, plus `--inspect` for per-URL indexing
+  verdicts) and Cloudflare edge (crawlers, answer engines, 404 scans) — and
+  prints one report so what-to-write-next decisions come from evidence.
+  Read-only env-var credentials; each section soft-skips until configured
+  (SETUP Phase 4).
 - Before organic traffic exists, the metric that matters is **AI citations**:
   keep a list of target queries, periodically run each in ChatGPT,
   Perplexity and Google AI Overviews, and log who got cited. Rankings and
@@ -233,7 +244,10 @@ serving pages, which is exactly why they get forgotten)
       Copilot/DuckDuckGo/ChatGPT search): verify via `VERIFICATION.bing`
       meta, submit sitemap.
 - [ ] IndexNow: key file at `public/<key>.txt` containing exactly the key;
-      `indexnow.yml` submits automatically after each green deploy. Google
+      `indexnow.yml` submits automatically after each green deploy — only the
+      URLs that deploy changed (`--changed` derives routes from the commit's
+      diff; a layout/style/data change falls back to the full sitemap, and a
+      manual dispatch always submits everything). Google
       does not participate — the sitemap covers Google.
 - [ ] robots.txt is a generated route — the AI-crawler list (with intent
       comments) lives in `src/pages/robots.txt.ts` and the Sitemap URL
@@ -323,6 +337,16 @@ has already cost something.
 - [ ] GSC Security & Manual Actions: must be empty. This is the check where
       finding something a week late is a disaster and a day late is fine.
 - [ ] AI-citation log (§5): run the target queries, note who got cited.
+- [ ] `npm run insights` (§5): queries at position 4–20 with impressions are
+      the work shortlist; position 50+ means links and authority, not a
+      better title. Match titles/headings to the query language the report
+      shows — never phrasing a keyword tool invented.
+- [ ] The /content-cadence Routine does most of this section for you when
+      scheduled (SETUP Phase 5): daily insights snapshot + emailed report
+      with the manual request-indexing shortlist; weekly anti-AI rules
+      refresh (with a sweep of the latest posts for newly landed tells) and
+      the evidence-fueled writing run. Its output is PRs — the human half of
+      the cadence is merging them and pasting the shortlist into GSC.
 
 **Monthly (automated + 10 minutes)**
 - [ ] The link-rot workflow ran on the 3rd

@@ -24,11 +24,11 @@ sources:
 
 ## The three metrics
 
-- **LCP — Largest Contentful Paint.** How long until the biggest thing in the viewport
+- **LCP, Largest Contentful Paint.** How long until the biggest thing in the viewport
   is painted. Good is under 2.5 seconds at the 75th percentile of real visits.
-- **INP — Interaction to Next Paint.** How quickly the page responds to a tap or
+- **INP, Interaction to Next Paint.** How quickly the page responds to a tap or
   keypress. Good is under 200 milliseconds. INP replaced FID in March 2024.
-- **CLS — Cumulative Layout Shift.** How much the layout jumps around while loading.
+- **CLS, Cumulative Layout Shift.** How much the layout jumps around while loading.
   Good is under 0.1.
 
 Google measures these in the field (Chrome UX Report), not in the lab, and uses them
@@ -38,11 +38,11 @@ as part of its page experience signals.
 
 The template makes three structural choices that buy the metrics before any tuning:
 
-1. **Static HTML, no client JavaScript on content pages** — nothing to hydrate, so INP
+1. **Static HTML, no client JavaScript on content pages.** Nothing to hydrate, so INP
    has almost nothing to measure.
-2. **CSS inlined into each page** — no render-blocking stylesheet request, which is
+2. **CSS inlined into each page.** No render-blocking stylesheet request, which is
    usually the LCP bottleneck on small sites.
-3. **No layout-shifting embeds** — images get intrinsic dimensions, and there are no
+3. **No layout-shifting embeds.** Images get intrinsic dimensions, and there are no
    late-loading banners pushing content down, so CLS stays near zero.
 
 The way to lose this is to add things: a web font without `font-display`, a script in

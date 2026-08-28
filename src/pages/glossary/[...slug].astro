@@ -157,7 +157,7 @@ const schema = [
 
     <RelatedLinks items={related} />
 
-    {data.faq.length > 0 && <Faq faq={data.faq} groupName={entry.id} />}
+    {data.faq.length > 0 && <Faq faq={data.faq} groupName={entry.id} place={`glossary:${entry.id}`} />}
 
     <section class="term__sources">
       <h2>Sources</h2>

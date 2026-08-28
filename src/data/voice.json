@@ -1,0 +1,188 @@
+{
+  "$comment": "Anti-AI writing rules, mechanized. Two layers: `base` is the generic tell list — seeded from Wikipedia's 'Signs of AI writing' and a working writer-pack checklist, each rule here because it marks text that reads like nobody in particular wrote it. `site` is this site's house style, filled by the /onboard-marketing skill and edited by hand. scripts/check-voice.mjs enforces both; the /refresh-anti-ai-rules skill updates `base` from its sources via PR (never silently — these rules gate CI). Severity: `banned*` fail the check; `watchWords`, `hedges` and `crutch` are reported as warnings because each has legitimate uses a grep cannot judge. Era-tagged tells rotate: the refresh skill retires stale ones and adds new ones as the sources move.",
+  "base": {
+    "updated": "2026-08-28",
+    "sources": [
+      {
+        "label": "Wikipedia: Signs of AI writing",
+        "url": "https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing",
+        "retrieved": "2026-08-28"
+      },
+      {
+        "label": "Wikipedia: WikiProject AI Cleanup (the project maintaining the signs page — new tells often land here first)",
+        "url": "https://en.wikipedia.org/wiki/Wikipedia:WikiProject_AI_Cleanup",
+        "retrieved": "2026-08-28"
+      },
+      {
+        "label": "Working writer-pack anti-AI checklist (generalized from a production content desk)",
+        "retrieved": "2026-08-08"
+      }
+    ],
+    "bannedWords": [
+      "delve", "delves", "delving",
+      "tapestry", "tapestries",
+      "boasts", "boasting",
+      "nestled",
+      "testament",
+      "paradigm",
+      "synergy", "synergies",
+      "holistic",
+      "multifaceted",
+      "seamless", "seamlessly",
+      "leverage", "leveraging",
+      "unlock", "unlocks", "unlocking",
+      "unleash", "unleashes", "unleashing",
+      "empower", "empowers", "empowering",
+      "elevate", "elevates", "elevating",
+      "harness", "harnessing",
+      "spearhead", "spearheaded",
+      "groundbreaking",
+      "cutting-edge",
+      "best-in-class",
+      "world-class",
+      "industry-leading",
+      "market-leading",
+      "unparalleled",
+      "unprecedented",
+      "ever-evolving",
+      "transformative",
+      "revolutionize", "revolutionise", "revolutionizing", "revolutionising",
+      "game-changer", "game-changing",
+      "meticulously",
+      "vibrant"
+    ],
+    "eraWords": {
+      "$comment": "Current-era vocabulary tells, per the Wikipedia signs page's dated lists. These FAIL like bannedWords but are expected to rotate — the refresh skill retires an era when the sources do and adds the next one.",
+      "2024-2025": ["fostering", "showcasing", "showcases"],
+      "2025+": ["emphasizing", "emphasising", "highlighting"]
+    },
+    "bannedPhrases": [
+      "stands as a",
+      "serves as a",
+      "is a testament to",
+      "plays a pivotal role",
+      "plays a crucial role",
+      "plays a vital role",
+      "underscores the importance",
+      "underscores its importance",
+      "marks a turning point",
+      "key turning point",
+      "reflects broader",
+      "in today's",
+      "it is important to note",
+      "it is worth noting",
+      "it should be noted",
+      "in conclusion",
+      "in summary",
+      "future outlook",
+      "despite these challenges",
+      "at the end of the day",
+      "carefully crafted",
+      "thoughtfully designed",
+      "meticulously curated",
+      "deeply rooted",
+      "seamlessly integrate",
+      "uniquely positioned",
+      "rich tapestry",
+      "diverse array",
+      "valuable insights",
+      "thought leader",
+      "north star",
+      "one-stop shop",
+      "studies show",
+      "experts say",
+      "experts argue",
+      "industry reports",
+      "observers note",
+      "observers have cited",
+      "some critics argue",
+      "continues to captivate",
+      "left an indelible mark"
+    ],
+    "bannedOpeners": [
+      "Moreover,",
+      "Furthermore,",
+      "Additionally,",
+      "Notably,",
+      "Importantly,",
+      "Interestingly,",
+      "Indeed,",
+      "Ultimately,"
+    ],
+    "assistantResidue": [
+      "i hope this helps",
+      "let me know if",
+      "certainly!",
+      "as an ai",
+      "as of my training",
+      "as of my knowledge cutoff",
+      "i cannot access",
+      "contentreference",
+      "oaicite",
+      "turn0search",
+      "[cite:",
+      "grok_card",
+      "attached_file",
+      "[insert"
+    ],
+    "watchWords": [
+      "robust", "dynamic", "agile", "resilient",
+      "comprehensive", "compelling", "remarkable", "crucial", "pivotal",
+      "profound", "innovative", "landscape", "journey", "ecosystem",
+      "roadmap", "blueprint", "navigate", "streamline", "optimize",
+      "enhance", "foster", "cultivate", "curate", "amplify", "propel",
+      "embark", "unpack", "facilitate",
+      "notably", "significantly", "effectively", "strategically",
+      "ultimately", "fundamentally", "essentially",
+      "arguably", "undoubtedly", "genuinely", "truly", "literally"
+    ],
+    "hedges": [
+      "i think", "maybe", "perhaps", "it seems", "sort of", "kind of",
+      "in my opinion", "arguably"
+    ],
+    "crutch": [
+      "just", "really", "very", "actually", "basically", "simply", "quite",
+      "various", "numerous", "a number of", "in order to", "the fact that"
+    ],
+    "shapes": {
+      "$comment": "Regex tells checked against prose. `fail` shapes reject the draft; `warn` shapes are reported. Source strings, compiled case-insensitive by check-voice.mjs.",
+      "fail": [
+        {
+          "label": "not-just-but construction as a slogan",
+          "re": "\\bnot (?:just|merely) an? \\w+[,;] but\\b"
+        },
+        {
+          "label": "vague significance ('is more than just')",
+          "re": "\\bis more than just\\b"
+        }
+      ],
+      "warn": [
+        {
+          "label": "negative parallelism (not only X but also Y)",
+          "re": "\\bnot only\\b[^.!?\\n]{0,90}\\bbut(?: also)?\\b"
+        },
+        {
+          "label": "present-participle significance tail (', highlighting/underscoring/reflecting …')",
+          "re": ",\\s+(?:highlighting|underscoring|reflecting|showcasing|emphasizing|demonstrating|signaling|signalling)\\b"
+        }
+      ]
+    },
+    "quant": {
+      "$comment": "Quantitative thresholds. A site overrides any of these in site.quantOverrides — e.g. emDashPer1000Words: 0 for a zero-em-dash house style.",
+      "emDashPer1000Words": 2,
+      "maxEmoji": 0,
+      "maxConsecutiveBoldLeadIns": 2,
+      "maxBoldProseLineRatio": 0.2,
+      "allowTitleCaseHeadings": false,
+      "maxHorizontalRules": 3
+    }
+  },
+  "site": {
+    "$comment": "TODO — filled by the /onboard-marketing skill. bannedWords/bannedPhrases: words this brand never says (self-praise like 'trusted', category clichés). allowedExceptions: base-layer words that are legitimate domain vocabulary here (e.g. 'ecosystem' on a biology site) — each entry needs a reason. quantOverrides: tighten or loosen base.quant. keepWords: words used on purpose, listed so a rewrite never 'fixes' them.",
+    "bannedWords": [],
+    "bannedPhrases": [],
+    "allowedExceptions": [],
+    "keepWords": [],
+    "quantOverrides": {}
+  }
+}

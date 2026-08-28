@@ -1,0 +1,12 @@
+{
+  "$comment": "The author registry. Every published blog post's `author` frontmatter must match an entry here (by a shared sameAs URL, or exact name) — check-source-rules fails the commit otherwise, because a byline that links nowhere is a credential nobody can verify. Each entry renders a page at /author/<slug>: bio, profiles, and everything they wrote. Filled by /onboard-marketing; a guest author gets their own entry (real profile, real bio), never a borrowed one.",
+  "authors": [
+    {
+      "slug": "founder",
+      "name": "TODO Founder Name",
+      "title": "Founder",
+      "bio": "TODO — two or three sentences of verifiable credential: what this person has actually done that gives them the right to write these pages. No adjectives; facts a reader could check.",
+      "sameAs": ["https://www.linkedin.com/in/TODO"]
+    }
+  ]
+}

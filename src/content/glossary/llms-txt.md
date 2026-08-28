@@ -30,7 +30,7 @@ the whole corpus in one fetch.
 ## How this template handles it
 
 Both files are **generated at build time** from the same content collections that
-render the pages — never hand-maintained. That is the property that matters: a
+render the pages, never hand-maintained. That is the property that matters: a
 hand-written brand summary drifts; a generated one cannot say something the site does
 not. The human-readable companion is the [/for-llms](/for-llms) page, which carries
 the same brief as a real, linked, indexable page.
@@ -39,6 +39,6 @@ the same brief as a real, linked, indexable page.
 
 No. The honest evidence as of 2026 is that few AI crawlers demonstrably honour
 `llms.txt`, so do not build strategy around it. But generation costs minutes and the
-downside is zero, which is why the template ships it anyway — as a cheap bet, not a
+downside is zero, which is why the template ships it anyway: as a cheap bet, not a
 moat. The durable levers are on the pages themselves: sourced claims, quotable
 definitions, and front-loaded answers.

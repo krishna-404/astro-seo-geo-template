@@ -88,6 +88,22 @@ var NOTIFY_BCC = 'colleague@example.com';
 var THANKS = 'https://example.com/contact/thanks';
 
 /**
+ * The automation report channel (/content-cadence skill): a POST with
+ * action=report and this token appends the run's summary to the Reports tab
+ * and emails it to NOTIFY_TO — same sheet, same mail quota, no new vendor.
+ *
+ * Empty = feature OFF (every report attempt is quarantined). To enable:
+ * generate a long random string (`openssl rand -hex 24`), paste it here,
+ * re-deploy the web app, and give the same value to the cadence session as
+ * the CADENCE_REPORT_TOKEN env var. The token rides in the POST body because
+ * Apps Script cannot read request headers at all (see proxyValue below). It
+ * gates WRITES to your inbox and sheet, nothing more — rotate it here if it
+ * ever leaks and the old one dies with the redeploy.
+ */
+var REPORT_TOKEN = '';
+var REPORT_TAB = 'Reports';
+
+/**
  * Columns, in the order a person reading the sheet wants them: who, then what
  * they said, then where they came from. Appending a new one here is safe;
  * inserting in the middle is not, because appendRow is positional and old rows
@@ -122,6 +138,10 @@ function doPost(e) {
     // wrote a row — both say "Completed".
     console.log('fields=' + Object.keys(p).join(',') + ' email=' + (p.email || '(none)'));
 
+    // The automation report channel. Checked before every lead heuristic —
+    // a report has no email field and must not land in Filtered as a lead.
+    if (p.action === 'report') return handleReport(p);
+
     // Honeypot. Filtered, not discarded — see FILTERED_TAB for why an agent
     // filling this field is not the same thing as a bot filling it.
     //
@@ -155,6 +175,37 @@ function doPost(e) {
   }
 
   return thanksPage();
+}
+
+/**
+ * The content-cadence run report: subject + markdown body, emailed to
+ * NOTIFY_TO and appended to the Reports tab. Token-gated (see REPORT_TOKEN);
+ * a bad or absent token quarantines the attempt so probing is visible in the
+ * sheet without ever reaching the inbox.
+ */
+function handleReport(p) {
+  if (!REPORT_TOKEN || p.token !== REPORT_TOKEN) {
+    console.warn('FILTERED (report token): configured=' + Boolean(REPORT_TOKEN));
+    quarantine(REPORT_TOKEN ? 'report-bad-token' : 'report-disabled', p, null);
+    return ContentService.createTextOutput('denied');
+  }
+  var subject = trim(p.subject, 180) || 'Content cadence report';
+  // Sheets caps a cell at 50,000 characters; the email carries the full body.
+  var body = String(p.body || '').slice(0, 100000);
+  var mailed = false;
+  try {
+    MailApp.sendEmail({
+      to: NOTIFY_TO,
+      subject: '[cadence] ' + subject,
+      body: body,
+    });
+    mailed = true;
+  } catch (err) {
+    console.error('REPORT MAIL FAILED: ' + err);
+  }
+  var stored = append(REPORT_TAB, ['When', 'Subject', 'Report'], [new Date(), subject, body.slice(0, 45000)]);
+  console.log('report mailed=' + mailed + ' stored=' + stored);
+  return ContentService.createTextOutput(mailed || stored ? 'ok' : 'failed');
 }
 
 /** One row, built the same way whether it is going to Leads or to Filtered. */

@@ -23,8 +23,8 @@ sourced is not published.
 
 ## Blog
 
-- [How this template's SEO machinery works](https://example.com/blog/how-the-seo-machinery-works): A tour of the SEO plumbing this template ships with — canonical URLs, JSON-LD, sitemap, RSS and OG cards — and which file each piece lives in.
-- [Writing content that answer engines actually cite](https://example.com/blog/writing-content-answer-engines-cite): The three evidence-backed GEO levers — citations, quotable definitions and front-loaded answers — and how this template's schemas force you to use them.
+- [How this template's SEO machinery works](https://example.com/blog/how-the-seo-machinery-works): A tour of the SEO plumbing this template ships with (canonical URLs, JSON-LD, sitemap, RSS and OG cards) and which file each piece lives in.
+- [Writing content that answer engines actually cite](https://example.com/blog/writing-content-answer-engines-cite): The three evidence-backed GEO levers (citations, quotable definitions and front-loaded answers) and how this template's schemas force you to use them.
 
 Index: <https://example.com/blog> · Feed: <https://example.com/rss.xml>
 

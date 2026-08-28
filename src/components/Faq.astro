@@ -13,15 +13,29 @@
  * Single-source with the schema: the same `faq` array feeds this component
  * and faqPageNode() (src/lib/faqSchema.ts), so the on-page questions and the
  * FAQPage JSON-LD cannot drift apart.
+ *
+ * Every toggle is measured (AGENTS rule 3): a collapsed answer costs the
+ * reader a click and pays for it with the only first-party signal the site
+ * gets about which questions visitors actually relate to. The `faq` event
+ * carries the question text and a `place`, via the same declarative
+ * data attributes every CTA uses — no custom JavaScript, native <details>
+ * does the collapsing and the analytics tracker binds the attribute. The
+ * binding fires on every <summary> click, so counts include closes as well
+ * as opens; the first click on a question is always an open, so treat the
+ * number as engagement, not a precise open-count.
  */
 interface Props {
   faq: { q: string; a: string }[];
   /** Groups the <details> for exclusive-open; use the entry slug. */
   groupName: string;
   heading?: string;
+  /** Where this FAQ lives, for the event's place property — e.g. "home",
+   *  "glossary:demurrage". Keep it stable; it is an analytics dimension.
+   *  Defaults to groupName. */
+  place?: string;
 }
 
-const { faq, groupName, heading = 'Questions this raises' } = Astro.props;
+const { faq, groupName, heading = 'Questions this raises', place = groupName } = Astro.props;
 ---
 
 <section class="faq">
@@ -29,7 +43,9 @@ const { faq, groupName, heading = 'Questions this raises' } = Astro.props;
   {
     faq.map((f) => (
       <details name={`faq-${groupName}`}>
-        <summary>{f.q}</summary>
+        <summary data-umami-event="faq" data-umami-event-question={f.q} data-umami-event-place={place}>
+          {f.q}
+        </summary>
         <p>{f.a}</p>
       </details>
     ))
