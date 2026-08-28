@@ -81,6 +81,53 @@ supports (never more than the cadence in STRATEGY.md; the hard cap is
 - Link glossary terms where they occur; add glossary `related` entries where
   the curation genuinely teaches the next concept.
 
+## 4b. Glossary upkeep — every update, where applicable
+
+The glossary is a living reference, not a launch artifact; every run checks
+it both ways:
+
+- **New or leaned-on term** → a post that introduces a term the glossary
+  lacks, or leans on one repeatedly, adds the entry in the same PR (the
+  schema's evidence rules apply in full: real `sources`, a quotable
+  `shortDefinition`), and links the term where it occurs.
+- **Changed facts** → when a news event or page update changes something a
+  glossary entry states (a rate, a rule, a definition's edge), the entry is
+  corrected in the same PR with its `updated` bumped and the new source
+  added. A glossary that contradicts the post citing it is worse than no
+  glossary.
+- **Demand signals** → question-shaped queries from insights ("what is X",
+  "X meaning", "X full form") seed glossary `faq` entries, phrased the way
+  the searcher typed them.
+
+## 4c. Tools and calculators — when the signals are strong
+
+An interactive tool is the highest-leverage page a site can ship — a link
+magnet, an AI-citation magnet, and a lead qualifier — and it is built
+rarely, on evidence, never on a whim. Build one when signals converge:
+tool-intent queries with impressions ("calculator", "how much", "estimate",
+"checker"), repeated social/forum requests for the same computation, or a
+field note where a reader did the arithmetic by hand.
+
+Rules for building one (the ancestor site's calculator is the precedent):
+
+- **Deterministic code computes; a model never does.** Every constant,
+  rate and formula lives in a data file (e.g. `src/data/assumptions.json`)
+  with a `source` per figure — a prospect who re-runs the arithmetic must
+  land exactly where the page does. A figure without a source stays out;
+  ship the tool with fewer inputs instead.
+- **Prefill via query params** (`?x=3&y=1200`) so outreach and posts can
+  deep-link a reader into a page that already knows their situation.
+- **Follow the /search JS pattern** (AGENTS rule 17): interaction-gated
+  inline script, additive (JS-off shows the formula and a worked example —
+  which is also what answer engines cite), styles from existing tokens.
+  Shipping a second JS page is a deliberate architecture change: extend the
+  invariant deliberately and document it in CHECKLIST per the
+  self-extending rule — never sneak it past the battery.
+- Propose the tool in the cadence report first with the signals that
+  justify it; build on the owner's go-ahead. It ships like everything else:
+  a PR, interlinked from the pages whose queries it serves, output framed
+  per STRATEGY.md.
+
 ## 5. Schedule — spread, never batch
 
 When the run produces more than one piece, assign `published` dates spread

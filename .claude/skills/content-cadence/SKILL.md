@@ -39,7 +39,11 @@ guessed at. All changes land as PRs; nothing merges or publishes itself.
 6. **Rules refresh.** Run /refresh-anti-ai-rules (its own PR: rule diff +
    sweep of the latest posts for newly landed tells).
 7. **Writing run.** Run /write-content (its own PR: drafts with spread
-   dates, page updates, interlinks, news-log entry). The fuel rule holds —
+   dates, page updates, glossary upkeep, interlinks, news-log entry). When
+   its tool-signal test fires (repeated tool-intent queries, forum requests
+   for the same computation), put the proposal with its evidence in the
+   report's "Needs you" — a calculator is built on the owner's go-ahead,
+   not on a schedule. The fuel rule holds —
    field notes are an add-on, never a gate: news, social and insights fuel
    keep the engine writing without them, and only a week where every
    channel is dry produces updates and an honest "wrote nothing new" line

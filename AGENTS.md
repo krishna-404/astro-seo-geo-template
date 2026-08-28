@@ -168,6 +168,13 @@ being checked is not a reason to ignore it here; the prose carries the WHY.
   human merges, nothing auto-publishes.
 - `marketing/content-inventory.md` is generated (`npm run inventory`) —
   never hand-edit it; regenerate.
+- **Glossary upkeep rides every content change.** A post that introduces a
+  term adds its glossary entry in the same PR; an update that changes a
+  fact a glossary entry states corrects the entry in the same PR (`updated`
+  bumped, source added). Interactive tools/calculators are built only on
+  converging demand signals and the owner's go-ahead: deterministic code
+  over a sourced data file, prefill via query params, the /search JS
+  pattern — a model never generates a number a reader can check.
 - Programmatic pages (glossary etc.) auto-publish but must be built from real
   data — `sources` min 1 is schema-enforced. A programmatic page with no
   unique data is what scaled-content policies penalise.
