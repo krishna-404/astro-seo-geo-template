@@ -1,9 +1,10 @@
 # News log
 
-The record of every news sweep the content engine runs — what was found, what
-ran, and above all what was DROPPED and why. The drop-discipline is the whole
-point: a news feed that publishes everything it finds is a content farm, and
-the log is the memory that stops the same story running twice.
+The record of every news AND ICP-social sweep the content engine runs — what
+was found, what ran, and above all what was DROPPED and why. The
+drop-discipline is the whole point: a feed that publishes everything it finds
+is a content farm, and the log is the memory that stops the same story — or the
+same recurring social gripe — running twice.
 
 Format, one entry per run, newest first:
 
@@ -21,6 +22,10 @@ Dropped, with reasons:
   reporting / source could not be verified.
 Verification catches: <dates that differ across outlets and which was used;
 claims that did not survive checking — this section is where trust is built>
+ICP social sweep: <where the ICP was read (LinkedIn / Reddit / forums);
+pain-points harvested in the ICP's own words; keyword phrasing captured for
+the next insights validation; each marked used:<slug> / held / dropped-reason.
+No private individual quoted, screenshotted or named without consent.>
 ```
 
 Rules learned from a production newsdesk:
