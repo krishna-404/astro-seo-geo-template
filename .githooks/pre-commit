@@ -15,6 +15,7 @@ node scripts/check-parity.mjs
 node scripts/check-source-rules.mjs
 node scripts/check-voice.mjs
 node scripts/check-link-graph.mjs
+node scripts/content-inventory.mjs --check
 
 node scripts/check-collection-routes.mjs
 

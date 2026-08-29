@@ -54,8 +54,10 @@ guessed at. All changes land as PRs; nothing merges or publishes itself.
 Compose markdown with these sections, then send it:
 
 - **Data** — the numbers and their deltas since the last run.
-- **Findings** — what the data means: queries to chase, pages
-  underperforming their position, indexing anomalies, FAQ signals.
+- **Findings** — what the data means, classified by the funnel ladder
+  (STRATEGY.md § Content strategy): rung 1 conversion of what lands, rung 2
+  CTR where the site already ranks, rung 3 impressions — work proposed
+  bottom-up. Plus indexing anomalies and FAQ signals.
 - **Actions taken** — PRs opened (links), pages swept, posts scheduled and
   their dates, rules changed.
 - **Needs you** — the 10-URL request-indexing list, PRs awaiting merge,
