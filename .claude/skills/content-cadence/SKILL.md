@@ -23,11 +23,14 @@ guessed at. All changes land as PRs; nothing merges or publishes itself.
 2. **Shortlist.** The report's "request indexing" list: the 10 URLs from the
    `--inspect` shortlist (never-crawled first). These need the owner's hands
    — the GSC API cannot request indexing.
-3. **Scan.** A light news and social check of the site's clusters: log
-   genuinely new candidates to `marketing/news-log.md` as `noted, held for weekly` — do
-   not write pieces on a daily run. Exception: a candidate that is clearly
-   time-critical for the site's readers goes in the report as a flagged
-   question, for the owner to trigger /write-content early.
+3. **Scan.** A light news + ICP-social check of the site's clusters —
+   including a quick look at where the ICP posts (the platforms STRATEGY.md
+   names): log genuinely new candidates, including any ICP pain-point or
+   keyword, to `marketing/news-log.md` as `noted, held for weekly` — do not
+   write pieces on a daily run; the weekly run works them. Exception: a
+   candidate that is clearly time-critical for the site's readers goes in
+   the report as a flagged question, for the owner to trigger /write-content
+   early.
 4. **Release.** If a future-dated post's date has arrived, the deploy of
    today's merged work publishes it — note it in the report.
 5. **Housekeeping.** `npm run inventory`; commit snapshot + log + inventory
@@ -43,11 +46,13 @@ guessed at. All changes land as PRs; nothing merges or publishes itself.
    its tool-signal test fires (repeated tool-intent queries, forum requests
    for the same computation), put the proposal with its evidence in the
    report's "Needs you" — a calculator is built on the owner's go-ahead,
-   not on a schedule. The fuel rule holds —
-   field notes are an add-on, never a gate: news, social and insights fuel
-   keep the engine writing without them, and only a week where every
-   channel is dry produces updates and an honest "wrote nothing new" line
-   instead of filler.
+   not on a schedule. Its weekly ICP social sweep runs here in full — read
+   where the ICP posts, harvest pain-points and the ICP's own keyword
+   phrasing, log them to news-log (the daily scan only notes candidates).
+   The fuel rule holds — field notes are an add-on, never a gate: news,
+   ICP-social and insights fuel keep the engine writing without them, and
+   only a week where every channel is dry produces updates and an honest
+   "wrote nothing new" line instead of filler.
 
 ## The report (every run, last step)
 

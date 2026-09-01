@@ -159,7 +159,8 @@ being checked is not a reason to ignore it here; the prose carries the WHY.
 - **The fuel rule.** A new post exists only when its `proprietary`
   frontmatter names something real: a `marketing/field-notes.md` entry, a
   `marketing/news-log.md` event with primary sources, a verified
-  social-sweep finding, or an insights finding. Field notes are an add-on,
+  ICP social-sweep finding (a pain-point or keyword the ICP posted), or an
+  insights finding. Field notes are an add-on,
   never a gate — the engine keeps writing from the internet-derived
   channels without them; only when every channel is dry does that cycle do
   updates and interlinking instead. The

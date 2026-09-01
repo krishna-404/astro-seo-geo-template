@@ -13,7 +13,8 @@ channels, and the engine runs on whichever have something this week:
   and strictly an ADD-ON: the engine never waits for interviews and never
   stalls because field notes are empty or stale;
 - (b) a `marketing/news-log.md` event with primary sources;
-- (c) a social-sweep finding (below) — real demand, verified before use;
+- (c) an ICP social-sweep finding (below) — a pain-point or keyword the ICP
+  posted this week, verified before use;
 - (d) an `npm run insights` finding plus verified source data.
 
 Only when every channel is genuinely dry does the run do updates,
@@ -39,16 +40,25 @@ Publishing nothing is a valid outcome; publishing filler never is.
   for our reader → dropped, with the reason logged. Log the whole sweep
   (published + dropped + verification catches) to `marketing/news-log.md`
   in its documented format.
-- **Social sweep**: search the platforms where this site's readers actually
-  talk (X, LinkedIn, Reddit, Hacker News, industry forums — STRATEGY.md
-  names which) for the week's discussions in the site's clusters. What to
-  keep: repeated questions (three people asking is a page that should
-  exist), live disputes, misconceptions worth correcting, vocabulary the
-  audience uses that the site does not. A thread is a DEMAND SIGNAL and an
-  angle — never a source: every claim in the resulting piece still traces
-  to a primary source, and no post quotes or identifies a private
-  individual's post without their consent. Log kept and dropped candidates
-  in the news-log entry alongside the news sweep.
+- **ICP social sweep** (weekly): go where this site's ICP actually posts
+  (the platforms and communities STRATEGY.md names — typically some of X,
+  LinkedIn, Reddit, Hacker News, industry forums) and read what the ICP is
+  saying THIS week, not just what is said about the category. Harvest three
+  things and log them:
+  1. **Pain-points** — the frustration in the ICP's own words. These map to
+     the site's clusters and become blog angles and, when repeated,
+     glossary/FAQ entries.
+  2. **Keywords** — the exact phrasing the ICP uses for a problem, added to
+     the candidate list the next `npm run insights` pass validates against
+     real search demand. Take the audience's words; never invent phrasing a
+     keyword tool would.
+  3. **Objections and misconceptions** — worth a correcting piece.
+  A thread is a DEMAND SIGNAL and an angle — never a source: every claim in
+  the resulting piece still traces to a primary source, and no post quotes,
+  screenshots or identifies a private individual without their consent. Log
+  kept and dropped candidates (with the pain-point/keyword harvested) in the
+  news-log entry alongside the news sweep — it dedups social too, so the
+  same recurring gripe is not re-litigated every week.
 
 ## 2. Decide — the funnel ladder (STRATEGY.md § Content strategy)
 
