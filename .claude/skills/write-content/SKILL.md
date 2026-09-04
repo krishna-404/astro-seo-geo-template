@@ -24,7 +24,11 @@ Publishing nothing is a valid outcome; publishing filler never is.
 ## 1. Gather (read before writing anything)
 
 - `marketing/STRATEGY.md` (wins all conflicts), `VOICE-GUIDE.md`,
-  `writer-brief.md`.
+  `writer-brief.md`, and `marketing/site-blueprint.md` (the page-type taxonomy,
+  intent→page-type rule, interlinking and AEO/GEO levers this run applies).
+- `marketing/keyword-map.md` — the ranked backlog and the query each planned page
+  targets. Pick this run's targets from here (or from a fresh insights finding);
+  if the map is empty or stale, run /keyword-map first.
 - `npm run inventory` then `marketing/content-inventory.md` — what exists;
   new pieces extend clusters, never duplicate.
 - `npm run insights -- --json` (and `--inspect` when GSC is configured):
@@ -60,9 +64,15 @@ Publishing nothing is a valid outcome; publishing filler never is.
   news-log entry alongside the news sweep — it dedups social too, so the
   same recurring gripe is not re-litigated every week.
 
-## 2. Decide — the funnel ladder (STRATEGY.md § Content strategy)
+## 2. Decide — page type, then the funnel ladder
 
-Order every cycle's work bottom-up; impressions alone are worth nothing:
+First match each target to its page type by intent (site-blueprint § 1–2): a
+"what is X" query is a glossary/guide entry, an "X vs Y" query a comparison page,
+an "X software/pricing" query a money page. One page = one primary query = one
+intent; never build two pages competing for the same query.
+
+Then order the cycle's work by the funnel ladder (STRATEGY.md § Content strategy)
+bottom-up; impressions alone are worth nothing:
 
 1. **Convert what already lands**: any ranking page whose measured next
    step is weak or missing (CTA events ÷ entrances, the path to this
@@ -96,8 +106,15 @@ the cadence in STRATEGY.md; the hard cap is 5/week, enforced).
   types (enforced minimum: 2).
 - At least one EXISTING page gains an in-body link to each new piece — a new
   post nobody links to is an orphan on arrival (`npm run check:links`
-  enforces). Bump `updated` on pages edited for links only if prose actually
-  changed around the link.
+  enforces). Make it count: the inbound link comes from an **already-indexed**,
+  topically-related page (check `npm run insights -- --inspect` for what is
+  indexed — a new page linked only from other new pages stays stranded), and its
+  anchor carries the new page's **target keyword** (site-blueprint § 3). Bump
+  `updated` on pages edited for links only if prose actually changed around the
+  link.
+- Anchor discipline: vary the anchor across links to the same page, never use the
+  identical anchor for two different destinations, and wire pillar↔spoke links
+  both ways within the cluster.
 - Link glossary terms where they occur; add glossary `related` entries where
   the curation genuinely teaches the next concept.
 

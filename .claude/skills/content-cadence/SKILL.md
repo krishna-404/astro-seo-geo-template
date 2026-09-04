@@ -54,6 +54,18 @@ guessed at. All changes land as PRs; nothing merges or publishes itself.
    only a week where every channel is dry produces updates and an honest
    "wrote nothing new" line instead of filler.
 
+8. **Site audit (monthly, or when the weekly run has slack).** Run /keyword-map
+   steps 1 and 4 to refresh `marketing/keyword-map.md` from the latest insights
+   (fold in new Search Console queries with impressions), then work the
+   site-completeness checklist in `marketing/site-blueprint.md § 7`: cluster
+   coverage and lopsided pillars/spokes, queries with impressions and no page,
+   recent pages not yet linked from an *indexed* page on their target anchor,
+   landing pages whose measured next step is missing or not firing, and stale
+   pages due a refresh. The output is backlog items and report questions ranked
+   by the funnel ladder — confident, small, in-scope fixes (a missing inbound
+   link, a stale date) land in the PR; everything larger goes to "Needs you". The
+   audit never silently rewrites architecture.
+
 ## The report (every run, last step)
 
 Compose markdown with these sections, then send it:

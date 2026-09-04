@@ -16,7 +16,10 @@
  * FAIL: a published content entry with zero intentional inbound links
  *       (orphan); an internal link whose target route does not exist (dead
  *       before it ships); junk anchor text ("here", "read more" — the anchor
- *       is a ranking signal and should carry the phrase a searcher types).
+ *       is a ranking signal and should carry the phrase a searcher types);
+ *       the identical anchor text pointing at two DIFFERENT pages from in-body
+ *       content links (it splits the ranking signal and confuses the engine
+ *       about which page owns the term — site-blueprint § 3).
  * WARN: an entry carrying more than 8 in-body internal links (a link farm
  *       reads as one).
  *
@@ -79,6 +82,11 @@ const known = new Set([...staticRoutes, ...contentRoutes, ...collectionIndexes])
 // ── edges + per-link checks ────────────────────────────────────────────────
 const JUNK = /^(here|click here|this|this page|this post|this article|read more|link|see here|more)$/i;
 const inbound = new Map(entries.map((e) => [e.route, 0]));
+// anchor text (normalised) → Map(target → first source path). The same anchor
+// aimed at two different pages is the defect; the same anchor reused for the
+// same target across many pages is exactly the varied-vs-consistent linking we
+// want and must NOT flag.
+const anchorTargets = new Map();
 
 // Hand-written links from .astro pages and components are intentional
 // curation too — a solutions page linked from the homepage's Jobs section is
@@ -122,6 +130,11 @@ for (const e of entries) {
     if (!known.has(t)) bad(`${e.path} links to ${t} — no such route`);
     if (JUNK.test(anchor.trim()))
       bad(`${e.path} anchors "${t}" on "${anchor.trim()}" — anchor on the phrase a searcher types instead`);
+    const key = anchor.trim().toLowerCase().replace(/\s+/g, ' ');
+    if (key) {
+      if (!anchorTargets.has(key)) anchorTargets.set(key, new Map());
+      if (!anchorTargets.get(key).has(t)) anchorTargets.get(key).set(t, e.path);
+    }
     if (inbound.has(t) && t !== e.route) inbound.set(t, inbound.get(t) + 1);
   }
   for (const r of e.related) {
@@ -136,6 +149,13 @@ for (const [route, n] of inbound) {
   if (n === 0)
     bad(
       `${route} has no intentional inbound link from any other page — an orphan gets no link equity. Link it in-body from a related page (or via glossary \`related\`); the auto-scorer does not count`
+    );
+}
+
+for (const [anchor, targets] of anchorTargets) {
+  if (targets.size > 1)
+    bad(
+      `anchor "${anchor}" points at ${targets.size} different pages (${[...targets.keys()].join(', ')}) — the same anchor for two destinations splits the ranking signal. Vary the anchor, or point them at one page`
     );
 }
 

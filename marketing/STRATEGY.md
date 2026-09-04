@@ -28,6 +28,19 @@
 
 ## 5. Content strategy
 
+The shape of a complete SEO/AEO/GEO site — the page-type taxonomy, the
+intent→page-type rule, the interlinking doctrine and the answer-engine levers —
+is documented once, transferably, in `marketing/site-blueprint.md`. This section
+is where THIS site commits to its instance of it.
+
+**The page-type plan** (site-blueprint § 1): <!-- TODO: which layers this site
+builds and in what order — money pages, comparison/"vs", use-case/ICP, industry,
+location, tools, plus the always-on blog + glossary. -->
+
+**The keyword map**: every target query maps to a page (live or planned) in
+`marketing/keyword-map.md`, maintained by /keyword-map. No page is built without a
+query it is meant to win; no priority query is left without a page.
+
 **The funnel ladder — the standing order of work.** Impressions alone are
 worth nothing; every cycle's work is ordered bottom-up:
 

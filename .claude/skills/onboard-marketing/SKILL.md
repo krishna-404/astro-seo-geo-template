@@ -24,16 +24,24 @@ produces is capped by what this interview captures.
    LinkedIn) — the blog schema requires a real `sameAs` profile.
 5. **The clusters** — 3–8 named topic areas. For each: the primary query
    family and why this site can win it.
+5b. **The page-type plan** — walk `marketing/site-blueprint.md § 1` and decide
+   which layers this site needs and in what order: money pages (one per
+   offering), comparison/"vs" pages (which competitors), use-case/ICP and
+   industry pages (which segments), location pages (only with localized data),
+   tools/calculators, plus the always-on blog and glossary. Capture what exists
+   vs. what to build — this seeds the keyword map's backlog.
 6. **Numbers and claims** — what figures may the site state, and what is
    each one's source? Anything without a source goes in as a TODO, never as
    a number. Wire real ones into `src/data/facts.json`.
 7. **Guardrails** — what must never be claimed (regulated advice, geography,
    customers that do not exist yet, results not yet achieved).
-8. **Voice choices** — em-dash policy (zero or the default cap), words this
-   brand never says (self-praise like "trusted", category clichés), words
-   used on purpose (`keepWords`), and any base-layer banned word that is
-   legitimate domain vocabulary here (`allowedExceptions`, each with a
-   reason).
+8. **Voice choices** — the default stance is straightforward messaging
+   (site-blueprint § 6 / VOICE-GUIDE): plain, concrete, "you" over "we", no
+   marketese. Confirm that fits, then capture the specifics: em-dash policy
+   (zero or the default cap), words this brand never says (self-praise like
+   "trusted", category clichés), words used on purpose (`keepWords`), and any
+   base-layer banned word that is legitimate domain vocabulary here
+   (`allowedExceptions`, each with a reason).
 9. **Cadence** — how often the content engine should run and write
    (default: daily-lite check, weekly writing run — see /content-cadence).
 
@@ -44,6 +52,8 @@ produces is capped by what this interview captures.
 - `marketing/VOICE-GUIDE.md` — reader, stance, the tenth house rule, the
   domain-specific integrity rail.
 - `marketing/writer-brief.md` — formats table if the defaults don't fit.
+- `marketing/keyword-map.md` — then run /keyword-map to turn the clusters and
+  page-type plan into the query→page map and the ranked build backlog.
 - `src/data/voice.json` → `site` — bannedWords/bannedPhrases,
   keepWords, allowedExceptions, quantOverrides (`emDashPer1000Words: 0` for
   a zero-em-dash house).

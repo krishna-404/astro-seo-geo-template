@@ -11,6 +11,14 @@ whoever typed it. The mechanical half of this standard is enforced by
 `npm run check:voice` (rules in `src/data/voice.json`); this file carries the
 half only judgement can check.
 
+**The default stance is straightforward messaging.** Plain, objective, concrete
+copy that says what you do and proves it — not brochure language, not hype, not
+false empathy. The transferable rules for it (read-aloud test, lead with *what*,
+"you" outnumbers "we", cut anyone-could-say-it claims, specificity over brevity,
+be concrete) live in `marketing/site-blueprint.md § 6` and are folded into the
+house rules below. They are the default because plain objective copy measurably
+converts better than promotional "marketese" — this is a standard, not a taste.
+
 ## 1. The reader
 
 <!-- TODO: one specific person, not a persona deck. What do they already
@@ -41,7 +49,14 @@ half only judgement can check.
    emphasis.
 9. If the answer is genuinely unclear, say it is unclear and say who
    decides. That is precision, not hedging.
-10. <!-- TODO: the rule specific to this business that the others miss. -->
+10. Lead with *what*. Open on what you do or what the page answers — never on
+    vision, mission or mood.
+11. "You/your" outnumbers "I/we/our". Write to the person who owns the
+    problem, not about yourself.
+12. The read-aloud test: delete any sentence you would not say out loud to the
+    reader's face. No false empathy — don't tell them how they feel; let a real
+    example carry it.
+13. <!-- TODO: the rule specific to this business that the others miss. -->
 
 ## 4. Words
 
