@@ -486,6 +486,17 @@ dilutes the battery.
 - ✅ **No orphan content pages**: every detail page carries ≥1 related link
   (once its collection has ≥2 entries) — internal linking by construction,
   checked.
+- ✅ **Site-wide link graph** (`scripts/check-link-graph.mjs`): no orphan
+  content entry (zero *intentional* inbound links — the auto-scorer doesn't
+  count), no dead internal link, no junk anchor, and **no identical anchor text
+  pointing at two different pages** (added Sep 2026). WHY the last one: reusing
+  one anchor for two destinations splits the ranking signal and confuses the
+  engine about which page owns the term (site-blueprint § 3); it is scoped to
+  in-body content links so the same anchor reused for the SAME target across
+  pages — the consistent internal linking we want — is not flagged. Proven red
+  against a crafted collision. The half a static check can't see (a new page's
+  inbound link must come from an *indexed* page on its target keyword) is worked
+  at cadence time from Search Console.
 - ✅ **Visible breadcrumbs mirror BreadcrumbList JSON-LD** (count + order,
   entity-decoded) — structured data must reflect the page.
 - ✅ **Every `.table-scroll` carries `tabindex="0" role="region"

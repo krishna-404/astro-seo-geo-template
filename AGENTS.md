@@ -131,6 +131,15 @@ being checked is not a reason to ignore it here; the prose carries the WHY.
 
 ## Content rules
 
+The shape of the whole site — page-type taxonomy, keyword-research→content
+mapping, interlinking doctrine, conversion, and the AEO/GEO levers — is in
+`marketing/site-blueprint.md`; `STRATEGY.md` is this site's instance of it and
+wins any conflict. The rules below are the enforced subset.
+
+- Every page traces to a query in `marketing/keyword-map.md` (one page = one
+  primary query = one intent), and every priority query traces to a page there,
+  live or planned. /keyword-map maintains the map; /write-content picks targets
+  from it.
 - Every blog author lives in `src/data/authors.json` (enforced): the byline
   links to `/author/<slug>` — the verifiable credential behind the name — and
   a guest author gets their own entry with a real profile and bio, never a
@@ -148,7 +157,11 @@ being checked is not a reason to ignore it here; the prose carries the WHY.
   generated related-posts footer does not count. Site-wide, the link graph
   is also checked (`check-link-graph`): no orphan content pages (an
   intentional inbound link from another page — the auto-scorer does not
-  count), no dead internal links, no junk anchors.
+  count), no dead internal links, no junk anchors, and no identical anchor text
+  pointing at two different pages (it splits the ranking signal). The half a
+  static check cannot see — that a new page's inbound link comes from an
+  *already-indexed* page, anchored on its target keyword — is worked at cadence
+  time from Search Console (site-blueprint § 3; /write-content § Interlink).
 - The voice standard has two halves. Mechanical: `npm run check:voice`
   enforces `src/data/voice.json` (banned AI-tell vocabulary and shapes,
   em-dash density, stacked bold lead-ins, Title Case headings) at all three

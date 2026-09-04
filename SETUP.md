@@ -191,12 +191,17 @@ FAQ answers only in frontmatter, `toc: true` at 4+ headings, dates spread
 links per post — the last two are enforced by `check-source-rules`. Scheduled posts:
 future-date `published` and schedule a build for that day (PLAYBOOK §2).
 
-**The content engine.** Five skills in `.claude/skills/` run the whole
-loop, and three marketing files are its memory:
+**The content engine.** Six skills in `.claude/skills/` run the whole
+loop, and its memory lives in `marketing/`. Read `marketing/site-blueprint.md`
+first — it is the transferable doctrine (page-type taxonomy, keyword→content
+mapping, interlinking, conversion, AEO/GEO levers, the straightforward house
+voice) that everything below is an instance of.
 
 1. Run **/onboard-marketing** once — it interviews you and fills
    `marketing/STRATEGY.md`, `VOICE-GUIDE.md`, `writer-brief.md` and the
-   `voice.json` site layer. Until then those files carry TODOs and the
+   `voice.json` site layer, then hands off to **/keyword-map** to turn your
+   clusters and page-type plan into `marketing/keyword-map.md` (the query→page
+   map + a ranked build backlog). Until then those files carry TODOs and the
    engine has no strategy to execute.
 2. Run **/interview** whenever you have been out in the world — meetings,
    calls, things noticed. It captures dated entries in
