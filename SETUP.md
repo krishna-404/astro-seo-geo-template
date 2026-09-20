@@ -23,6 +23,13 @@ TODOs render as visible `[TO CONFIRM: …]` markers and block nothing — clear
 them in phase 4; `productSchema.example.ts` is reference code, delete it if
 unused).
 
+**Prefer the conversation to the checklist.** `/new-site` walks every phase
+below in order, puts each decision to you with current best-in-class examples
+fetched live (awwwards for design, the category's best sites for copy, the
+regulator's page for consent, the ranking pages for each money query), and
+writes every answer into the file that owns it. This file remains the list of
+where each value lives; the skill is how a new site gets through it well.
+
 Sibling docs: `README.md` quickstart · `CHECKLIST.md` every baked-in decision
 and why · `PLAYBOOK.md` operating knowledge and traps · `AGENTS.md` standing
 editing rules. This file tells you WHERE to go; those tell you WHY it's built
@@ -190,6 +197,20 @@ origin breaks it.
 - [ ] **Privacy page**: clear the `privacy.json` TODOs, then flip
       `status.draft` to `false` — one flag publishes it and its
       indexability together.
+- [ ] **Posts API (optional)** — `POST /api/posts` lets external automation
+      submit a blog post (`worker/posts.ts`): the worker validates it against
+      the blog schema and the source rules, writes it to an `api/post/*`
+      branch through GitHub and opens a PR; `.github/workflows/publish-post.yml`
+      regenerates lastmod, inventory and the OG card, runs `npm run verify`,
+      squash-merges on green and deploys. Two worker secrets:
+      `POSTS_API_TOKEN` (the caller's bearer) and `GITHUB_POSTS_TOKEN` (a
+      fine-grained PAT, Contents + Pull requests read/write on this repo
+      only); `GITHUB_REPO` in `wrangler.jsonc`; the repository variable
+      `CLOUDFLARE_ZONE_ID` for the workflow's purge. Either secret unset =
+      the route answers 503 and nothing else changes. `npm run smoke:worker`
+      exercises every answer short of a GitHub write. The daily cadence's PR
+      inbox does the judgement half on every post that lands (interlinks,
+      glossary, keyword map) — see the content-cadence skill.
 - [ ] **Search engines**: GSC (domain property via DNS TXT), Bing Webmaster
       (`VERIFICATION.bing` in site.ts), submit the sitemap in both;
       IndexNow key file `public/<key>.txt` (the workflow submits after each
@@ -210,14 +231,16 @@ impressions at position 4–20 are the shortlist, impressions at position 50+
 mean the page needs links and authority, not a better title. The rules that
 bite are AGENTS § Content: named human author with
 a real profile, `tldr` front-loads the answer, `sources` on anything factual,
-FAQ answers only in frontmatter, `toc: true` at 4+ headings, dates spread
-(no two posts share a `published` date) and at least 2 in-body internal
-links per post — the last two are enforced by `check-source-rules`. Scheduled posts:
+FAQ answers only in frontmatter, `toc: true` at 4+ headings, and at least
+2 in-body internal links per post — the last is enforced by
+`check-source-rules`. There is no cap on posts per day or per week; the gates
+are quality gates. Scheduled posts:
 future-date `published` and schedule a build for that day (PLAYBOOK §2).
 
-**The content engine.** Eight skills in `.claude/skills/` run the whole
-loop (/onboard-marketing, /keyword-map, /interview, /write-content,
-/refresh-anti-ai-rules, /insights-review, /content-cadence, /ship), and its
+**The content engine.** Ten skills in `.claude/skills/` run the whole
+loop (/new-site, /onboard-marketing, /design-direction, /keyword-map,
+/interview, /write-content, /refresh-anti-ai-rules, /insights-review,
+/content-cadence, /ship), and its
 memory lives in `marketing/`. Read `marketing/site-blueprint.md`
 first — it is the transferable doctrine (page-type taxonomy, keyword→content
 mapping, interlinking, conversion, AEO/GEO levers, the straightforward house

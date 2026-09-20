@@ -85,14 +85,9 @@ bottom-up; impressions alone are worth nothing:
    with a genuine hook may jump the queue while fresh; it still ships with
    its conversion path and snippet done, not as bare reach.
 
-Cap new posts at what the week's fuel honestly supports (never more than
-the cadence in STRATEGY.md; the hard cap is 5/week and one per date, both
-enforced). Count the posts already dated in the current ISO week — including
-future-dated ones on main — before drafting; high-intent supporting pieces
-(`marketing/keyword-map.md § High-intent`) have first claim on the week's
-slots, and a piece that finds no slot ships as an uncapped type (glossary
-entry, FAQ block on a money page, comparison page) rather than as a sixth
-post.
+Write as many new posts as the week's fuel honestly supports and none it
+does not — there is no volume cap; high-intent supporting pieces
+(`marketing/keyword-map.md § High-intent`) come first.
 
 ## 3. Draft
 
@@ -183,10 +178,9 @@ Rules for building one (the ancestor site's calculator is the precedent):
 
 ## 5. Schedule — spread, never batch
 
-When the run produces more than one piece, assign `published` dates spread
-forward (2+ days apart, ≤5 in any ISO week — enforced). A future-dated post
-publishes when a build runs on/after its date; the daily cadence run's build
-is what releases it. Never backdate.
+`published` is the real day a piece goes live; several on one day are fine.
+A future-dated post publishes when a build runs on/after its date; the daily
+cadence run's build is what releases it. Never backdate.
 
 ## 6. Check, then deliver
 

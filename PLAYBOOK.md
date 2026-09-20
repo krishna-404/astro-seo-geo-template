@@ -96,6 +96,13 @@ workflow). Date-only YAML (`published: 2026-09-01`) means midnight UTC.
   ⚠ Same URL, two bodies — without the Vary, caches mix them.
 - `/hi/<code>`: internal rewrite to the contact page (URL stays visible =
   the attribution datum), `X-Robots-Tag: noindex` at header level.
+- `/api/posts`, `/api/posts/<n>`: the posts API (`worker/posts.ts`, SETUP
+  Phase 4). Bearer-authenticated and rate-limited; validates a blog post
+  against a mirror of the blog schema plus the source rules, writes it to an
+  `api/post/*` branch through the GitHub API and opens a PR; `GET` reads the
+  PR and the **Publish post** workflow run for its status. The only route
+  that writes anything, and it writes to GitHub, never to the site. Both
+  secrets unset = 503 and nothing else changes.
 - Permanent redirects live in ONE map, `PERMANENT_REDIRECTS` in
   worker/index.ts (a URL that once existed and reached a sitemap or an
   IndexNow ping; a URL visitors keep typing that the site never had). Every
