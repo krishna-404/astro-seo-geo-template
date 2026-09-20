@@ -389,6 +389,10 @@ check('homepage og:image is the brand card, not a page card', (bad) => {
   if (!home) { bad('no dist/index.html'); return; }
   const og = /<meta property="og:image" content="([^"]+)"/.exec(home)?.[1] ?? '';
   if (!og.endsWith(brand)) bad(`dist/index.html og:image is ${og} — expected ${brand} (index.astro passes ogImage={SITE.ogImage}; render-pages.mjs skips '/')`);
+  // The file itself. On the ancestor site render-pages.mjs cleared public/og/
+  // before writing the page cards and took default.png with it; the meta
+  // still pointed at the right path and the homepage previewed as a 404.
+  if (!existsSync(join('public', brand)) && !existsSync(join(DIST, brand))) bad(`${brand} is not on disk in public/ — the brand card is missing (node marketing/og/render.mjs renders it; render-pages.mjs preserves it)`);
   for (const ext of ['jpg', 'png', 'webp']) {
     for (const stale of [join('public', 'og', 'pages', `home.${ext}`), join('public', 'og', `index.${ext}`)]) {
       if (existsSync(stale)) bad(`${stale} exists — a stale homepage page card; delete it — render-pages.mjs must keep skipping '/'`);

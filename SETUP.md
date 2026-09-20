@@ -78,8 +78,8 @@ Work top to bottom; later files read earlier ones.
       actually use (closed vocabulary; a typo'd category fails the build).
 - [ ] **Brand colour + favicon**: replace `public/favicon.svg`; set the
       tokens in `src/styles/global.css`; update the `BRAND_BG` literal in
-      BOTH `marketing/favicon.mjs` and `marketing/og/render-pages.mjs`, and
-      `--brand` in `marketing/og/default.html`; then
+      `marketing/favicon.mjs`, the `:root` tokens in `marketing/og/page.html`
+      (they mirror `global.css`), and `--brand` in `marketing/og/default.html`; then
       `node marketing/favicon.mjs`. ⚠ Colour is measured, not eyeballed:
       `npm run build && npm run check:contrast` — do not ship a colour the
       checker rejects; darken it until it passes.
