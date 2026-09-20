@@ -110,8 +110,10 @@ screenshots. A direction that ignores a fixed asset is a redesign nobody
 asked for.
 
 Put the references to the owner before deciding: three to five, with the
-one-line reading each, and ask which register they want to be read
-against. Record what they chose and what they rejected in the brief's
+one-line reading each, and ask in the session with `AskUserQuestion` which
+register they want to be read against — the references are the options, one
+line of consequence each, and "Other" carries the direction they name
+themselves. Record what they chose and what they rejected in the brief's
 Log — a reference the owner did not see is not a reference.
 
 ## 2. Decide — write `marketing/design-brief.md`

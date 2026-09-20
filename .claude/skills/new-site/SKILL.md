@@ -1,6 +1,6 @@
 ---
 name: new-site
-description: Take a new site from an empty copy of this template to launched and running its cadence — every phase in order (discover and asset intake, landscape, decide, identity and entity, strategy and voice, page plan, design direction and language, infrastructure and migration, measurement, privacy and trust pages, seed content, launch, cadence), each decision put to the owner with current best-in-class examples fetched live, and every answer written into the file that owns it. Use when someone clones the template for a new site, when SETUP.md still has unchecked boxes, or when the owner asks "how do I set this up".
+description: Take a new site from an empty copy of this template to launched and running its cadence — every phase in order (discover and asset intake, landscape, decide, identity and entity, strategy and voice, page plan, design direction and language, infrastructure and migration, measurement, privacy and trust pages, seed content, launch, cadence), each decision put to the owner in the session with AskUserQuestion against current best-in-class examples fetched live, and every answer written into the file that owns it. Use when someone clones the template for a new site, when SETUP.md still has unchecked boxes, or when the owner asks "how do I set this up".
 ---
 
 # New site — from template to launched
@@ -11,7 +11,7 @@ a time, and never a decision without examples. Its job is to make the owner's
 choices well-informed and cheap, and to leave nothing in a chat transcript
 that should be in a file.
 
-## The two rules that shape every step
+## The three rules that shape every step
 
 **Show before asking.** For every decision, fetch what the best sites and the
 most current guidance do *right now* and put three to five concrete examples in
@@ -35,27 +35,60 @@ kind of decision:
 Record every example you show and every decision taken in the file that owns
 it (below). A reference the owner did not see is not a reference.
 
+**Ask here, in the run.** Every question goes to the owner in this session,
+through the `AskUserQuestion` tool — never as a line in a file the owner is
+expected to go and find. A phase that ends by writing its questions into
+`DATA-SHEET.md` and stopping has not run the phase, it has postponed it.
+
+- *Batch, don't drip.* Up to four related questions per call, grouped by
+  what they decide, and the blocking ones first: the answers that change
+  what gets built (the one action, the buyer, the register, the brand
+  assets) before the ones that change a detail.
+- *Options, not a blank.* Each question carries two to four concrete
+  options drawn from the examples just fetched — an option is the reading
+  you would otherwise have written into the file, with its one line of
+  consequence. The owner's own answer arrives through "Other", and for the
+  interview questions it usually will; that is the tool working, not the
+  options failing.
+- *Keep going.* Work the phase's questions until each is answered or the
+  owner defers it, then build. The run stops at a gate (below), when the
+  owner says stop, or when only deferred questions are left — never merely
+  because a question exists.
+- *Defer, don't dump.* A question becomes a `DATA-SHEET.md` block only
+  after it was put to the owner here and the answer was *don't know*, *not
+  yet*, or *I have to check*; the block records what was asked and what
+  they said, so it reads as a pending answer and not as an unasked
+  question. Then carry on with everything that does not depend on it,
+  naming the assumption in the file that owns the decision.
+
 **Write, don't remember.** Every answer lands in its file in the same session:
 `src/data/site.ts`, `facts.json` (with sources), `authors.json`,
 `marketing/brief.md` (the brief and the asset register), `landscape.md`,
 `STRATEGY.md`, `VOICE-GUIDE.md`, `writer-brief.md`, `design-brief.md`,
-`keyword-map.md`, `DATA-SHEET.md` (for anything the owner does not know
-yet — including every asset not yet received), `link-targets.md`,
-`privacy.json`, and the SETUP.md boxes ticked. A question the owner cannot
-answer becomes a DATA-SHEET question, never a guess.
+`keyword-map.md`, `DATA-SHEET.md` (for anything the owner was asked here and
+does not know yet — including every asset not yet received),
+`link-targets.md`, `privacy.json`, and the SETUP.md boxes ticked. A question
+the owner has been asked and cannot answer becomes a DATA-SHEET question,
+never a guess; a question nobody put to them becomes neither.
 
 **Sign off at the gates.** Four phases end with the owner looking at
 something, not at a summary: the brief read back (Discover), the
 teardowns with their verdicts (Landscape), the homepage screenshots at 375
 and 1440 (Design direction), and the live site (Launch). An owner who has
 not seen the thing has not signed it off; record the sign-off and its date
-in the owning file's Log.
+in the owning file's Log. A gate is still asked here: show the thing and put
+the sign-off itself through `AskUserQuestion` (approve · approve with these
+changes · not yet, and what is wrong). It is a confirmation inside the run,
+not a message that ends the session — on approval the next phase starts in
+the same run.
 
 ## The phases, in order
 
 Each phase names the skill or SETUP phase that does the work; this skill
-sequences them, supplies the examples, and checks the exit condition before
-moving on.
+sequences them, supplies the examples, asks the questions in the session,
+and checks the exit condition before moving on. It does not pause between
+phases to wait for a file to be filled in: an open DATA-SHEET question holds
+up only the decisions that actually depend on it.
 
 1. **Discover** (/discover). The interview that shapes everything after
    it — why now and what success is, the one job, who signs off and who
@@ -65,8 +98,9 @@ moving on.
    product access, photography, copy and collateral, proof with
    permission, legal identity, people, contact channels, profiles, access
    held by whom, the existing site's URLs that must keep working. *Exit:*
-   `marketing/brief.md` filled, every missing asset a DATA-SHEET question,
-   the brief read back to the owner in five lines.
+   `marketing/brief.md` filled, every question in it put to the owner in the
+   session, every still-missing asset a DATA-SHEET question, the brief read
+   back to the owner in five lines.
 
 2. **Landscape** (/landscape). Six to ten sites the buyer actually
    compares this one with — the owner's list, the money-query SERPs, the
@@ -181,8 +215,8 @@ moving on.
 ## Finish
 
 Summarise what was decided (with the file each decision lives in), what is
-still a DATA-SHEET question (assets not yet received first), how the
-outcome in `brief.md § 1` will be measured, and the first three things the
-cadence will do.
+still a DATA-SHEET question — each one asked here and deferred by the owner,
+assets not yet received first — how the outcome in `brief.md § 1` will be
+measured, and the first three things the cadence will do.
 Then hand the owner /interview for the ongoing fuel and /insights-review for
 the first read of the numbers.

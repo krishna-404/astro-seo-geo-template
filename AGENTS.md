@@ -185,7 +185,7 @@ wins any conflict. The rules below are the enforced subset.
   Positioning, design, voice, schema, consent, infrastructure: before a
   decision is put to the owner, fetch what the best sites and the current
   guidance do today and show three to five concrete examples with a reading
-  of each (`/new-site` § The two rules; `/design-direction` § 1;
+  of each (`/new-site` § The three rules; `/design-direction` § 1;
   `/onboard-marketing` step 8 for voice). The category itself is looked at
   before any of it: `/landscape` tears down the sites the buyer compares
   this one with and records the owner's verdict on each in
@@ -206,12 +206,17 @@ wins any conflict. The rules below are the enforced subset.
   the target. `check-invariants` fails a content page without exactly one
   lead figure, and any indexable page without its own card. CHECKLIST §8,
   /write-content § Every piece carries a figure.
-- **What the engine cannot find out becomes a question, never an estimate.**
-  `marketing/DATA-SHEET.md` holds the open questions only the owner can answer,
+- **What the engine cannot find out becomes a question, never an estimate —
+  and with the owner in the session, it is asked there first.** A run that
+  has the owner's attention puts its questions to them with
+  `AskUserQuestion`, in batches of up to four, each with concrete options
+  drawn from what it just researched (`/new-site` § The three rules).
+  `marketing/DATA-SHEET.md` holds what they deferred — the open questions
+  only the owner can answer, in their words — and
   `marketing/link-targets.md` the listings a human has to claim; `npm run ask`
-  prints both (and runs at session start). A run that hits a blocker adds the
-  question in the same commit; a run never answers one by guessing and never
-  claims a listing.
+  prints both (and runs at session start). An unattended run that hits a
+  blocker adds the question in the same commit; no run answers one by
+  guessing or claims a listing.
 - Every blog author lives in `src/data/authors.json` (enforced): the byline
   links to `/author/<slug>` — the verifiable credential behind the name — and
   a guest author gets their own entry with a real profile and bio, never a
@@ -302,7 +307,7 @@ wins any conflict. The rules below are the enforced subset.
 |---|---|
 | A page title | Re-run OG cards (`marketing/og/render-pages.mjs`); keep it ≤60 characters or put the sacrificial half after " — " (`check-source-rules` fails a title the SERP clamp would hard-cut) |
 | A URL that must keep working (page moved, folded, or visitors keep typing it) | One row in `worker/index.ts → PERMANENT_REDIRECTS` with a one-line reason, AND the exact path in `wrangler.jsonc → run_worker_first` (`check-parity` fails one without the other; `smoke-worker` asserts the 301) |
-| A blocker only the owner can resolve | Add it to `marketing/DATA-SHEET.md` in the documented format, same commit — `npm run ask` will surface it |
+| A blocker only the owner can resolve | Ask them in the session with `AskUserQuestion` if they are here; what they defer goes to `marketing/DATA-SHEET.md` in the documented format, same commit — `npm run ask` will surface it |
 | Any inline `<script is:inline>` | `npm run build` regenerates the CSP hashes; commit the changed `worker/csp.generated.json` (CI diffs it). Never add an inline `onclick=`-style handler — the CSP generator fails the build on those |
 | Brand colour / favicon.svg | Edit the literal `BRAND_BG` in `marketing/favicon.mjs`, the `:root` tokens in `marketing/og/page.html` (they mirror `global.css`), and `--brand` in `marketing/og/default.html`; then `node marketing/favicon.mjs`, `node marketing/og/render.mjs`, re-run the page cards, `npm run check:contrast` |
 | Any vendor or data collection | `src/data/privacy.json` in the same commit |

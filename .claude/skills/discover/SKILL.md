@@ -1,6 +1,6 @@
 ---
 name: discover
-description: The first conversation for a new site — reads what a stranger finds about the business today (the old site, the profiles, page one for the brand name) and puts that record to the owner to correct, then a discovery interview that asks the questions whose answers shape everything downstream (why now, what the site must do, who signs off, what exists today, what is off-limits) and an asset intake that collects or requests every file the build needs (logo, fonts, colours, screenshots, photography, copy, proof, legal identity, access), writing marketing/brief.md and turning every missing asset into a DATA-SHEET question. Use before /new-site Phase 1, when someone says "we need a website", or when marketing/brief.md still carries TODOs.
+description: The first conversation for a new site — reads what a stranger finds about the business today (the old site, the profiles, page one for the brand name) and puts that record to the owner to correct, then a discovery interview that asks the questions whose answers shape everything downstream (why now, what the site must do, who signs off, what exists today, what is off-limits) and an asset intake that collects or requests every file the build needs (logo, fonts, colours, screenshots, photography, copy, proof, legal identity, access), asking every question in the session with AskUserQuestion, writing marketing/brief.md and turning only what the owner defers into a DATA-SHEET question. Use before /new-site Phase 1, when someone says "we need a website", or when marketing/brief.md still carries TODOs.
 ---
 
 # Discover — the brief and the asset intake
@@ -12,20 +12,29 @@ skill runs once, before anything is decided, and produces one file:
 `marketing/brief.md` — the brief (what the site is for) and the asset
 register (what we have, what we need, where each lands).
 
-Three rules hold here. **Read before asking:** the engine researches what
+Four rules hold here. **Read before asking:** the engine researches what
 it can on its own first (§ 0) and puts that read in front of the owner to
 correct — never ask a question the internet answers. **Show before asking:** when a
 question is a choice (what a homepage's one action is, what a trust page
 carries), fetch two or three current examples from the owner's category
-first and ask against them, never against a blank. **Write, don't
-remember:** every answer goes into `brief.md` in the same session, every
-number with a source, and every question the owner cannot answer goes into
-`marketing/DATA-SHEET.md` — never into a guess.
+first and ask against them, never against a blank. **Ask in the session:**
+every question below is put to the owner here, in the run, with the
+`AskUserQuestion` tool — never written into a file for them to discover
+later. **Write, don't remember:** every answer goes into `brief.md` in the
+same session, every number with a source, and a question the owner was asked
+and could not answer goes into `marketing/DATA-SHEET.md` with what they
+said — never a guess, and never a question nobody put to them.
 
-Ask one question at a time, in the owner's language, and push on generic
-answers. "A modern site that builds trust" is not an answer; "importers
-who compare three freight forwarders and want to see rates before they
-call" is.
+Ask in batches of up to four related questions per `AskUserQuestion` call, in
+the order below, each question carrying two to four concrete options built
+from what § 0 found — the owner's own wording comes back through "Other", and
+for most of these it will. Keep the interview batches separate from the asset
+intake. Use the owner's language, and push on generic answers: "a modern site
+that builds trust" is not an answer, "importers who compare three freight
+forwarders and want to see rates before they call" is — when one comes back
+that vague, ask the follow-up in the next call rather than recording it.
+Nothing goes to DATA-SHEET until the interview and the asset intake have both
+been put to the owner and they have deferred what they cannot answer.
 
 ## 0. The current record — what a stranger finds today
 
@@ -106,6 +115,14 @@ what exactly, in which format, by when), or **none** (does not exist and
 will not; record what the site does instead). Never leave a row blank, and
 never substitute a placeholder for an asset that is merely late.
 
+Ask for the states, do not assume them: put the register to the owner in
+`AskUserQuestion` batches of up to four rows, each row offering *have it, I
+will send it*, *does not exist*, and the answer the build actually needs
+where there is one (a brand colour that may be darkened to pass contrast, a
+font whose licence allows self-hosting, product access instead of ready
+screenshots). Only a row the owner marks **needed** becomes a DATA-SHEET
+question, and it names the file, the format and the date they gave.
+
 | Asset | What to ask for | Where it lands |
 |---|---|---|
 | Logo | Vector master (SVG), a single-colour version, a version for dark backgrounds, the square mark on its own, clear-space and minimum-size rules if they exist | `public/favicon.svg`, header, `marketing/og/default.html`; `node marketing/favicon.mjs` |
@@ -134,8 +151,9 @@ the repo: record that access exists and who holds it.
 
 - `marketing/brief.md` — every section filled or marked with the
   DATA-SHEET id that will fill it. The Log gets today's date.
-- `marketing/DATA-SHEET.md` — one `Q-` block per missing asset or
-  unanswered question, in the documented format, with what it unblocks.
+- `marketing/DATA-SHEET.md` — one `Q-` block per missing asset or deferred
+  question, in the documented format, with what it unblocks, what was asked
+  in the session and the owner's own words for why it is open.
 - `marketing/STRATEGY.md § Honest state` — the one-line true state of the
   business today, from the interview, dated.
 - `src/data/site.ts`, `facts.json`, `authors.json`, `origin.mjs` — any
@@ -150,7 +168,9 @@ the repo: record that access exists and who holds it.
 ## Finish
 
 Read the brief back to the owner in five lines: the outcome, the one
-action, the buyer, what exists, what is missing. Then hand off in order:
-/landscape (the category, from the names in § 1.7), then /new-site from
-Phase 3 (Decide) — it reads `brief.md` and does not ask again what the
-brief already answers.
+action, the buyer, what exists, what is missing. That is a checkpoint, not
+the end of the session: unless the owner stops you, carry straight on in
+order — /landscape (the category, from the names in § 1.7), then /new-site
+from Phase 3 (Decide), which reads `brief.md` and does not ask again what the
+brief already answers. Open DATA-SHEET questions travel with the work; they
+do not hold the next phase.
