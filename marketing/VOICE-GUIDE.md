@@ -34,6 +34,32 @@ converts better than promotional "marketese" — this is a standard, not a taste
      worth reading. If a sentence could carry any competitor's logo, it is
      not stance, it is filler. -->
 
+## 2b. Tone — where this voice sits, and what it sounds like
+
+<!-- TODO: filled by /onboard-marketing step 8, against fetched examples:
+     the category read aloud (marketing/landscape.md § 7), the four
+     tone-of-voice dimensions, the published voice guides closest to this
+     register. Cite the guide a rule came from; a rule from memory is a
+     guess. -->
+
+| Dimension | The category sits | This site sits | Because |
+|---|---|---|---|
+| Funny — serious | TODO | TODO | |
+| Formal — casual | TODO | TODO | |
+| Respectful — irreverent | TODO | TODO | |
+| Enthusiastic — matter-of-fact | TODO | TODO | |
+
+The register decision from `marketing/landscape.md` (inside the category's
+norms or outside them): TODO.
+
+**This, not that** — five pairs the owner corrected:
+
+| The category writes | This site writes |
+|---|---|
+| TODO | TODO |
+
+Guides cited: TODO (name, URL, the rule taken).
+
 ## 3. House rules
 
 1. Lead with the specific: a person, a number, a named form, a scene. Never
@@ -88,3 +114,9 @@ clichés) and its `keepWords` — vocabulary used on purpose that no rewrite may
 - [ ] Does the title say what the searcher types (check `npm run insights`),
       not what a keyword tool invented?
 - [ ] Every number traced; every `[VERIFY]` resolved or the piece held.
+
+## Log
+
+| Date | Change |
+|---|---|
+| <!-- YYYY-MM-DD --> | Created from the template. Fill with /onboard-marketing; record the examples shown and what the owner chose. |

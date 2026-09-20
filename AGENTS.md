@@ -185,8 +185,12 @@ wins any conflict. The rules below are the enforced subset.
   Positioning, design, voice, schema, consent, infrastructure: before a
   decision is put to the owner, fetch what the best sites and the current
   guidance do today and show three to five concrete examples with a reading
-  of each (`/new-site` § The two rules; `/design-direction` § 1). Record the
-  examples shown with the decision in the file that owns it.
+  of each (`/new-site` § The two rules; `/design-direction` § 1;
+  `/onboard-marketing` step 8 for voice). The category itself is looked at
+  before any of it: `/landscape` tears down the sites the buyer compares
+  this one with and records the owner's verdict on each in
+  `marketing/landscape.md`. Record the examples shown with the decision in
+  the file that owns it.
 - **What the engine cannot find out becomes a question, never an estimate.**
   `marketing/DATA-SHEET.md` holds the open questions only the owner can answer,
   `marketing/link-targets.md` the listings a human has to claim; `npm run ask`
@@ -234,9 +238,11 @@ wins any conflict. The rules below are the enforced subset.
   never a gate — the engine keeps writing from the internet-derived
   channels without them; only when every channel is dry does that cycle do
   updates and interlinking instead. The
-  content engine (skills: /onboard-marketing, /interview, /write-content,
-  /refresh-anti-ai-rules, /content-cadence) delivers everything as PRs; a
-  human merges, nothing auto-publishes.
+  content engine (skills: /new-site, /discover, /landscape,
+  /onboard-marketing, /design-direction, /keyword-map, /interview,
+  /write-content, /refresh-anti-ai-rules, /insights-review,
+  /content-cadence, /ship) delivers everything as PRs; a human merges,
+  nothing auto-publishes.
 - `marketing/content-inventory.md` is generated (`npm run inventory`) —
   never hand-edit it; regenerate.
 - **Glossary upkeep rides every content change.** A post that introduces a

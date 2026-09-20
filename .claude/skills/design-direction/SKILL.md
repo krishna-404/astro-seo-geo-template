@@ -41,6 +41,41 @@ type, colour, layout, motion, imagery — and what it *refuses* to do.
   face used large and rarely, a restrained palette with one accent, generous
   whitespace, a product screen as the hero image, motion that only ever
   confirms an action. That is the register this template can hold at zero JS.
+- **The galleries beyond awwwards** — each curates a different register,
+  so read two or three that match the site's job, not all of them:
+  Godly (godly.website — the current product-marketing register),
+  Land-book and Lapa Ninja (landing pages, filterable by industry),
+  SiteInspire and Minimal Gallery (restraint, editorial layouts),
+  One Page Love (single-page sites), Dark Mode Design (inverted palettes
+  done well), Httpster (typographic and brutalist sites — the warning
+  sign of the register, not the target), Refero and Mobbin (product UI
+  patterns and flows, for the hero panel's product screen and any tool
+  page), Fonts In Use and Typewolf (type pairings seen in the wild, with
+  the faces named). Note which gallery a reference came from: a
+  Land-book winner and an awwwards SOTD are optimising for different
+  things.
+- **The writing about why it works** — the sources that explain the
+  decisions rather than showcase them, so the brief can cite a reason:
+  Refactoring UI (Wathan and Schoger — hierarchy, spacing, colour scales;
+  the closest thing to this template's constraints in book form),
+  Butterick's Practical Typography (measure, leading, the two-face rule),
+  Google Fonts Knowledge (choosing and pairing type), Utopia.fyi (fluid
+  type and space scales — what `--step-*` implements), Every Layout
+  (Bell and Pickering — the layout primitives the template's bands and
+  grids are built from), Nielsen Norman Group (readability, F-patterns,
+  what buyers actually scan), Baymard Institute (e-commerce and form
+  UX, research-backed), Smashing Magazine and A List Apart (long-form on
+  accessible colour, motion and typography), web.dev (Core Web Vitals —
+  the reason a trend is refused), Laws of UX (the named principles a
+  brief can point at), Growth.Design (case studies of real flows), and
+  the design writing of the people who ship the standing-list register:
+  Linear's and Stripe's design posts, Rauno Freiberg, Emil Kowalski
+  (motion that confirms rather than decorates), Josh Comeau (CSS that
+  holds up). For colour systems that clear AA by construction: Radix
+  Colors, Adobe Leonardo, Atmos. For the design-language vocabulary
+  (what a card, a band, a button *is* on this site): Shopify Polaris,
+  Atlassian, GOV.UK Design System, IBM Carbon — read for the naming and
+  the rules, never to import a system.
 - **The trend check.** Read what actually held up in production this year
   (as of 2026: bento layouts and dark mode shipped at scale; kinetic
   typography and glassmorphism survive only in heroes and navigation;
@@ -50,6 +85,21 @@ type, colour, layout, motion, imagery — and what it *refuses* to do.
 
 Do not copy a specific site's layout. References tell you the *register*;
 the direction has to be this brand's.
+
+Read `marketing/landscape.md` before any of the above if it exists: its
+§ 6 lines are the category's design register, and its register decision
+(inside the category's norms or deliberately outside them) is a choice
+already taken with the owner — the references here are chosen to serve
+it, not to reopen it. Read `marketing/brief.md § 8` for the sites the
+owner admires and dislikes, with their reasons, and § Asset register for
+what exists: a fixed brand palette, licensed fonts, product access for
+screenshots. A direction that ignores a fixed asset is a redesign nobody
+asked for.
+
+Put the references to the owner before deciding: three to five, with the
+one-line reading each, and ask which register they want to be read
+against. Record what they chose and what they rejected in the brief's
+Log — a reference the owner did not see is not a reference.
 
 ## 2. Decide — write `marketing/design-brief.md`
 
@@ -92,6 +142,18 @@ informed it and the constraint that bounds it:
    tokens).
 8. **What we refuse.** The list from § 1's trend check, plus the brand's own
    no-gos, so the next editor does not re-argue them.
+9. **The design language.** The tokens and patterns *are* the design
+   system: name what each one means on this site so the next page is
+   built from the vocabulary, not improvised. The buttons (primary,
+   secondary, what a `.btn` never does), the cards (what earns a card,
+   what sits on the plain band), the bands (which content goes on the
+   inverted band, at most one per page), the numbered rail, the
+   disclosure, the table (`.table-scroll`), the image treatment, the
+   spacing rhythm (`--gutter`, `--measure`, what a section gap is), the icon
+   policy (none, one set, inline SVG only), and the states (hover, focus
+   visible, disabled — measured like text). One line each. A pattern
+   not in this list is not used until it is added here with a CHECKLIST
+   §8 line.
 
 ## 3. Apply
 
@@ -109,6 +171,30 @@ informed it and the constraint that bounds it:
   `npm run check:invariants`; check 375×667 (the hero must not push the
   first CTA below the fold) and a 1440 desktop; confirm CSS size in the
   build output stayed under the budget.
+- **The smell pass** — run by eye on the 375 and 1440 screenshots before
+  the owner sees them, and again on any generated page before it ships.
+  The content side of this is mechanised (`npm run check:voice`, refreshed
+  weekly by /refresh-anti-ai-rules); the design side is judgement only
+  today — there is no `check-design-smells` script and no published
+  source list comparable to Wikipedia's signs-of-AI-writing page, so this
+  list is the working one and is dated. As of Sep 2026 a page reads as
+  generated when it has: a gradient-filled headline or a purple-to-blue
+  hero glow on a dark ground; frosted-glass cards (`backdrop-filter`)
+  outside the header; three identical icon-title-blurb cards in a row,
+  repeated band after band; emoji or sparkle glyphs as icons or in
+  headings; a badge pill above the h1 ("✨ Now with AI"); two hero
+  buttons where one action was decided; a "trusted by" logo strip with
+  no real customers behind it; every corner at the same large radius and
+  every card with the same soft shadow; centred text on every band;
+  Inter or the system stack with one purple accent and nothing chosen;
+  stock or generated photography of people smiling at laptops; abstract
+  3D blobs standing in for a product screen; a testimonial with a first
+  name and an initial. Each one found is fixed in the tokens or the
+  composition, not hidden, and added to the brief's § 8 if the brand is
+  prone to it. If this list starts being consulted at every run, mechanise
+  the machine-checkable half (the CSS and markup patterns) at the
+  built-output rung per AGENTS rule 18 and give it a `sources` block and
+  a weekly refresh like `voice.json` has.
 - Record it: the brief, a CHECKLIST §8 line for any new pattern, and a
   PLAYBOOK note if a script or asset pipeline changed. Re-render the social
   cards if the tokens changed (SETUP Phase 2).

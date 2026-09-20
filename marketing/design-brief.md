@@ -60,6 +60,26 @@ style; social-card treatment.
 - A brand colour the contrast sweep rejects.
 - TODO — the brand's own no-gos.
 
+## 9. The design language
+
+The tokens and patterns in `global.css` are the system; this names what
+each means on this site. One line per pattern; a pattern not listed here
+is not used until it is added with a CHECKLIST §8 line.
+
+| Pattern | On this site it means | Never |
+|---|---|---|
+| Buttons — primary / secondary | TODO | TODO |
+| Cards — what earns one | TODO | TODO |
+| Bands — plain / soft / inverted (`.band--ink`, one per page) | TODO | TODO |
+| Numbered rail | TODO | TODO |
+| Disclosure / FAQ | TODO | TODO |
+| Tables (`.table-scroll`) | TODO | TODO |
+| Images — crop, radius, caption | TODO | TODO |
+| Spacing rhythm — section gap, inner gap | TODO | TODO |
+| Icons | TODO (none / one inline SVG set) | TODO |
+| States — hover, focus-visible, disabled | TODO (measured like text) | TODO |
+
 ## Log
 
-- TODO date — brief created from /design-direction; references: TODO.
+- TODO date — brief created from /design-direction; references: TODO;
+  shown to the owner: TODO; chosen / rejected: TODO.
