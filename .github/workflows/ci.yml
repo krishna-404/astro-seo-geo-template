@@ -54,10 +54,13 @@ jobs:
         run: node scripts/check-content-images.mjs
 
       # The "must change together" pairs (format↔html_handling, twin routes
-      # in three places, static↔worker security headers) and the repo-wide
-      # source bans (web storage, colour literals). Source-level and fast —
-      # the same checks the pre-commit hook runs, re-run here because hooks
-      # are advisory (--no-verify exists; CI does not).
+      # in three places, static↔worker security headers, /search
+      # noindex↔sitemap, worker redirects↔run_worker_first), the repo-wide
+      # source bans (web storage, colour literals) and the content-level
+      # rules (author registry, cadence and interlinks, banned claims, SERP
+      # title clamp). Source-level and fast — the same checks the pre-commit
+      # hook runs, re-run here because hooks are advisory (--no-verify
+      # exists; CI does not).
       - name: Check config parity and source rules
         run: |
           node scripts/check-parity.mjs

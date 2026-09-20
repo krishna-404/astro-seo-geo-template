@@ -96,6 +96,14 @@ workflow). Date-only YAML (`published: 2026-09-01`) means midnight UTC.
   ⚠ Same URL, two bodies — without the Vary, caches mix them.
 - `/hi/<code>`: internal rewrite to the contact page (URL stays visible =
   the attribution datum), `X-Robots-Tag: noindex` at header level.
+- Permanent redirects live in ONE map, `PERMANENT_REDIRECTS` in
+  worker/index.ts (a URL that once existed and reached a sitemap or an
+  IndexNow ping; a URL visitors keep typing that the site never had). Every
+  key must also be in `run_worker_first` or the request never reaches the
+  worker and the visitor gets the 404 page — `check-parity` enforces it, and
+  `smoke-worker` / `smoke-live` parse the map and assert each entry, so a
+  row added there is tested without anyone remembering. Each row carries a
+  one-line reason in a comment.
 - ⚠ `run_worker_first` in wrangler.jsonc is the metering boundary: listed
   routes cost invocations, everything else is free. Review it when adding
   worker behaviour.
@@ -153,12 +161,34 @@ Lessons encoded (each cost the ancestor site a bug):
   verdicts) and Cloudflare edge (crawlers, answer engines, 404 scans) — and
   prints one report so what-to-write-next decisions come from evidence.
   Read-only env-var credentials; each section soft-skips until configured
-  (SETUP Phase 4).
+  (SETUP Phase 4). The Search Console section leads with the **high-intent
+  queries** (`src/data/intent.json` signal words + a curated watch list, each
+  term tied to the page that claims it; `scripts/lib/intent.mjs`): on a
+  zero-click site the buyer's transactional phrasings sit far below the
+  informational rows by volume and a report sorted by impressions never
+  shows them first. Every row is kept (never a top-N slice — GSC orders by
+  clicks, which on a zero-click site is arbitrary) and the page × query
+  dimension is pulled too, so a title rewrite uses the words the page is
+  actually shown for.
 - Before organic traffic exists, the metric that matters is **AI citations**:
   keep a list of target queries, periodically run each in ChatGPT,
   Perplexity and Google AI Overviews, and log who got cited. Rankings and
   pageviews say nothing yet; citations move weeks before the traffic
   reports do.
+
+**The generative-AI half of measurement (Sep 2026).** Search Console's
+*Generative AI* report — impressions inside AI Overviews and AI Mode, by page,
+country, device and date — is UI-only: no API `type`, no BigQuery. So it is
+read through its Export button: the owner drops the zip into
+`marketing/insights/genai/` (one a week, dated), `scripts/lib/genai.mjs` opens
+it, joins AI vs web impressions per page and diffs against the previous export,
+and `npm run insights` prints it as its own section beside two proxies for what
+the report withholds (prompt-shaped web queries; referrals from AI assistants in
+Umami). `BING_WEBMASTER_API_KEY` adds Bing's read-back — the index behind
+Copilot and ChatGPT search. `marketing/ai-panel.md` is the monthly manual
+share-of-voice panel across the assistants; `npm run audit:discovery` scores
+the whole picture on twenty levers. The cadence works all of it
+(`.claude/skills/content-cadence/SKILL.md` step 2e, weekly step 17).
 
 ## 6. Cloudflare dashboard — setting by setting
 
@@ -342,11 +372,20 @@ has already cost something.
       better title. Match titles/headings to the query language the report
       shows — never phrasing a keyword tool invented.
 - [ ] The /content-cadence Routine does most of this section for you when
-      scheduled (SETUP Phase 5): daily insights snapshot + emailed report
-      with the manual request-indexing shortlist; weekly anti-AI rules
-      refresh (with a sweep of the latest posts for newly landed tells) and
-      the evidence-fueled writing run. Its output is PRs — the human half of
-      the cadence is merging them and pasting the shortlist into GSC.
+      scheduled (SETUP Phase 5): daily insights snapshot, the high-intent
+      rows worked first, one to three evidence-backed improvements, and an
+      emailed report with the manual request-indexing shortlist; weekly
+      anti-AI rules refresh (with a sweep of the latest posts for newly
+      landed tells), the evidence-fueled writing run, the tools sweep and
+      the map/data-sheet maintenance. Its output is PRs — the human half of
+      the cadence is merging them, pasting the shortlist into GSC, and
+      answering the two sections that ask: **What I need from you** (the
+      open questions in `marketing/DATA-SHEET.md`, ranked by what they
+      unblock — type the answer under the question, it moves to facts.json
+      or the data file with a source) and **Where to list the site next**
+      (`marketing/link-targets.md` — a directory listing needs a human with
+      an email address; tick the row and the run stops asking). `npm run
+      ask` prints both on demand and at every session start.
 
 **Monthly (automated + 10 minutes)**
 - [ ] The link-rot workflow ran on the 3rd

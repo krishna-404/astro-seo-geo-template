@@ -1,6 +1,6 @@
 # Content inventory
 
-Generated 2026-08-28 by `npm run inventory` — do not hand-edit; regenerate instead.
+Generated 2026-09-20 by `npm run inventory` — do not hand-edit; regenerate instead.
 Check this before pitching anything new: new pieces extend clusters, they do not
 duplicate them. Live URLs are permalinks; drafts render nowhere yet.
 
@@ -22,7 +22,7 @@ duplicate them. Live URLs are permalinks; drafts render nowhere yet.
 
 | Title | Permalink | Source | Published | Updated | Words | Out-links |
 |---|---|---|---|---|---|---|
-| Core Web Vitals: the three metrics and this template's budget | https://example.com/glossary/core-web-vitals | `src/content/glossary/core-web-vitals.md` | — | 2026-08-11 | 204 | 0 |
+| Core Web Vitals: the three metrics and the template's budget | https://example.com/glossary/core-web-vitals | `src/content/glossary/core-web-vitals.md` | — | 2026-08-11 | 204 | 0 |
 | llms.txt: what it is and whether to ship one | https://example.com/glossary/llms-txt | `src/content/glossary/llms-txt.md` | — | 2026-08-11 | 205 | 1 |
 
 ## Static pages

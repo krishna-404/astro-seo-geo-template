@@ -4,7 +4,7 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import JsonLd from '../components/JsonLd.astro';
 import ConsentBanner from '../components/ConsentBanner.astro';
-import { SITE, FOUNDER, ANALYTICS, VERIFICATION } from '../data/site';
+import { SITE, FOUNDER, CONTACT, ANALYTICS, VERIFICATION } from '../data/site';
 import { ogCardFor } from '../lib/ogCard';
 import { FOUNDER_PHOTO } from '../lib/founderPhoto';
 import { clampTitle } from '../lib/clampTitle';
@@ -80,14 +80,40 @@ const founder = {
   ...(FOUNDER_PHOTO ? { image: new URL(FOUNDER_PHOTO.src, SITE.url).href } : {}),
 };
 
+/**
+ * The entity every other node hangs off. An engine resolves a brand to an
+ * entity before it can recommend it, and it does so from corroboration: the
+ * same name, logo, contact and profiles asserted here and on the profiles
+ * `sameAs` points at. Every field below is one the site already shows —
+ * nothing is asserted that a visitor cannot see. `legalName`, `address`,
+ * `foundingDate` and the company's own profiles (`sameAs`) are the owner's
+ * to supply through marketing/DATA-SHEET.md; leave them out until then —
+ * an empty string in sameAs is invalid, and CI's entity-hygiene check fails
+ * it. The founder's profile belongs on the Person node, not here.
+ */
 const organization = {
   '@type': 'Organization',
   '@id': `${SITE.url}/#organization`,
   name: SITE.name,
   url: SITE.url,
+  // ≥112px square, the same mark the favicon set uses — one source
+  // (marketing/favicon.mjs writes it).
+  logo: new URL('/apple-touch-icon.png', SITE.url).href,
   description: SITE.description,
   slogan: SITE.tagline,
   founder: { '@id': `${SITE.url}/#founder` },
+  email: CONTACT.email,
+  contactPoint: [
+    {
+      '@type': 'ContactPoint',
+      contactType: 'sales',
+      email: CONTACT.email,
+      // `as string`: the template ships phoneHref as '' (as const), which
+      // TypeScript narrows to `never` after a truthiness check.
+      ...((CONTACT.phoneHref as string) && { telephone: (CONTACT.phoneHref as string).replace(/^tel:/, '') }),
+      availableLanguage: [SITE.locale.split('-')[0]],
+    },
+  ],
 };
 
 const pageSchemas = schema ? (Array.isArray(schema) ? schema : [schema]) : [];

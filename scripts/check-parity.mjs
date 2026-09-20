@@ -16,6 +16,15 @@
  *      worker's withSecurityHeaders() values. The platform never applies
  *      _headers to worker responses, so the two emitters exist by design —
  *      and "must stay in lockstep" was, until this check, a comment.
+ *   4. /search noindex ↔ excluded from the sitemap filter (the iron rule:
+ *      the two must agree, in both directions, in the same commit).
+ *      check-invariants sees the built output; this sees the source, at
+ *      commit time, before a build.
+ *   5. Every worker PERMANENT_REDIRECTS key is in wrangler run_worker_first.
+ *      Same failure shape as rule 2, on a route the worker owns exactly:
+ *      the redirect looks written and correct, the worker never sees the
+ *      request, and the visitor gets the 404 page. Silent, and invisible in
+ *      review because both files read fine on their own.
  */
 
 import { readFileSync } from 'node:fs';
@@ -31,6 +40,7 @@ const wrangler = readFileSync('wrangler.jsonc', 'utf8');
 const worker = readFileSync('worker/index.ts', 'utf8');
 const twins = readFileSync('scripts/markdown-twins.mjs', 'utf8');
 const headers = readFileSync('public/_headers', 'utf8');
+const searchPage = readFileSync('src/pages/search.astro', 'utf8');
 
 // ── 1. format ↔ html_handling ─────────────────────────────────────────────
 console.log('→ astro build.format agrees with wrangler html_handling');
@@ -100,5 +110,33 @@ if (!/^\s*# @generated-csp/m.test(headers)) {
 const committedCsp = JSON.parse(readFileSync('worker/csp.generated.json', 'utf8')).csp;
 if (!committedCsp) bad('worker/csp.generated.json has an empty csp — run npm run build and commit it');
 if (!fail) console.log('   ok');
+
+// ── 4. /search noindex ↔ sitemap exclusion ────────────────────────────────
+console.log('→ /search is noindex AND excluded from the sitemap (both, always)');
+{
+  const before = fail;
+  if (!/noindex=\{true\}/.test(searchPage)) bad('src/pages/search.astro no longer passes noindex={true} — a client-rendered tool page must not be indexed');
+  if (!/!page\.includes\('\/search'\)/.test(astroConfig)) bad("astro.config.mjs sitemap filter no longer excludes '/search' — noindex and the sitemap must agree");
+  if (fail === before) console.log('   ok');
+}
+
+// ── 5. worker redirects reach the worker ──────────────────────────────────
+console.log('→ every PERMANENT_REDIRECTS path is in wrangler run_worker_first');
+{
+  const map = worker.match(/PERMANENT_REDIRECTS:\s*Record<string,\s*string>\s*=\s*\{([\s\S]*?)\}/)?.[1];
+  if (map === undefined) {
+    bad('could not parse PERMANENT_REDIRECTS in worker/index.ts — check the parser against the source');
+  } else {
+    const paths = [...map.matchAll(/'(\/[^']*)':/g)].map((m) => m[1]);
+    const missing = paths.filter((p) => !workerFirst.includes(p));
+    if (missing.length) {
+      missing.forEach((p) =>
+        bad(`wrangler run_worker_first lacks "${p}" — the worker never sees the request and the visitor gets the 404 page`)
+      );
+    } else {
+      console.log(`   ok (${paths.length ? paths.join(', ') : 'no redirects configured'})`);
+    }
+  }
+}
 
 process.exit(fail);

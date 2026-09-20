@@ -56,10 +56,16 @@ check('every table wrapped in .table-scroll', (bad) => {
 });
 
 // BaseLayout clamps via clampTitle(); a failure means the clamp was bypassed.
+// Measured on the DECODED string: Astro escapes an apostrophe to &#39;, five
+// characters for one, and a 60-character title read as 64 (found 20 Sep 2026).
+const decode = (t) => t.replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(n)).replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
+  .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
 check('<title> at most 60 characters', (bad) => {
   for (const [f, h] of html) {
     const m = h.match(/<title>([^<]*)<\/title>/);
-    if (m && m[1].length > 60) bad(`${f} — ${m[1].length} chars: "${m[1]}"`);
+    if (!m) continue;
+    const t = decode(m[1]);
+    if (t.length > 60) bad(`${f} — ${t.length} chars: "${t}"`);
   }
 });
 
@@ -238,6 +244,93 @@ check('every JSON-LD block parses', (bad) => {
 
 // The worker falls back to HTML when a twin is missing, so a broken generator
 // degrades silently — same rationale as the pagefind coverage check.
+// Helper: every JSON-LD node on a page, @graph flattened.
+function ldNodes(h) {
+  const nodes = [];
+  for (const m of h.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) {
+    try {
+      const j = JSON.parse(m[1]);
+      for (const n of Array.isArray(j['@graph']) ? j['@graph'] : [j]) if (n && typeof n === 'object') nodes.push(n);
+    } catch { /* the parse check above reports it */ }
+  }
+  return nodes;
+}
+
+// ENTITY HYGIENE. An engine resolves the brand to an entity from the strings
+// in Organization/Person/WebSite nodes, verbatim. The Sep 2026 audit of another
+// site found its brand name shipped as "B&#39;spoke" in its own JSON-LD (an
+// apostrophe escaped twice and never decoded) and a sameAs array with four
+// empty strings — the canonical name a knowledge graph reads was a string no
+// human would type, and the corroboration list was invalid. Neither shows on
+// the page; both are one template edit away here. So: no HTML entity survives
+// in a name/description/headline string, and every sameAs/url/logo/image is an
+// absolute http(s) URL with nothing empty.
+check('JSON-LD entity hygiene: no HTML entities in names, every sameAs/url a real absolute URL', (bad) => {
+  const ENTITY = /&(#\d+|#x[0-9a-f]+|amp|quot|apos|lt|gt|nbsp);/i;
+  const TEXT_KEYS = new Set(['name', 'headline', 'description', 'alternateName', 'legalName', 'slogan', 'jobTitle']);
+  const URL_KEYS = new Set(['sameAs', 'url', 'logo', 'image', 'thumbnailUrl', 'contentUrl']);
+  const visit = (f, node, path) => {
+    for (const [k, v] of Object.entries(node)) {
+      if (TEXT_KEYS.has(k) && typeof v === 'string' && ENTITY.test(v)) bad(`${f} ${path}${k} carries an HTML entity: ${JSON.stringify(v)}`);
+      if (URL_KEYS.has(k)) {
+        for (const u of Array.isArray(v) ? v : [v]) {
+          if (u && typeof u === 'object') { if (u.url !== undefined) visit(f, { url: u.url }, `${path}${k}.`); continue; }
+          if (typeof u !== 'string' || !/^https?:\/\/\S+$/.test(u)) bad(`${f} ${path}${k} is not an absolute URL: ${JSON.stringify(u)}`);
+        }
+      }
+      if (v && typeof v === 'object' && !URL_KEYS.has(k)) {
+        for (const child of Array.isArray(v) ? v : [v]) if (child && typeof child === 'object') visit(f, child, `${path}${k}.`);
+      }
+    }
+  };
+  for (const [f, h] of html) for (const n of ldNodes(h)) visit(f, n, '');
+});
+
+// The Organization node is the spine: name, url, logo, description and a
+// contact point are what make it resolvable (the Sep 2026 discovery-audit frame, ENT-04). It is
+// emitted once from BaseLayout, so this guards a refactor that drops a field.
+check('Organization node carries name, url, logo, description, contactPoint on every page', (bad) => {
+  for (const [f, h] of html) {
+    const org = ldNodes(h).find((n) => n['@type'] === 'Organization');
+    if (!org) { bad(`${f} has no Organization node`); continue; }
+    for (const k of ['name', 'url', 'logo', 'description', 'contactPoint']) if (!org[k]) bad(`${f} Organization lacks ${k}`);
+  }
+});
+
+// A collection index that links to its members but describes itself only as
+// a page is, to an engine, a page — not a list (discovery-audit frame SD-04). Rule:
+// any page that links to three or more pages under its own path prefix is an
+// index and must emit an ItemList (itemListElement). Generic on purpose: the
+// next collection index gets the rule without anyone listing it here.
+check('every collection index page emits an ItemList', (bad) => {
+  for (const [f, h] of html) {
+    const route = '/' + f.slice(DIST.length + 1).replace(/\.html$/, '').split(sep).join('/');
+    // Only top-level pages can be a collection index: /blog, /glossary, /vs …
+    if (route === '/index' || route.split('/').length !== 2) continue;
+    const prefix = `${route}/`;
+    const children = new Set([...h.matchAll(/href="([^"#?]+)"/g)].map((m) => m[1]).filter((u) => u.startsWith(prefix)));
+    if (children.size < 3) continue;
+    if (!ldNodes(h).some((n) => n['@type'] === 'ItemList' || n.mainEntity?.['@type'] === 'ItemList' || n.itemListElement)) {
+      bad(`${f} links to ${children.size} pages under ${prefix} but emits no ItemList — add one from the same loop that renders the list`);
+    }
+  }
+});
+
+// robots.txt stays open to the answer-engine crawlers by decision (the
+// comments in src/pages/robots.txt.ts). A Disallow for one of them is a decision to
+// take on purpose, in that file's comment, not a line that slips in.
+check('robots.txt does not Disallow an answer-engine crawler', (bad) => {
+  const robotsPath = join(DIST, 'robots.txt');
+  if (!existsSync(robotsPath)) return;
+  const groups = readFileSync(robotsPath, 'utf8').split(/\n(?=User-agent:)/i);
+  const WATCH = /^(googlebot|bingbot|gptbot|oai-searchbot|chatgpt-user|claudebot|claude-user|claude-searchbot|perplexitybot|perplexity-user|google-extended|applebot|applebot-extended|ccbot|meta-externalagent|\*)$/i;
+  for (const g of groups) {
+    const ua = /User-agent:\s*(\S+)/i.exec(g)?.[1];
+    if (!ua || !WATCH.test(ua)) continue;
+    if (/^Disallow:\s*\/\s*$/im.test(g)) bad(`robots.txt disallows ${ua} — AGENTS § Content rules: being cited is a distribution channel, and the robots.txt generator's own comment is the decision`);
+  }
+});
+
 check('every content page has its markdown twin', (bad) => {
   for (const dir of ['blog', 'glossary']) {
     for (const p of readdirSync(join(DIST, dir)).filter((f) => f.endsWith('.html'))) {
@@ -276,6 +369,28 @@ check('canonicals are self-consistent', (bad) => {
     }
     const expected = p === '/' ? join(DIST, 'index.html') : join(DIST, ...(p.slice(1) + '.html').split('/'));
     if (resolve(expected) !== resolve(f)) bad(`${f} canonical resolves to ${expected.split(sep).join('/')}, not itself`);
+  }
+});
+
+// The homepage's social card is the BRAND card (SITE.ogImage — the harbour
+// scene rendered from marketing/og/default.html), never a per-page title card.
+// On the ancestor site render-pages.mjs rendered a card for '/', so
+// og/pages/home.jpg existed, ogCardFor('/') preferred it, and the live
+// homepage previewed as a lower-cased <title> fragment over a product
+// screenshot while its docs said it used the brand card. Nothing noticed for six
+// weeks because a scraper caches the first card it fetched. Two assertions:
+// the built homepage points at SITE.ogImage, and no home card sits in public/
+// waiting for the lookup to prefer it again.
+check('homepage og:image is the brand card, not a page card', (bad) => {
+  const site = readFileSync('src/data/site.ts', 'utf8');
+  const brand = /ogImage:\s*'([^']+)'/.exec(site)?.[1];
+  if (!brand) { bad('src/data/site.ts has no SITE.ogImage'); return; }
+  const home = html.get(join(DIST, 'index.html'));
+  if (!home) { bad('no dist/index.html'); return; }
+  const og = /<meta property="og:image" content="([^"]+)"/.exec(home)?.[1] ?? '';
+  if (!og.endsWith(brand)) bad(`dist/index.html og:image is ${og} — expected ${brand} (index.astro passes ogImage={SITE.ogImage}; render-pages.mjs skips '/')`);
+  for (const ext of ['jpg', 'png', 'webp']) {
+    if (existsSync(join('public', 'og', 'pages', `home.${ext}`))) bad(`public/og/pages/home.${ext} exists — a stale homepage page card; delete it — render-pages.mjs must keep skipping '/'`);
   }
 });
 

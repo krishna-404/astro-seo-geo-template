@@ -400,6 +400,27 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
 - ✅ **No Tailwind, on purpose**: arbitrary utility colours would make "no
   unmeasured colour" unenforceable. The token set + contrast sweep IS the
   design system.
+- ✅ **The expressive layer** (`global.css`, Sep 2026): a fluid Utopia-style
+  type scale (`--step--1 … --step-5`) so type is set once and never re-sized
+  per breakpoint; `--font-display` as the single knob for a self-hosted
+  display face (`font-src 'self'` — no Google Fonts request); the inverted
+  `.band--ink` with its own measured `--on-ink-*` tokens (10.9:1, 8.0:1,
+  8.1:1 on `--band-ink`); `.hero--editorial`, `.bento` (asymmetric 6-column
+  card grid), `.rail` (numbered list — the numeral is absolutely positioned,
+  not a grid cell, because a grid turns each inline run into a cell and the
+  text wrapped into the numeral column on first render), `.display`, and
+  `.reveal` — a scroll-driven `animation-timeline: view()` entry, inside
+  the motion query AND `@supports`, zero JS. The homepage uses all of them
+  as the template's default direction; `/design-direction` decides a site's
+  own and writes `marketing/design-brief.md`. Constraint stays the brief:
+  borrow composition, type, colour and rhythm from awwwards-class sites,
+  never their WebGL, scroll-jacking or font payloads.
+- ✅ **No dead token references.** The stylesheet inherited `var(--orange)`,
+  `--orange-soft` and `--orange-strong` from the ancestor site after the
+  tokens were renamed to `--brand*` — so `:focus-visible` had an INVISIBLE
+  outline and `.prose a` no colour. Fixed Sep 2026; `check-source-rules`
+  bans hex literals outside the token files, which is why the leftovers
+  were references and not colours, and why they went unnoticed.
 - ⬜ **Dark mode** — not included: it doubles the contrast-audit matrix and
   marketing sites rarely need it. Adding it means re-measuring every token
   pair in both schemes.
@@ -441,10 +462,28 @@ dilutes the battery.
   pairs that were previously comments: `build.format` ↔ `html_handling`
   (mismatch breaks every route), twin routes in all three places (worker
   `TWIN_PREFIXES` / twins `COLLECTIONS` / `run_worker_first`), static ↔
-  worker security-header lockstep; plus the repo-wide bans — web storage
-  (AGENTS rule 5) and colour literals outside the token files (rule 6) —
-  the two rules statistically most likely to be violated by
-  plausible-looking generated code.
+  worker security-header lockstep, `/search` noindex ↔ sitemap exclusion at
+  source level (the built-output invariant sees it after a build; this sees
+  it at commit time), and **every worker `PERMANENT_REDIRECTS` key present
+  in `run_worker_first`** (added Sep 2026; WHY: the same silent shape as the
+  twin-route rule and worse to review — the redirect and the route list
+  each read correctly on their own while the worker never sees the request
+  and the visitor gets the 404 page; proven red against an unlisted path);
+  plus the repo-wide bans — web storage (AGENTS rule 5) and colour literals
+  outside the token files (rule 6) — the two rules statistically most
+  likely to be violated by plausible-looking generated code. Two
+  content-level rules ride the same script: **banned claims**
+  (`voice.json → site.bannedClaims`, regexes for assertions of fact the site
+  may not make — a measurement nobody took, a customer that does not exist;
+  WHY: the ancestor site's prose rule did not stop the claim regrowing nine
+  times in a month, in synonyms the rule never named — match the CLAIM, not
+  the verb; empty until /onboard-marketing fills it) and the **SERP title
+  clamp** (a frontmatter `title` that `src/lib/clampTitle.ts` would
+  HARD-CUT — over 60 characters with no " — " or " | " clause starting
+  inside the budget; WHY: the built `<title>` ≤60 invariant passes precisely
+  because the clamp did its job, so the promise cut off mid-phrase is
+  visible only in the SERP; proven red against the template's own
+  Core Web Vitals entry, which it found at 62 characters).
 - ✅ `npm run build` = types + zod schemas + render + search index + CSP
   generation in one step.
 - ✅ **Committed worker CSP is current** (`git diff` on
@@ -525,7 +564,10 @@ dilutes the battery.
   to provide: form POST → 303 `/contact/thanks` with the secret unset
   (empty-default rule), GET → 405, unknown data tab → 404, `/hi` rewrite +
   header-level noindex + malformed-code fallthrough, twin negotiation for
-  GET **and HEAD** with `Vary: Accept` on both bodies, security set + the
+  GET **and HEAD** with `Vary: Accept` on both bodies, every
+  `PERMANENT_REDIRECTS` entry → 301 to its target (the map is parsed from
+  worker/index.ts, so a row added there is asserted without anyone
+  remembering; `smoke-live` does the same at the edge), security set + the
   committed CSP on every worker response. Deliberately not covered: the
   Apps Script upstream (needs a live secret — stays a PLAYBOOK §8 launch
   step) and the rate limiter (asserting on the local simulator tests the
@@ -539,6 +581,45 @@ dilutes the battery.
   `example.com` (a red job on day one teaches people to ignore red);
   requests retry so edge propagation doesn't cry wolf. The real form
   submission stays manual — it emails humans.
+- ✅ **Homepage og:image is the brand card** (`check-invariants`): the built
+  homepage must point at `SITE.ogImage` and no `public/og/pages/home.*` may
+  exist. `ogCardFor()` prefers any card on disk for a route, so a card run
+  that renders `/` silently replaces the brand card — on the ancestor site the
+  homepage previewed for six weeks as a lower-cased title fragment over a
+  screenshot while its docs said it used the brand card. `render-pages.mjs`
+  skips `/`; `index.astro` passes `ogImage={SITE.ogImage}` explicitly.
+- ✅ **JSON-LD entity hygiene** (`check-invariants`): no HTML entity survives
+  in a `name`/`headline`/`description`; every `sameAs`/`url`/`logo`/`image`
+  is an absolute http(s) URL, nothing empty. From the Sep 2026 discovery audit
+  of another site, which shipped its brand as `B&#39;spoke` in its own schema
+  and four empty `sameAs` strings — invisible on the page, one template edit
+  away here.
+- ✅ **Organization completeness** (`check-invariants`): `name`, `url`,
+  `logo`, `description`, `contactPoint` on every page. The entity every other
+  node hangs off; a refactor that drops a field has no symptom on the page.
+- ✅ **Collection indexes emit `ItemList`** (`check-invariants`): a top-level
+  page linking to ≥3 pages under its own prefix is an index, and an index that
+  only describes itself is, to an engine, a page rather than a list. Generic
+  so the next collection gets the rule without being listed.
+- ✅ **robots.txt never Disallows an answer-engine crawler**
+  (`check-invariants`): the open policy is the decision in
+  `robots.txt.ts`'s comments; a slipped `Disallow: /` under GPTBot or
+  OAI-SearchBot removes the site from the citation path with no symptom.
+- ✅ **Answer-engine crawlers get through the edge** (`smoke-live`): GPTBot,
+  OAI-SearchBot, ClaudeBot, PerplexityBot, Bingbot and Googlebot user-agents
+  each fetch `/` and `/llms.txt` and must get a plain 200 with no Cloudflare
+  challenge. robots.txt permission means nothing if a WAF or "block AI bots"
+  toggle 403s them — invisible in analytics, fatal to being cited.
+- ✅ **`<title>` length is measured on the decoded string**
+  (`check-invariants`): Astro escapes `'` to `&#39;` — five characters for
+  one — and a 60-character title read as 64 while the SERP clamp had passed
+  it.
+- ✅ **Discovery scorecard, informational** (`npm run audit:discovery`,
+  `scripts/discovery-audit.mjs`): the Sep 2026 outside-audit frame as code —
+  twenty levers scored 0–100 with evidence, on the site from `dist/` and off
+  it from the newest snapshot, `link-targets.md`, `DATA-SHEET.md` and
+  `ai-panel.md`. Never a gate; n/a levers print their reason so nobody
+  invents a thing to lift a number. The weekly cadence run prints it.
 - ✅ **External link rot is checked monthly, never in CI**
   (`.github/workflows/linkrot.yml`, lychee over built HTML, external URLs
   only). Citations rot on someone else's schedule and a flaky third-party
@@ -557,6 +638,15 @@ dilutes the battery.
   human runs at publish time (may install a headless browser ad hoc).
 - ✅ **Generate, commit the output, never hand-edit the output** (llms.txt,
   favicons, OG cards, lastmod.json, sheet snapshots).
+- ✅ **What the engine cannot find out is a question, not an estimate.**
+  `marketing/DATA-SHEET.md` holds the open questions only the owner can
+  answer (format is parsed by `scripts/data-sheet.mjs`; it holds no answers
+  — an answer moves to facts.json or its data file with a source and the
+  question is marked ✅ with a pointer); `marketing/link-targets.md` holds
+  the directory and entity-anchor targets with a status each (a run
+  surfaces the next three, never claims one). `npm run ask` prints both,
+  and the `.claude/settings.json` SessionStart hook runs it so anyone
+  opening the repo sees what is blocked before they start.
 - ✅ Sections shared between routes live in one component and are imported,
   never copied — two pages meant to agree then cannot drift.
 - ✅ **Glossary categories are a closed vocabulary** (`src/data/taxonomy.ts`

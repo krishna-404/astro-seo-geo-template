@@ -23,6 +23,26 @@
  *               non-browser traffic, which for this site is genuinely
  *               interesting (see /for-llms).
  *
+ * The Search Console section leads with HIGH-INTENT queries (scripts/lib/
+ * intent.mjs, rules in src/data/intent.json): the transactional phrasings —
+ * "<category> software", "<category> tracking system", "<x> vs <y>" — that a
+ * buyer with budget types. On a zero-click site they sit far below the
+ * informational rows by volume and a report sorted by impressions never shows
+ * them first; here they are surfaced in every pull, so the cadence run can
+ * work them first and carry them in the report with what was done.
+ *
+ * A FOURTH surface, read through a side door (scripts/lib/genai.mjs): the
+ * Search Console GENERATIVE AI report — how often the site's URLs were shown
+ * inside AI Overviews and AI Mode, by page, country, device and date. It has
+ * no API and no BigQuery export (Sep 2026), so the owner exports it from the
+ * UI and drops the zip into marketing/insights/genai/; this script reads the
+ * newest one, joins it with the ordinary page rows (AI share per page, pages
+ * with web impressions and zero AI impressions), and adds the two proxies the
+ * report withholds — prompt-shaped queries from the web rows, and referrals
+ * from AI assistants in Umami. Bing Webmaster Tools is a FIFTH, optional:
+ * Bing's index feeds Copilot and ChatGPT search, so its query and link
+ * numbers are the other half of the answer-engine picture (BING_WEBMASTER_API_KEY).
+ *
  * Each section runs iff its credentials are present and soft-skips with a note
  * otherwise, so a partially-configured workspace still gets a partial report.
  *
@@ -60,6 +80,8 @@
 
 import crypto from 'node:crypto';
 import { SITE_URL } from '../src/data/origin.mjs';
+import { highIntentReport } from './lib/intent.mjs';
+import { readGenAiExports, genAiReport, GENAI_DIR } from './lib/genai.mjs';
 
 const SITE = new URL(SITE_URL).host;
 if (/example\.com$/.test(SITE)) {
@@ -177,17 +199,47 @@ async function gsc() {
   };
 
   try {
-    const [queries, pages] = await Promise.all([
-      query({ dimensions: ['query'], rowLimit: 100 }),
-      query({ dimensions: ['page'], rowLimit: 25 }),
+    const byImpressions = (a, b) => b.impressions - a.impressions || a.position - b.position;
+    const [queriesRaw, pagesRaw, pageQueriesRaw] = await Promise.all([
+      query({ dimensions: ['query'], rowLimit: 500 }),
+      query({ dimensions: ['page'], rowLimit: 100 }),
+      // page × query: which words each page is actually shown for. This is
+      // the input to "say what the searcher types" (AGENTS § Content rules) —
+      // without it a title rewrite is a guess.
+      query({ dimensions: ['page', 'query'], rowLimit: 1000 }),
     ]);
+    // GSC orders rows by clicks; on a zero-click site that is an arbitrary
+    // order, and a top-N slice of it is an arbitrary fragment (the ancestor
+    // site's early snapshots kept the first 20 and lost its best cluster
+    // entirely). Keep EVERY row, sorted by impressions — the snapshot is the
+    // measurement history.
+    const queries = [...queriesRaw].sort(byImpressions);
+    const pages = [...pagesRaw].sort(byImpressions);
+    const pageQueries = {};
+    for (const r of [...pageQueriesRaw].sort(byImpressions)) {
+      const [page, q] = r.keys;
+      (pageQueries[page] ??= []).push({ query: q, clicks: r.clicks, impressions: r.impressions, position: r.position });
+    }
     // The actionable slice: real demand (impressions) sitting just off page
     // one, where a title rewrite or content upgrade moves the needle.
     const opportunities = queries
       .filter((r) => r.impressions >= 20 && r.position >= 4 && r.position <= 20)
-      .sort((a, b) => b.impressions - a.impressions)
+      .sort(byImpressions)
       .slice(0, 15);
-    return { startDate, endDate, queries: queries.slice(0, 20), pages, opportunities };
+    // The same slice with no volume floor — at a small site's size (hundreds
+    // of impressions a month) ≥20 on a single query is rare, and the position
+    // 4–20 set on ANY impressions is the rung-2 shortlist the funnel ladder
+    // works (STRATEGY.md § Content strategy).
+    const nearPageOne = queries
+      .filter((r) => r.position >= 4 && r.position <= 20)
+      .sort(byImpressions)
+      .slice(0, 40);
+    // The buyer's queries, whatever their volume: every row carrying a
+    // transactional signal or sitting on the watch list, with the page Google
+    // shows it on against the page whose frontmatter claims it. Worked first
+    // in every cadence run; the report's own section.
+    const highIntent = highIntentReport(queries, pageQueries, SITE);
+    return { startDate, endDate, queries, pages, pageQueries, opportunities, nearPageOne, highIntent };
   } catch (e) {
     if (e.notOnboarded) return { skipped: e.message };
     throw e;
@@ -327,17 +379,90 @@ async function cloudflare() {
   };
 }
 
+/** ---------- Bing Webmaster Tools (optional) ---------- */
+
+/**
+ * Why Bing at all: Bing's index is what Copilot answers from and what ChatGPT
+ * search leans on for web results (the Sep 2026 discovery-audit frame — "classic SEO and Bing indexing are prerequisites for GEO, not
+ * alternatives"). Verify the site there (site.ts → VERIFICATION.bing); IndexNow already
+ * pings it; this reads the numbers back. The JSON API's
+ * response shape is `{ d: [...] }` on the classic endpoint; guarded either way.
+ */
+async function bing() {
+  const key = process.env.BING_WEBMASTER_API_KEY;
+  if (!key) return { skipped: 'BING_WEBMASTER_API_KEY not set — see SETUP.md § Insights read-back.' };
+  const site = `https://${SITE}/`;
+  const call = async (method) => {
+    const r = await fetch(`https://ssl.bing.com/webmaster/api.svc/json/${method}?siteUrl=${encodeURIComponent(site)}&apikey=${key}`, {
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!r.ok) throw new Error(`Bing ${method} → ${r.status}: ${(await r.text()).slice(0, 160)}`);
+    const j = await r.json();
+    return j.d ?? j;
+  };
+  const [queries, links, crawl] = await Promise.all([
+    call('GetQueryStats').catch((e) => ({ error: e.message })),
+    call('GetLinkCounts').catch((e) => ({ error: e.message })),
+    call('GetCrawlStats').catch((e) => ({ error: e.message })),
+  ]);
+  const rows = Array.isArray(queries) ? queries : [];
+  // The query endpoint returns one row per query per day; fold to per query.
+  const byQuery = new Map();
+  for (const r of rows) {
+    const q = r.Query ?? r.query;
+    if (!q) continue;
+    const cur = byQuery.get(q) ?? { query: q, impressions: 0, clicks: 0 };
+    cur.impressions += Number(r.Impressions ?? 0);
+    cur.clicks += Number(r.Clicks ?? 0);
+    byQuery.set(q, cur);
+  }
+  const topQueries = [...byQuery.values()].sort((a, b) => b.impressions - a.impressions).slice(0, 30);
+  const crawlRows = Array.isArray(crawl) ? crawl : [];
+  const last = crawlRows.at(-1) ?? {};
+  return {
+    topQueries,
+    queriesError: queries?.error,
+    links: links?.error ? { error: links.error } : links,
+    crawl: crawl?.error ? { error: crawl.error } : { days: crawlRows.length, lastInIndex: last.InIndex ?? null, lastCrawledPages: last.CrawledPages ?? null, lastHttp4xx: last.Code4xx ?? null },
+  };
+}
+
+/** ---------- Search Console — Generative AI report (UI export) ---------- */
+
+/**
+ * No credentials: it reads files. Runs after Umami and Search Console so it
+ * can join their rows. See scripts/lib/genai.mjs for what it can and cannot
+ * know, and DEPLOY.md § 7c for how the export gets into the folder.
+ */
+function genai(u, g) {
+  const exps = readGenAiExports(GENAI_DIR);
+  return genAiReport({
+    site: SITE,
+    exports: exps,
+    gscPages: g?.pages ?? [],
+    gscQueries: g?.queries ?? [],
+    referrers: u?.referrers ?? [],
+    now,
+  });
+}
+
 /** ---------- Report ---------- */
 
 const settle = async (fn) => {
   try { return await fn(); } catch (e) { return { error: e.message }; }
 };
 
-const [u, g, c, ins] = await Promise.all([
-  settle(umami), settle(gsc), settle(cloudflare),
+const [u, g, c, b, ins] = await Promise.all([
+  settle(umami), settle(gsc), settle(cloudflare), settle(bing),
   INSPECT ? settle(gscInspect) : Promise.resolve(null),
 ]);
-const report = { generated: new Date(now).toISOString(), windowDays: DAYS, umami: u, searchConsole: g, cloudflare: c, ...(ins && { indexing: ins }) };
+let ai;
+try { ai = genai(u, g); } catch (e) { ai = { error: e.message }; }
+const report = {
+  generated: new Date(now).toISOString(), windowDays: DAYS,
+  umami: u, searchConsole: g, generativeAi: ai, bing: b, cloudflare: c,
+  ...(ins && { indexing: ins }),
+};
 
 if (AS_JSON) {
   console.log(JSON.stringify(report, null, 2));
@@ -370,6 +495,11 @@ else {
   }
   out.push('\n**Referrers**\n');
   table(['Referrer', 'Visitors'], u.referrers.map((r) => [r.x || '(direct)', r.y]));
+  if (ai?.referrals) {
+    out.push('\n**Referrals from AI assistants** — a visitor who clicked a citation in ChatGPT, Perplexity, Gemini, Copilot, Claude… The only place a citation that was actually FOLLOWED shows up.\n');
+    if (!ai.referrals.length) out.push('_None in this window._');
+    else table(['Assistant', 'Referrer', 'Visitors'], ai.referrals.map((r) => [r.assistant, r.referrer, r.visitors]));
+  }
   out.push('\n**Countries**\n');
   table(['Country', 'Visitors'], u.countries.map((r) => [r.x, r.y]));
 }
@@ -378,9 +508,24 @@ section('Google Search Console — demand and positions');
 if (g.skipped || g.error) out.push(`_${g.skipped ?? g.error}_`);
 else {
   out.push(`Window ${g.startDate} → ${g.endDate} (GSC lags ~2 days).\n`);
-  out.push('**Top queries**\n');
+  if (g.highIntent) {
+    const hi = g.highIntent;
+    out.push('**High-intent queries — work these first** (transactional and commercial phrasings: software, system, tool, pricing, vs…; rules in `src/data/intent.json`). Status: `ok` = Google shows the page that claims the query; `wrong-page` = a different page is ranking, so the claiming page needs the phrase and an inbound link on it; `unmapped` = no page claims it yet — map it in `marketing/keyword-map.md § High-intent` or add it to a money page\'s keywords.\n');
+    if (hi.rows.length === 0) out.push('_No high-intent query earned an impression in this window._');
+    else table(['Query', 'Impressions', 'Clicks', 'Position', 'Google shows', 'Claimed by', 'Status'],
+      hi.rows.map((r) => [
+        (r.watch ? '★ ' : '') + r.query, r.impressions, r.clicks, r.position.toFixed(1),
+        r.shownOn ?? '—', r.intended ?? '—', r.status,
+      ]));
+    if (hi.notShowing.length) {
+      out.push(`\n_Watch-list terms with no impressions yet (${hi.notShowing.length}): ` +
+        hi.notShowing.map((w) => `"${w.query}" → ${w.page}`).join(' · ') + '._');
+    }
+    out.push('');
+  }
+  out.push(`**Top queries** (${g.queries.length} in the window, top 30 by impressions; every row is in the JSON snapshot)\n`);
   table(['Query', 'Clicks', 'Impressions', 'CTR', 'Position'],
-    g.queries.map((r) => [r.keys[0], r.clicks, r.impressions, pct(r.clicks, r.impressions), r.position.toFixed(1)]));
+    g.queries.slice(0, 30).map((r) => [r.keys[0], r.clicks, r.impressions, pct(r.clicks, r.impressions), r.position.toFixed(1)]));
   out.push('\n**Top pages**\n');
   table(['Page', 'Clicks', 'Impressions', 'CTR', 'Position'],
     g.pages.map((r) => [r.keys[0].replace(`https://${SITE}`, '') || '/', r.clicks, r.impressions, pct(r.clicks, r.impressions), r.position.toFixed(1)]));
@@ -388,6 +533,60 @@ else {
   if (g.opportunities.length === 0) out.push('_None in this window._');
   else table(['Query', 'Impressions', 'Clicks', 'Position'],
     g.opportunities.map((r) => [r.keys[0], r.impressions, r.clicks, r.position.toFixed(1)]));
+  out.push('\n**Near page one** — every query at position 4–20, any volume: the rung-2 shortlist (STRATEGY.md § funnel ladder)\n');
+  if (!g.nearPageOne?.length) out.push('_None in this window._');
+  else table(['Query', 'Impressions', 'Clicks', 'Position'],
+    g.nearPageOne.map((r) => [r.keys[0], r.impressions, r.clicks, r.position.toFixed(1)]));
+  if (g.pageQueries) {
+    out.push('\n**What each page is shown for** — top 5 queries per page, pages with ≥3 impressions (the words to put in the title, description and a heading)\n');
+    for (const [page, rows] of Object.entries(g.pageQueries)) {
+      const total = rows.reduce((n, r) => n + r.impressions, 0);
+      if (total < 3) continue;
+      out.push(`- \`${page.replace(`https://${SITE}`, '') || '/'}\` (${total} impr): ` +
+        rows.slice(0, 5).map((r) => `"${r.query}" ${r.impressions}@${r.position.toFixed(0)}`).join(' · '));
+    }
+    out.push('');
+  }
+}
+
+section('Generative AI — where Google\'s AI features show the site');
+if (ai?.error) out.push(`_${ai.error}_`);
+else {
+  out.push('The Search Console **Generative AI** report: impressions inside AI Overviews and AI Mode, by page. Impressions only — Google withholds the queries and the clicks, and there is no API, so this reads the newest export dropped in `' + GENAI_DIR + '/` (SETUP.md § Insights read-back). The two tables after it are proxies for what the report hides.\n');
+  if (!ai.exportDate) out.push(`_${ai.note}_`);
+  else {
+    const delta = ai.previousTotal == null ? '' : ` (previous export ${ai.previousDate}: ${ai.previousTotal.toLocaleString()})`;
+    out.push(`**Export dated ${ai.exportDate}**${ai.stale ? ` — **${ai.ageDays} days old; ask for a fresh one**` : ''}: **${ai.total.toLocaleString()} AI impressions**${delta}, ${ai.pagesCited} pages shown.\n`);
+    out.push('**Pages shown in AI features** — AI impressions beside the ordinary web impressions for the same page in this window; the share says how much of a page\'s visibility is already AI-shaped\n');
+    table(['Page', 'AI impr.', 'Web impr.', 'AI share'],
+      ai.topPages.map((p) => [p.page, p.ai, p.web ?? '—', p.share == null ? '—' : `${(100 * p.share).toFixed(0)}%`]));
+    if (ai.movers.length && ai.previousDate) {
+      out.push(`\n**Moved since the ${ai.previousDate} export**\n`);
+      table(['Page', 'Then', 'Now'], ai.movers.map((p) => [p.page, p.previous, p.ai]));
+    }
+    out.push('\n**Shown on the web, never in AI** — ≥10 web impressions in the window and zero AI impressions in the export: the pages to give an answer-shaped opening (the `tldr`), a FAQ block in the searcher\'s words and named sources — the three levers with evidence behind them\n');
+    if (!ai.uncited.length) out.push('_Every page with web impressions also appears in AI features._');
+    else table(['Page', 'Web impr.', 'Position'], ai.uncited.map((p) => [p.page, p.web, p.position.toFixed(1)]));
+    if (ai.countries.length) {
+      out.push('\n**AI impressions by country** — read against the Umami split and the target markets in STRATEGY.md\n');
+      table(['Country', 'AI impr.'], ai.countries.map((c) => [c.key, c.impressions]));
+    }
+  }
+  out.push('\n**Prompt-shaped queries** — web rows whose phrasing is a prompt, not a keyword (8+ words, a question, a follow-up verb; `isPromptShaped` in scripts/lib/genai.mjs). Google hides the queries behind AI impressions; these are the nearest visible thing, and the phrasing to answer in a FAQ line\n');
+  if (!ai.promptShaped.length) out.push('_None in this window._');
+  else table(['Query', 'Impressions', 'Clicks', 'Position'], ai.promptShaped.map((r) => [r.query, r.impressions, r.clicks, r.position.toFixed(1)]));
+}
+
+section('Bing Webmaster Tools — the index behind Copilot and ChatGPT search');
+if (b.skipped || b.error) out.push(`_${b.skipped ?? b.error}_`);
+else {
+  if (b.queriesError) out.push(`_Query stats: ${b.queriesError}_`);
+  else if (!b.topQueries.length) out.push('_No Bing query rows in the window._');
+  else table(['Query (Bing)', 'Impressions', 'Clicks'], b.topQueries.map((r) => [r.query, r.impressions, r.clicks]));
+  if (b.crawl?.error) out.push(`\n_Crawl stats: ${b.crawl.error}_`);
+  else if (b.crawl) out.push(`\nCrawl: ${b.crawl.days} days of data · pages in Bing's index ${b.crawl.lastInIndex ?? '—'} · crawled ${b.crawl.lastCrawledPages ?? '—'} · 4xx ${b.crawl.lastHttp4xx ?? '—'} (latest day)`);
+  if (b.links?.error) out.push(`\n_Link counts: ${b.links.error}_`);
+  else if (b.links) out.push(`\nInbound links Bing knows: ${JSON.stringify(b.links).slice(0, 300)}`);
 }
 
 if (ins) {

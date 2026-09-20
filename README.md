@@ -74,6 +74,8 @@ pageview and are otherwise invisible forever.
 src/data/        site.ts (config) · origin.mjs (domain) · facts.json (numbers)
                  privacy.json (drives /privacy-policy + its indexability)
                  sheets.config.json (Sheet tabs) · lastmod.json (generated)
+                 voice.json (anti-AI rules; site layer incl. bannedClaims)
+                 intent.json (high-intent query detection + watch list)
 src/content/     blog/ glossary/ — MDX + zod schemas (content.config.ts)
 src/pages/       one file per route; [...slug].astro per collection
 src/components/  Header/Footer/ContactForm/ConsentBanner/LiveData/…
@@ -82,14 +84,23 @@ worker/          index.ts — forms proxy, sheet data, /hi rewrites, md twins
 public/          _headers _redirects favicons .well-known/ (robots.txt is
                  generated — src/pages/robots.txt.ts derives it from origin.mjs)
 scripts/         CI-run: sheets, llms, twins, lastmod, csp, invariants,
-                 parity, worker/live smoke, contrast, a11y, verify, indexnow
+                 parity, worker/live smoke, contrast, a11y, verify, indexnow ·
+                 operator-run: insights (with lib/intent.mjs), data-sheet
+                 (npm run ask), report-html (the cadence email body)
 marketing/       human-run: favicon gen, OG cards, apps-script source ·
                  the content engine's memory: site-blueprint (the transferable
                  SEO/AEO/GEO doctrine), STRATEGY, keyword-map, VOICE-GUIDE,
-                 writer-brief, field-notes, news-log, generated inventory
-.claude/skills/  the content engine: onboard-marketing · keyword-map ·
-                 interview · write-content · refresh-anti-ai-rules ·
-                 content-cadence (see SETUP Phase 5 — schedule it as a Routine)
+                 writer-brief, field-notes, news-log, generated inventory ·
+                 what it is waiting on: DATA-SHEET (open questions, no answers),
+                 link-targets (listings a human claims), channel-gaps (what is
+                 deliberately not done off-site) · insights/ (dated snapshots)
+.claude/skills/  the content engine: onboard-marketing · design-direction
+                 (the site's own look, from awwwards-class references, inside
+                 the constraints) · keyword-map · interview · write-content ·
+                 refresh-anti-ai-rules · insights-review · content-cadence
+                 (see SETUP Phase 5 — schedule it as a Routine) · ship
+                 (merge + deploy in one go)
+.claude/settings.json  SessionStart hook → npm run ask (what is blocked, first)
 .githooks/       pre-commit (fast tier) · pre-push (npm run verify) —
                  activated automatically by npm install
 .github/         ci.yml (checks + gated deploy + live smoke) · indexnow.yml ·

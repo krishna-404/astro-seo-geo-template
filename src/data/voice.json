@@ -1,21 +1,26 @@
 {
   "$comment": "Anti-AI writing rules, mechanized. Two layers: `base` is the generic tell list — seeded from Wikipedia's 'Signs of AI writing' and a working writer-pack checklist, each rule here because it marks text that reads like nobody in particular wrote it. `site` is this site's house style, filled by the /onboard-marketing skill and edited by hand. scripts/check-voice.mjs enforces both; the /refresh-anti-ai-rules skill updates `base` from its sources via PR (never silently — these rules gate CI). Severity: `banned*` fail the check; `watchWords`, `hedges` and `crutch` are reported as warnings because each has legitimate uses a grep cannot judge. Era-tagged tells rotate: the refresh skill retires stale ones and adds new ones as the sources move.",
   "base": {
-    "updated": "2026-08-28",
+    "updated": "2026-09-15",
     "sources": [
       {
         "label": "Wikipedia: Signs of AI writing",
         "url": "https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing",
-        "retrieved": "2026-08-28"
+        "retrieved": "2026-09-15"
       },
       {
         "label": "Wikipedia: WikiProject AI Cleanup (the project maintaining the signs page — new tells often land here first)",
         "url": "https://en.wikipedia.org/wiki/Wikipedia:WikiProject_AI_Cleanup",
-        "retrieved": "2026-08-28"
+        "retrieved": "2026-09-15"
       },
       {
         "label": "Working writer-pack anti-AI checklist (generalized from a production content desk)",
         "retrieved": "2026-08-08"
+      },
+      {
+        "label": "Explaining Generalization of AI-Generated Text Detectors Through Linguistic Analysis (Xia, Stańczak, Roth; arXiv 2601.07974, Jan 2026) — detector generalisation tied to linguistic features such as tense usage and pronoun frequency; recorded as a source, no word rule adopted from it",
+        "url": "https://arxiv.org/abs/2601.07974",
+        "retrieved": "2026-09-07"
       }
     ],
     "bannedWords": [
@@ -49,11 +54,12 @@
       "revolutionize", "revolutionise", "revolutionizing", "revolutionising",
       "game-changer", "game-changing",
       "meticulously",
-      "vibrant"
+      "vibrant",
+      "encompassing"
     ],
     "eraWords": {
       "$comment": "Current-era vocabulary tells, per the Wikipedia signs page's dated lists. These FAIL like bannedWords but are expected to rotate — the refresh skill retires an era when the sources do and adds the next one.",
-      "2024-2025": ["fostering", "showcasing", "showcases"],
+      "2024-2025": ["fostering", "showcasing", "showcases", "bolstered", "enduring"],
       "2025+": ["emphasizing", "emphasising", "highlighting"]
     },
     "bannedPhrases": [
@@ -97,7 +103,22 @@
       "observers have cited",
       "some critics argue",
       "continues to captivate",
-      "left an indelible mark"
+      "left an indelible mark",
+      "in the heart of",
+      "natural beauty",
+      "functions as a",
+      "operates as a",
+      "deep dive into",
+      "a deep dive",
+      "evolving landscape",
+      "focal point",
+      "setting the stage for",
+      "future prospects",
+      "faces several challenges",
+      "resonate with",
+      "several sources",
+      "marks a shift",
+      "represents a shift"
     ],
     "bannedOpeners": [
       "Moreover,",
@@ -123,7 +144,12 @@
       "[cite:",
       "grok_card",
       "attached_file",
-      "[insert"
+      "[insert",
+      "attributableindex",
+      "oai_citation",
+      "start_span",
+      "ppl-ai-file-upload",
+      "grok_render_citation_card_json"
     ],
     "watchWords": [
       "robust", "dynamic", "agile", "resilient",
@@ -134,7 +160,9 @@
       "embark", "unpack", "facilitate",
       "notably", "significantly", "effectively", "strategically",
       "ultimately", "fundamentally", "essentially",
-      "arguably", "undoubtedly", "genuinely", "truly", "literally"
+      "arguably", "undoubtedly", "genuinely", "truly", "literally",
+      "bolstered", "garner", "intricate", "intricacies", "interplay", "enduring",
+      "exemplifies", "renowned", "causal", "empirical", "correlate"
     ],
     "hedges": [
       "i think", "maybe", "perhaps", "it seems", "sort of", "kind of",
@@ -183,6 +211,8 @@
     "bannedPhrases": [],
     "allowedExceptions": [],
     "keepWords": [],
-    "quantOverrides": {}
+    "quantOverrides": {},
+    "$bannedClaimsComment": "Regex sources (case-insensitive) for CLAIMS the site may not make — a measurement it did not take, a customer it does not have, a result the product has not produced — checked by scripts/check-source-rules.mjs over src/content, src/pages, src/layouts, src/components and facts.json. Different from bannedPhrases: those are style tells; these are assertions of fact that are not true here. Match the CLAIM, not the verb the last edit used (the ancestor site banned 'we measured' and the next rewrite said 'we timed'). Examples: \"\\bwe (?:measured|timed|clocked)\\b\", \"\\bour (?:customers|design partner)\\b\", \"\\bthe (?:desks?|teams?) we work with\\b\". Empty until /onboard-marketing (or STRATEGY.md § Honest state) says what the site must not claim.",
+    "bannedClaims": []
   }
 }

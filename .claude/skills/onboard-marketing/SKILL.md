@@ -56,7 +56,19 @@ produces is capped by what this interview captures.
   page-type plan into the query→page map and the ranked build backlog.
 - `src/data/voice.json` → `site` — bannedWords/bannedPhrases,
   keepWords, allowedExceptions, quantOverrides (`emDashPer1000Words: 0` for
-  a zero-em-dash house).
+  a zero-em-dash house), and **bannedClaims**: regexes for the assertions of
+  fact this site may not make (a measurement nobody took, a customer that
+  does not exist, a result the product has not produced — from STRATEGY.md
+  § Honest state). `check-source-rules` fails any page that says one.
+- `src/data/intent.json` → `navigational` (the brand name and its
+  misspellings, so brand lookups are not counted as buyer queries) and
+  `claimFrom` (the money-page collections whose frontmatter declares
+  `primaryKeyword`). The `watch` list fills as the first high-intent rows
+  appear in Search Console (/keyword-map § High-intent).
+- `marketing/DATA-SHEET.md` — replace the example question with the first
+  real one the interview surfaces that nobody can answer yet; and
+  `marketing/link-targets.md` — the directory category this buyer browses,
+  as a data-sheet question if it is not obvious.
 - Author identity → `src/data/authors.json` (slug, name, title, a bio of
   checkable facts, real sameAs profiles — every byline links to
   `/author/<slug>` and the check fails unregistered authors), plus

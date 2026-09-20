@@ -60,6 +60,19 @@ pages competing.
 Keep aliases and secondary queries on the same row as their primary — the map is
 one row per page, not one row per keyword.
 
+**The High-intent section sits at the top of the map.** Every transactional
+or commercial query with impressions (the `highIntent` block of the latest
+snapshot, ★ = watch list in `src/data/intent.json`) has a row there, ranked
+by impressions then position, with the money page that claims it and the
+supporting pieces planned or published for it. A query is high-intent when a
+buyer choosing would type it — "software", "system", "tool", "pricing", "vs",
+"calculator" — and those rows are worked before any informational cluster
+(content-cadence step 2). Keep `intent.json → watch` in step with this
+section: a term added here is added there with its page, the same commit.
+Money pages declare the query they claim in frontmatter (`primaryKeyword`,
+`secondaryKeywords`) and their collection is listed in `intent.json →
+claimFrom`, so the report can say which page a query SHOULD land on.
+
 ## 4. Find the gaps — the backlog
 
 The map's value is what it reveals is missing. Produce a ranked backlog, ordered

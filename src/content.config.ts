@@ -48,6 +48,16 @@ const seo = {
   faq: z.array(z.object({ q: z.string(), a: z.string() })).default([]),
   /** Opt-in "On this page" anchor list for long entries (4+ h2s is the guideline). */
   toc: z.boolean().default(false),
+  /**
+   * The one query this page is meant to win (one page = one primary query =
+   * one intent, AGENTS § Content rules). Optional on reference entries; a
+   * money-page collection should make it required. scripts/lib/intent.mjs
+   * reads these two fields from the collections named in
+   * src/data/intent.json → claimFrom to decide which page CLAIMS a
+   * high-intent Search Console query.
+   */
+  primaryKeyword: z.string().optional(),
+  secondaryKeywords: z.array(z.string()).default([]),
 };
 
 const blog = defineCollection({

@@ -20,6 +20,10 @@
  *      disagreeing with GET poisons caches — inherited trap). Without the
  *      header → HTML, still Vary: Accept.
  *   5. Security headers + generated CSP on every worker response.
+ *   6. Permanent redirects: every worker PERMANENT_REDIRECTS entry answers
+ *      301 to its target (the map is parsed from worker/index.ts so this
+ *      test cannot drift from it; check-parity asserts each path is in
+ *      run_worker_first, which is what makes it reachable in production).
  *
  * NOT covered here, on purpose: the Apps Script upstream (needs a secret and
  * a live Google endpoint — PLAYBOOK §8's "submit the real form" stays a
@@ -28,7 +32,7 @@
  */
 
 import { spawn } from 'node:child_process';
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 
 const PORT = 8791;
 const BASE = `http://127.0.0.1:${PORT}`;
@@ -118,6 +122,20 @@ check('HEAD negotiates identically', (r.headers.get('content-type') ?? '').inclu
 r = await get(twinPath);
 check('no Accept header → HTML', (r.headers.get('content-type') ?? '').includes('text/html'), `got ${r.headers.get('content-type')}`);
 check('…HTML answer also carries Vary: Accept', /accept/i.test(r.headers.get('vary') ?? ''), 'caches would mix the two bodies');
+
+// ── 6. permanent redirects ─────────────────────────────────────────────────
+// Parsed from the worker source, not copied: a row added there is asserted
+// here without anyone remembering. An empty map asserts nothing, deliberately.
+const redirectMap = readFileSync('worker/index.ts', 'utf8')
+  .match(/PERMANENT_REDIRECTS:\s*Record<string,\s*string>\s*=\s*\{([\s\S]*?)\}/)?.[1] ?? '';
+for (const [, from, to] of redirectMap.matchAll(/'(\/[^']*)':\s*'([^']+)'/g)) {
+  r = await get(from);
+  check(
+    `${from} → 301 ${to}`,
+    r.status === 301 && new URL(r.headers.get('location') ?? '', BASE).pathname === to,
+    `got ${r.status} → ${r.headers.get('location')}`
+  );
+}
 
 // ── 5. security headers + CSP on worker responses ──────────────────────────
 const { default: cspGenerated } = await import('../worker/csp.generated.json', { with: { type: 'json' } });

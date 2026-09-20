@@ -19,6 +19,11 @@
  *      text). marketing/ is out of scope (BRAND_BG literals are documented
  *      per-site knobs).
  *
+ * Plus the content-level rules that grow back silently as pages are added:
+ * the author registry, blog cadence and in-body interlinks, claims the site
+ * may not make (voice.json → site.bannedClaims), and frontmatter titles the
+ * SERP clamp would hard-cut. Each carries its WHY inline.
+ *
  * Fast (pure grep over src/ + worker/), so it runs in the pre-commit hook.
  */
 
@@ -138,6 +143,81 @@ for (const [week, ps] of Object.entries(byWeek))
     bad(`${ps.length} posts published in ${week} — cap is 5/week (AGENTS § Content rules)`);
     found = 1;
   }
+if (!found) console.log('   ok');
+
+console.log('→ no banned claims in content (voice.json → site.bannedClaims: a model is not a measurement)');
+// Assertions of fact the site may not make — a measurement nobody took, a
+// customer that does not exist, a result the product has not produced. The
+// ancestor site claimed a design partner it never had; 106 places across 33
+// files were built on it, the rewrite removed the wording, and the claim
+// regrew nine times in the following month in shapes the prose rule did not
+// name ("we measured" became "we timed"). Prose guards nothing here; a regex
+// per CLAIM does. The patterns are the site's own (voice.json site layer,
+// filled by /onboard-marketing from STRATEGY.md § Honest state) — this script
+// is only the mechanism, and an empty list is a pass. Scope is everything
+// that renders: content, pages, layouts, components, and facts.json (whose
+// `source` strings do not render but do get quoted).
+function walkContent(dir, out = []) {
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name);
+    if (statSync(p).isDirectory()) walkContent(p, out);
+    else if (/\.(mdx?|astro|ts|json)$/.test(name)) out.push(p);
+  }
+  return out;
+}
+const VOICE_SITE = JSON.parse(readFileSync('src/data/voice.json', 'utf8')).site ?? {};
+const CLAIM_PATTERNS = (VOICE_SITE.bannedClaims ?? []).map((src) => new RegExp(src, 'gi'));
+found = 0;
+if (CLAIM_PATTERNS.length) {
+  for (const f of [...walkContent('src/content'), ...walkContent('src/pages'), ...walkContent('src/layouts'), ...walkContent('src/components'), 'src/data/facts.json']) {
+    const text = readFileSync(f, 'utf8');
+    for (const re of CLAIM_PATTERNS) {
+      for (const m of text.matchAll(re)) {
+        const line = text.slice(0, m.index).split('\n').length;
+        bad(`${f}:${line} says "${m[0]}" — a claim the site may not make (voice.json → site.bannedClaims); state the figure flat and unattributed`);
+        found = 1;
+      }
+    }
+  }
+}
+if (!found) console.log(CLAIM_PATTERNS.length ? '   ok' : '   ok (no patterns configured — fill voice.json → site.bannedClaims)');
+
+console.log('→ frontmatter titles survive the SERP clamp without a mid-phrase cut');
+// BaseLayout runs every title through src/lib/clampTitle.ts, which clamps to
+// 60 characters for the SERP. It sacrifices in order: a trailing " — clause",
+// then a trailing " | clause", then a HARD CUT at the last word boundary. The
+// first two are deliberate and read fine. The third is the defect: the
+// ancestor site shipped 62–63 character titles and Google was served the
+// promise cut off mid-phrase, on the one line a searcher reads. Nothing in the
+// repo showed it, because the MDX carries the full string — and the built
+// <title> ≤60 invariant passes precisely because the clamp did its job.
+//
+// So: a title is fine at 60 characters or fewer, or if it carries an em-dash or
+// pipe clause that starts inside the budget (the clamp drops it whole).
+// Anything else would be hard-cut, and fails here rather than in the SERP.
+const CLAMP_MAX = 60; // keep in step with clampTitle's `max` default
+found = 0;
+for (const f of walkContent('src/content')) {
+  if (!/\.mdx?$/.test(f)) continue;
+  const text = readFileSync(f, 'utf8');
+  if (/^draft:\s*true$/m.test(text)) continue;
+  // Measure the VALUE, not the YAML: a single-quoted scalar doubles its
+  // apostrophes ('' → '), a double-quoted one backslash-escapes.
+  const tm = text.match(/^title:\s*(['"])(.+)\1\s*$/m);
+  const title = tm ? (tm[1] === "'" ? tm[2].replace(/''/g, "'") : tm[2].replace(/\\(["\\])/g, '$1')) : null;
+  if (!title || title.length <= CLAMP_MAX) continue;
+  const emDash = title.lastIndexOf(' — ');
+  const pipe = title.lastIndexOf(' | ');
+  const clean = (emDash > 0 && emDash <= CLAMP_MAX) || (pipe > 0 && pipe <= CLAMP_MAX);
+  if (!clean) {
+    const cut = title.slice(0, CLAMP_MAX);
+    bad(
+      `${f} title is ${title.length} chars and would be hard-cut to "${cut.slice(0, cut.lastIndexOf(' '))}" — ` +
+        `keep it to ${CLAMP_MAX}, or put the sacrificial half after " — " (src/lib/clampTitle.ts)`
+    );
+    found = 1;
+  }
+}
 if (!found) console.log('   ok');
 
 process.exit(fail);

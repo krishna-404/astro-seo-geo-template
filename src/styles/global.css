@@ -44,11 +44,35 @@
   --line: #e8e4dd;
   --line-2: #eaecf0;
 
-  /* Type */
+  /* Type. --font-display is the one knob the design pass turns: point it at
+     a self-hosted variable font (public/fonts/, font-src 'self' — see
+     marketing/design-brief.md) and every heading follows. The fluid steps
+     are a Utopia-style scale: the phone value, a viewport term, a desktop
+     cap — so type is set in one place and never re-sized per breakpoint. */
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
     'Liberation Mono', monospace;
+  --font-display: var(--font-sans);
+  --step--1: clamp(0.8125rem, 0.78rem + 0.18vw, 0.9375rem);
+  --step-0: clamp(1rem, 0.96rem + 0.22vw, 1.125rem);
+  --step-1: clamp(1.125rem, 1.05rem + 0.4vw, 1.375rem);
+  --step-2: clamp(1.35rem, 1.2rem + 0.8vw, 1.75rem);
+  --step-3: clamp(1.6rem, 1.3rem + 1.6vw, 2.5rem);
+  --step-4: clamp(2rem, 1.5rem + 2.6vw, 3.5rem);
+  --step-5: clamp(2.5rem, 1.6rem + 4.6vw, 5.25rem);
+  --display-tracking: -0.04em;
+  --display-leading: 0.98;
+
+  /* The inverted band. Text on it is measured like everything else:
+     --on-ink-2 is 10.9:1 on --band-ink, --on-ink-3 8.0:1, --on-ink-accent
+     8.1:1 — the eyebrow and links on the dark band use the accent, never
+     --brand, which is 1.6:1 there. */
+  --band-ink: #101828;
+  --on-ink: #ffffff;
+  --on-ink-2: #c9d1dc;
+  --on-ink-3: #aab3c1;
+  --on-ink-accent: #8fb8e6;
 
   /* Rhythm */
   --gutter: 1.25rem;
@@ -129,15 +153,17 @@ h4 {
 }
 
 h1 {
-  font-size: clamp(2rem, 7vw, 3.5rem);
+  font-family: var(--font-display);
+  font-size: var(--step-4);
   letter-spacing: -0.035em;
 }
 h2 {
-  font-size: clamp(1.6rem, 5vw, 2.5rem);
+  font-family: var(--font-display);
+  font-size: var(--step-3);
   letter-spacing: -0.03em;
 }
 h3 {
-  font-size: clamp(1.05rem, 2.6vw, 1.25rem);
+  font-size: var(--step-1);
   letter-spacing: -0.015em;
 }
 
@@ -162,6 +188,28 @@ p {
 .band--cream { background: var(--cream); }
 .band--blue { background: var(--blue-pale); }
 .band--tint { background: var(--blue-tint); }
+.band--ink {
+  background: var(--band-ink);
+  color: var(--on-ink-2);
+}
+.band--ink :is(h1, h2, h3, h4, .stat) { color: var(--on-ink); }
+.band--ink .lede,
+.band--ink .muted,
+.band--ink .fine { color: var(--on-ink-3); }
+.band--ink .eyebrow { color: var(--on-ink-accent); }
+.band--ink a:not(.btn) { color: var(--on-ink); }
+.band--ink .btn {
+  background: transparent;
+  border-color: var(--on-ink-3);
+  color: var(--on-ink);
+}
+.band--ink .btn:hover { border-color: var(--on-ink); }
+.band--ink .btn--primary {
+  background: var(--on-ink);
+  border-color: var(--on-ink);
+  color: var(--band-ink);
+}
+.band--ink .btn--primary:hover { background: var(--on-ink-2); border-color: var(--on-ink-2); }
 
 @media (min-width: 48rem) {
   :root { --gutter: 2rem; }
@@ -456,4 +504,163 @@ table.cmp tr.is-self td {
 }
 .prose tbody tr:last-child :is(th, td) {
   border-bottom: 0;
+}
+
+/* ---------- The expressive layer ----------
+   What keeps a site built from this template from looking like a form. Every
+   pattern here is CSS only, mobile-first, AA-measured and reduced-motion
+   safe; the design pass (.claude/skills/design-direction) chooses which to
+   use and records why in marketing/design-brief.md. Borrow composition, type
+   and rhythm from the best sites; never their WebGL. */
+
+/* Editorial hero: one oversized, balanced headline; the copy column stays
+   narrow while the section runs full-bleed. A soft radial glow in the brand
+   tint sits behind it — pale enough that every text token still clears AA
+   against it (the contrast sweep composites the gradient). */
+.hero--editorial {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  padding-block: 4.5rem 4rem;
+}
+.hero--editorial::before {
+  content: '';
+  position: absolute;
+  inset: -20% -10% auto;
+  height: 70%;
+  background: radial-gradient(60% 60% at 30% 30%, var(--brand-soft), transparent 70%);
+  z-index: -1;
+  pointer-events: none;
+}
+.hero--editorial h1 {
+  font-size: var(--step-5);
+  letter-spacing: var(--display-tracking);
+  line-height: var(--display-leading);
+  max-width: 14ch;
+  margin-bottom: 1.25rem;
+}
+.hero--editorial .lede {
+  font-size: var(--step-1);
+  max-width: 30em;
+}
+.hero__grid {
+  display: grid;
+  gap: 2.5rem;
+  align-items: center;
+}
+@media (min-width: 64rem) {
+  .hero--editorial { padding-block: 6.5rem 6rem; }
+  .hero__grid { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 4rem; }
+}
+/* SE-class phones: keep the primary CTA inside the first fold. */
+@media (max-height: 46rem) and (max-width: 40rem) {
+  .hero--editorial { padding-block: 3rem 2.5rem; }
+  .hero--editorial h1 { font-size: var(--step-4); }
+  .hero--editorial .lede { font-size: var(--step-0); }
+}
+
+/* Bento: an asymmetric card grid. Children span 2 of 6 columns by default;
+   .bento__wide takes 4, .bento__full takes 6 — so one card can carry the
+   lead and the rest support it, instead of three identical boxes. Falls back
+   to a single column on phones without any override. */
+.bento {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 40rem) {
+  .bento { grid-template-columns: repeat(2, 1fr); }
+  .bento__full { grid-column: 1 / -1; }
+}
+@media (min-width: 60rem) {
+  .bento { grid-template-columns: repeat(6, 1fr); gap: 1.25rem; }
+  .bento > * { grid-column: span 2; }
+  .bento__wide { grid-column: span 4; }
+  .bento__full { grid-column: 1 / -1; }
+}
+.card--feature {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.5rem;
+}
+.card--feature .stat { margin-bottom: 0.25rem; }
+.card--ink {
+  background: var(--band-ink);
+  border-color: var(--band-ink);
+  color: var(--on-ink-2);
+}
+.card--ink :is(h3, .stat) { color: var(--on-ink); }
+.card--ink .eyebrow { color: var(--on-ink-accent); }
+.card--brand {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--on-ink);
+}
+.card--brand :is(h3, .stat, .eyebrow) { color: var(--on-ink); }
+
+/* Numbered rail: a compact ordered list for a process or a contract. The
+   numerals are the visual, set in the mono face so they read as a system. */
+.rail {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: rail;
+  display: grid;
+  gap: 0.875rem;
+}
+/* The numeral is absolutely positioned and the text gets padding, rather
+   than a grid — a grid would turn each inline run inside the <li> into its
+   own cell, and "<strong>term</strong> — sentence" would wrap into the
+   numeral column (it did, on the first render of the template homepage). */
+.rail li {
+  counter-increment: rail;
+  position: relative;
+  padding: 0 0 0.875rem 2.25rem;
+  border-bottom: 1px solid var(--line-2);
+}
+.rail li:last-child { border-bottom: 0; padding-bottom: 0; }
+.rail li::before {
+  content: counter(rail, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 0.2em;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--brand);
+}
+.band--ink .rail li { border-color: rgba(255, 255, 255, 0.14); }
+.band--ink .rail li::before { color: var(--on-ink-accent); }
+
+/* Display numeral — for the one figure a section is about. */
+.display {
+  font-family: var(--font-display);
+  font-size: var(--step-5);
+  letter-spacing: var(--display-tracking);
+  line-height: var(--display-leading);
+  font-weight: 800;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Reveal on scroll, without JavaScript: a scroll-driven animation keyed to
+   the element's own position in the viewport. Inside the motion query per
+   AGENTS rule 14 — reduced motion is the ABSENCE of these rules — and inside
+   @supports so a browser without view() timelines simply shows the content. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 40%;
+    }
+    @keyframes reveal {
+      from { opacity: 0; translate: 0 1.25rem; }
+      to { opacity: 1; translate: 0 0; }
+    }
+  }
+  .card--feature { transition: translate 200ms ease, box-shadow 200ms ease; }
+  .card--feature:hover { translate: 0 -2px; box-shadow: var(--shadow); }
 }

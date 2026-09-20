@@ -107,7 +107,7 @@ Source: https://example.com/blog/writing-content-answer-engines-cite
 
 ---
 
-# Core Web Vitals: the three metrics and this template's budget
+# Core Web Vitals: the three metrics and the template's budget
 
 Core Web Vitals are Google's three field metrics for page experience: Largest Contentful Paint (loading, good under 2.5s), Interaction to Next Paint (responsiveness, good under 200ms) and Cumulative Layout Shift (visual stability, good under 0.1). A static site with no client JS passes them almost by construction.
 

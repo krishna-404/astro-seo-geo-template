@@ -36,6 +36,19 @@ const schema = [
       url: new URL(`/glossary/${e.id}`, SITE.url).href,
     })),
   },
+  // DefinedTermSet says what the terms are; ItemList says this page
+  // enumerates them, in this order. CI fails a collection index without one.
+  {
+    '@type': 'ItemList',
+    '@id': `${SITE.url}/glossary#list`,
+    name: `${SITE.name} glossary entries`,
+    itemListElement: entries.map((e, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: e.data.term,
+      url: new URL(`/glossary/${e.id}`, SITE.url).href,
+    })),
+  },
 ];
 ---
 

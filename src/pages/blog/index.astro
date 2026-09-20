@@ -26,6 +26,20 @@ const schema = [
       author: { '@type': 'Person', name: e.data.author.name },
     })),
   },
+  // An index page that only describes itself is a page, not a list. The
+  // ItemList enumerates what the page links to, in order, so an engine reads
+  // the collection as a collection. CI fails a collection index without one.
+  {
+    '@type': 'ItemList',
+    '@id': `${SITE.url}/blog#list`,
+    name: `${SITE.name} blog posts`,
+    itemListElement: entries.map((e, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: e.data.title,
+      url: new URL(`/blog/${e.id}`, SITE.url).href,
+    })),
+  },
 ];
 ---
 
