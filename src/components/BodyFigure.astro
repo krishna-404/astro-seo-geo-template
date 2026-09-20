@@ -1,0 +1,19 @@
+---
+/**
+ * `<Figure id="…" />` inside an MDX body. Resolved from the page's declared
+ * figures (frontmatter `figures:` with `place: body`) through
+ * src/lib/figureContext.ts, which the layout fills before rendering the body.
+ * Passed to the body as `<Content components={{ Figure: BodyFigure }} />`, so
+ * an author writes the tag with no import.
+ */
+import Figure from './Figure.astro';
+import { getBodyFigure } from '../lib/figureContext';
+
+interface Props {
+  id: string;
+}
+const { id } = Astro.props;
+const figure = getBodyFigure(id);
+---
+
+<Figure figure={figure} />

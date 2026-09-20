@@ -10,6 +10,10 @@ import { isPublished } from '../../data/publishing.mjs';
 import { faqPageNode } from '../../lib/faqSchema';
 import { relatedFor, type RelatedCandidate } from '../../lib/related';
 import authorsData from '../../data/authors.json';
+import Figure from '../../components/Figure.astro';
+import BodyFigure from '../../components/BodyFigure.astro';
+import { setFigures } from '../../lib/figureContext';
+import { leadFigure, outlineFigure } from '../../lib/figures';
 
 /**
  * Blog post template.
@@ -74,6 +78,12 @@ export async function getStaticPaths() {
 const { entry, related, prev, next } = Astro.props;
 const { data } = entry;
 const { Content, headings } = await render(entry);
+
+// The lead figure: declared in frontmatter, else the post's own sections as a
+// numbered path — so no post ships without a visual, and its social card
+// always carries one (AGENTS § Figures).
+const lead = leadFigure(data.figures, () => outlineFigure(data.title, headings));
+setFigures(data.figures, `/blog/${entry.id}`);
 
 const url = new URL(`/blog/${entry.id}`, SITE.url).href;
 
@@ -169,10 +179,12 @@ const schema = [
     {/* Front-loaded answer — the lift target, first thing after the h1. */}
     <p class="post__tldr">{data.tldr}</p>
 
+    {lead && <Figure figure={lead} lead />}
+
     {data.toc && <Toc headings={headings} />}
 
     <div class="post__body prose">
-      <Content />
+      <Content components={{ Figure: BodyFigure }} />
     </div>
 
     {

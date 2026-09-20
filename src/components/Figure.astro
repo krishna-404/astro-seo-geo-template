@@ -1,0 +1,68 @@
+---
+/**
+ * A figure — pictograph or infographic — drawn as inline SVG from a
+ * declaration (`src/data/figureSchema.ts`). Zero JavaScript, painted by the
+ * page's own tokens, described for screen readers by its <title>/<desc>, and
+ * captioned visibly.
+ *
+ * The lead figure carries `data-og-figure`, which is how
+ * `marketing/og/render-pages.mjs` finds the visual to put on the page's
+ * social card — the card shows exactly what the page shows.
+ */
+import type { Figure } from '../data/figureSchema';
+import { drawFigure } from '../lib/figureSvg';
+import { resolveBars } from '../lib/figures';
+
+interface Props {
+  figure: Figure;
+  /** The page's lead figure (after the TL;DR, lifted onto the social card). */
+  lead?: boolean;
+}
+
+const { figure, lead = false } = Astro.props;
+const bars = figure.kind === 'bars' ? resolveBars(figure) : null;
+const svg = drawFigure(figure, bars, lead);
+const source = figure.kind === 'bars' ? (figure.items ? figure.source : `facts.json → ${figure.fact}`) : undefined;
+---
+
+<figure class:list={['fig', `fig--${figure.kind}`, { 'fig--lead': lead }]} data-figure-kind={figure.kind}>
+  <Fragment set:html={svg} />
+  <figcaption>
+    <strong>{figure.title}</strong>
+    {figure.caption && <span> {figure.caption}</span>}
+    {source && <span class="fig__source"> Source: {source}.</span>}
+  </figcaption>
+</figure>
+
+<style>
+  .fig {
+    margin: 1.75rem 0;
+    padding: 1rem 1rem 0.75rem;
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius);
+    background: var(--white);
+  }
+  .fig--lead {
+    margin-top: 1.25rem;
+  }
+  .fig :global(svg) {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+  .fig figcaption {
+    margin-top: 0.625rem;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--ink-3);
+  }
+  .fig figcaption strong {
+    color: var(--ink-2);
+    font-weight: 600;
+  }
+  .fig__source {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+  }
+</style>

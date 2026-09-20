@@ -1,45 +1,50 @@
 #!/usr/bin/env node
 /**
- * Renders one social card per built page: title over a brand-coloured
- * background, 1200×630, written to
- *
- *   public/og/<collection>/<slug>.jpg   for blog/glossary entries
- *   public/og/pages/<flattened-route>.jpg  for everything else
- *
- * Run it AFTER a build:
+ * Renders one social card per built page to public/og/<route>.jpg.
  *
  *   npm run build
  *   npm install --no-save playwright
  *   CHROMIUM_CHANNEL=chrome node marketing/og/render-pages.mjs
+ *   npm run build   # so og:image picks up the cards now on disk
  *
  * Playwright is deliberately not a project dependency — this runs at publish
  * time, not on every build, so it is installed ad hoc and `--no-save` keeps it
- * out of package.json. `CHROMIUM_CHANNEL=chrome` points it at the Chrome that
- * is already installed; drop it to use Playwright's own browser
- * (`npx playwright install chromium` first).
+ * out of package.json. `CHROMIUM_CHANNEL=chrome` points it at an installed
+ * Chrome; `CHROMIUM_PATH=/path/to/chrome` at any Chromium binary.
  *
- * TITLES COME FROM THE BUILT HTML, not from a list in this file. A page's
- * title is set in its frontmatter or its .astro props, and copying titles
- * into this script would mean two places to change and one of them silently
- * going stale — which is precisely the failure per-page cards exist to fix.
- * Reading dist/ costs a build first and keeps the card unable to claim
- * something the page does not say.
+ * WHAT A CARD CARRIES — read from the BUILT page in dist/, never from a list
+ * kept here (a list on the ancestor site went stale twice and once mis-carded
+ * the homepage):
+ *   - the brand row: name, tagline and domain — the same on every card, so a
+ *     shared link always says who this is (the two literals below; the domain
+ *     comes from the page's canonical);
+ *   - the eyebrow (the page's section), the <title> and the og:description;
+ *   - the page's own visual: the lead figure it draws (`<svg data-og-figure>`,
+ *     lifted verbatim — inline SVG painted by the tokens page.html mirrors),
+ *     else a portrait when the page carries one (the author page), else the
+ *     tagline on a brand panel.
  *
- * TWO BUILDS. Cards land in public/, which Astro copies into dist/ at build
- * time — so a card rendered now ships on the NEXT build (build → render →
- * build again, or just accept that it goes out with the next deploy). The
- * page templates only point `og:image` at a card that exists on disk, so
- * forgetting to re-run this degrades to the default card rather than
- * shipping a 404 to LinkedIn. Re-run when a title changes or a page is added.
+ * WHICH PAGES: every dist/**\/*.html except the homepage (it keeps the brand
+ * card, public/og/default.png), 404, pages marked noindex, and pages that
+ * declare their own `ogImage` (BaseLayout precedence means an explicit image
+ * always wins, so a generated card for them could never be referenced). The
+ * card path mirrors the route: /blog/x → og/blog/x.jpg, /about → og/about.jpg,
+ * /blog → og/blog.jpg. src/lib/ogCard.ts is the read side — change one,
+ * change both.
  *
- * jpeg, not png: a card is ~90KB as jpeg and ~450KB as png, and a flat-colour
- * card has nothing that jpeg hurts. Twenty pages of png would be megabytes in
- * the repo for no visible gain.
+ * The page templates point og:image at a card ONLY if the file is on disk —
+ * so forgetting to re-run this degrades to the default card rather than
+ * shipping a 404 to LinkedIn — and check-invariants then fails the build:
+ * every indexable page must have its own card. Re-run after any content
+ * change (a title, a description or a lead figure all appear on the card).
+ *
+ * jpeg, not png: ~90KB against ~450KB, and nothing here has hard edges that
+ * jpeg hurts at quality 88.
  */
 import { chromium } from 'playwright';
-import { readdirSync, readFileSync, mkdirSync, existsSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync, mkdirSync, existsSync, statSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve, join, relative, sep } from 'node:path';
+import { dirname, resolve, join, relative } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../..');
@@ -47,86 +52,64 @@ const template = resolve(here, 'page.html');
 const distDir = resolve(root, 'dist');
 const outRoot = resolve(root, 'public/og');
 
-/**
- * ─── EDIT FOR YOUR SITE ─────────────────────────────────────────────────────
- * Node cannot import site.ts (TypeScript), so the two values the card needs
- * live here. Keep SITE_NAME in step with SITE.name and BRAND_BG with the
- * brand colour in global.css / site.ts.
- */
+// ── EDIT FOR YOUR SITE ─────────────────────────────────────────────────────
+// Node scripts cannot import src/data/site.ts, so the two brand strings live
+// here (see marketing/README.md). Keep SITE_NAME in step with SITE.name and
+// TAGLINE with SITE.tagline; the brand colour is mirrored in page.html.
 const SITE_NAME = 'Example Co';
-const BRAND_BG = '#0f4c81';
+const TAGLINE = 'A one-line description of what this company does';
+// ───────────────────────────────────────────────────────────────────────────
 
-/** Collection route segment → eyebrow label. Anything else gets no eyebrow. */
-const COLLECTIONS = { blog: 'Blog', glossary: 'Glossary' };
+/** Section label per first path segment. Anything else reads as the site. */
+const EYEBROW = {
+  blog: 'Blog',
+  glossary: 'Glossary',
+  author: 'Author',
+  about: 'About',
+  contact: 'Contact',
+  'for-llms': 'For AI assistants',
+  'privacy-policy': 'Privacy',
+};
 
-/** Every built .html under dist/, as a route ('/', '/about', '/blog/x'). */
-function discoverRoutes(dir = distDir, out = []) {
+function decode(s) {
+  return s
+    .replace(/&#8211;/g, '–')
+    .replace(/&#8212;/g, '—')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+}
+
+function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {
     const p = join(dir, name);
-    if (statSync(p).isDirectory()) {
-      discoverRoutes(p, out);
-    } else if (name.endsWith('.html')) {
-      const rel = relative(distDir, p).split(sep).join('/');
-      const route = '/' + rel.replace(/(^|\/)index\.html$/, '$1').replace(/\.html$/, '');
-      // The homepage is deliberately NOT rendered. Its card is the brand card
-      // (public/og/default.png from marketing/og/default.html); ogCardFor()
-      // prefers any card it finds on disk, so a home card here would silently
-      // replace the brand card — which is exactly what happened on the
-      // ancestor site for six weeks. check-invariants guards it.
-      if (route === '/') continue;
-      out.push({ route: route.replace(/\/$/, ''), file: p });
-    }
+    if (statSync(p).isDirectory()) walk(p, out);
+    else if (name.endsWith('.html')) out.push(p);
   }
   return out;
 }
 
-/**
- * True when the built page's og:image points at neither the site default nor
- * this script's output tree — i.e. the page declared its own `ogImage` in
- * frontmatter/props. Rendering a card for it would be dead weight: BaseLayout
- * precedence means an explicit image always wins, so the generated file could
- * never be referenced.
- */
-function declaresOwnOgImage(file) {
-  const m = /<meta property="og:image" content="([^"]+)"/.exec(readFileSync(file, 'utf8'));
+/** Long titles step down so two lines always hold them. */
+function headlineSize(title) {
+  if (title.length > 84) return 38;
+  if (title.length > 66) return 42;
+  if (title.length > 50) return 46;
+  return 50;
+}
+
+function routeOf(file) {
+  const rel = relative(distDir, file).replace(/\\/g, '/').replace(/\.html$/, '');
+  return rel === 'index' ? '/' : `/${rel.replace(/\/index$/, '')}`;
+}
+
+/** True when the page's og:image is neither the default nor this script's tree — it declared its own. */
+function declaresOwnOgImage(html) {
+  const m = /<meta property="og:image" content="([^"]+)"/.exec(html);
   if (!m) return false;
   const path = m[1].replace(/^https?:\/\/[^/]+/, '');
-  return !path.startsWith('/og/') && path !== '/og/default.png';
-}
-
-/** The page's own <title>, minus the site-name prefix/suffix. */
-function titleOf(file) {
-  const m = /<title>(.*?)<\/title>/s.exec(readFileSync(file, 'utf8'));
-  if (!m) return null;
-  const name = SITE_NAME.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return m[1]
-    .replace(/&#8211;/g, '–')
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(new RegExp(`^${name}\\s*[—–|-]\\s*`), '')
-    .replace(new RegExp(`\\s*[—–|-]\\s*${name}$`), '')
-    .trim();
-}
-
-/**
- * Output path for a route. Collection entries keep their collection folder so
- * the page templates can point og:image at og/<collection>/<slug>.jpg; every
- * other route flattens into og/pages/ ('/' → 'home', '/contact/thanks' →
- * 'contact-thanks').
- */
-function outPathFor(route) {
-  const segs = route === '/' ? [] : route.slice(1).split('/');
-  if (segs.length === 2 && COLLECTIONS[segs[0]]) return join(segs[0], `${segs[1]}.jpg`);
-  return join('pages', `${segs.length ? segs.join('-') : 'home'}.jpg`);
-}
-
-/** Long titles step down so the card never runs to four lines. */
-function headlineSize(title) {
-  if (title.length > 74) return 40;
-  if (title.length > 58) return 46;
-  if (title.length > 44) return 50;
-  return 54;
+  return !path.startsWith('/og/');
 }
 
 if (!existsSync(distDir)) {
@@ -134,62 +117,101 @@ if (!existsSync(distDir)) {
   process.exit(1);
 }
 
-// No browser of its own: `CHROMIUM_CHANNEL=chrome` drives the Google Chrome
-// already on the machine, which skips Playwright's 130MB download entirely.
+const name = SITE_NAME.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const pages = walk(distDir)
+  .map((file) => ({ file, route: routeOf(file) }))
+  .filter(({ route }) => route !== '/' && route !== '/404')
+  .map((p) => ({ ...p, html: readFileSync(p.file, 'utf8') }))
+  .filter(({ html }) => !/<meta name="robots" content="[^"]*noindex/.test(html))
+  .filter(({ html }) => !declaresOwnOgImage(html))
+  .sort((a, b) => a.route.localeCompare(b.route));
+
+// A clean slate: a card for a page that no longer exists is a stale file the
+// invariants would otherwise never see. The brand card lives outside this tree.
+for (const entry of existsSync(outRoot) ? readdirSync(outRoot) : []) {
+  if (entry !== 'default.png') rmSync(join(outRoot, entry), { recursive: true, force: true });
+}
+mkdirSync(outRoot, { recursive: true });
+
 const browser = await chromium.launch({
   channel: process.env.CHROMIUM_CHANNEL || undefined,
   executablePath: process.env.CHROMIUM_PATH || undefined,
 });
 const page = await browser.newPage({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1 });
-
-// The template is self-contained (system fonts, no assets); the script owns
-// the brand colour and site name so the card cannot drift from this config.
-const html = readFileSync(template, 'utf8')
-  .replaceAll('__BRAND_BG__', BRAND_BG)
-  .replaceAll('__SITE_NAME__', SITE_NAME);
-await page.setContent(html, { waitUntil: 'load' });
+await page.goto(`file://${template}`, { waitUntil: 'networkidle' });
 
 let written = 0;
-let skipped = 0;
+let noVisual = 0;
 
-for (const { route, file } of discoverRoutes().sort((a, b) => a.route.localeCompare(b.route))) {
-  // 404 is not a page anyone shares, and it is not in the sitemap.
-  if (route === '/404') {
-    skipped += 1;
-    continue;
-  }
-
-  const title = titleOf(file);
+for (const { route, html } of pages) {
+  const title = decode(/<title>(.*?)<\/title>/s.exec(html)?.[1] ?? '')
+    .replace(new RegExp(`^${name}\\s*[—–|-]\\s*`), '')
+    .replace(new RegExp(`\\s*[—–|-]\\s*${name}$`), '')
+    .trim();
   if (!title) {
-    console.warn(`skip ${route}: no <title> in built HTML`);
-    skipped += 1;
+    console.warn(`skip ${route}: no <title>`);
     continue;
   }
+  const desc = decode(/<meta property="og:description" content="([^"]*)"/.exec(html)?.[1] ?? '');
+  const canonical = /<link rel="canonical" href="([^"]+)"/.exec(html)?.[1];
+  const domain = canonical ? new URL(canonical).host : '';
+  const eyebrow = EYEBROW[route.split('/')[1]] ?? SITE_NAME;
 
-  if (declaresOwnOgImage(file)) {
-    console.log(`skip ${route}: page declares its own ogImage`);
-    skipped += 1;
-    continue;
+  // The visual: the lead figure, else a portrait, else the tagline panel.
+  let figure = null;
+  let cursor = html.indexOf('<svg');
+  while (cursor !== -1) {
+    const end = html.indexOf('</svg>', cursor);
+    const open = html.slice(cursor, html.indexOf('>', cursor) + 1);
+    if (/data-og-figure/.test(open)) {
+      figure = html.slice(cursor, end + 6);
+      break;
+    }
+    cursor = html.indexOf('<svg', end);
   }
+  let portrait = null;
+  if (!figure) {
+    const img = /<img[^>]+src="(\/_astro\/founder[^"]+\.(?:jpg|jpeg|png|webp))"/.exec(html)?.[1];
+    if (img && existsSync(join(distDir, img))) {
+      const ext = img.split('.').pop();
+      portrait = `data:image/${ext === 'jpg' ? 'jpeg' : ext};base64,${readFileSync(join(distDir, img)).toString('base64')}`;
+    }
+  }
+  if (!figure && !portrait) noVisual += 1;
 
-  const eyebrow = COLLECTIONS[route.slice(1).split('/')[0]] ?? '';
   await page.evaluate(
-    ({ title, eyebrow, size }) => {
-      document.getElementById('headline').textContent = title;
-      document.getElementById('headline').style.fontSize = `${size}px`;
-      const eb = document.getElementById('eyebrow');
-      eb.textContent = eyebrow;
-      eb.style.display = eyebrow ? '' : 'none';
+    ({ title, desc, eyebrow, size, brand, figure, portrait }) => {
+      document.getElementById('brand').textContent = brand.name;
+      document.getElementById('tagline').textContent = brand.tagline;
+      document.getElementById('domain').textContent = brand.domain;
+      document.getElementById('eyebrow').textContent = eyebrow;
+      const h = document.getElementById('headline');
+      h.textContent = title;
+      h.style.fontSize = `${size}px`;
+      document.getElementById('desc').textContent = desc;
+      const v = document.getElementById('visual');
+      v.className = `visual ${figure ? 'visual--figure' : portrait ? 'visual--portrait' : 'visual--none'}`;
+      v.innerHTML = figure
+        ? figure
+        : portrait
+          ? `<img id="shot" src="${portrait}" alt=""><p>${desc}</p>`
+          : `<p>${brand.tagline}</p>`;
     },
-    { title, eyebrow, size: headlineSize(title) }
+    { title, desc, eyebrow, size: headlineSize(title), brand: { name: SITE_NAME, tagline: TAGLINE, domain }, figure, portrait }
   );
+  if (portrait) {
+    await page.waitForFunction(() => {
+      const img = document.getElementById('shot');
+      return img && img.complete && img.naturalWidth > 0;
+    });
+  }
 
-  const out = outPathFor(route);
-  mkdirSync(join(outRoot, dirname(out)), { recursive: true });
-  await page.screenshot({ path: join(outRoot, out), type: 'jpeg', quality: 88 });
-  console.log(`og/${out.split(sep).join('/')}  ← ${route}`);
+  const out = join(outRoot, `${route.slice(1)}.jpg`);
+  mkdirSync(dirname(out), { recursive: true });
+  await page.screenshot({ path: out, type: 'jpeg', quality: 88 });
+  console.log(`${relative(root, out)}  ← ${figure ? 'figure' : portrait ? 'portrait' : 'tagline panel'}`);
   written += 1;
 }
 
 await browser.close();
-console.log(`\n${written} cards written, ${skipped} skipped — remember they ship on the NEXT build`);
+console.log(`\n${written} cards written (${noVisual} without a figure)`);

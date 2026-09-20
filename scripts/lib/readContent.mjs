@@ -53,3 +53,29 @@ export function readCollection(collection) {
   entries.sort((a, b) => a.slug.localeCompare(b.slug));
   return entries;
 }
+
+/**
+ * The figures a page carries, as text — for the surfaces that ship the body
+ * as markdown (the twins, llms-full.txt). The HTML draws them as inline SVG;
+ * here each becomes one italic line: its title and caption, which is exactly
+ * what the SVG's <title>/<desc> say. A body's `<Figure id="…" />` tag is
+ * replaced in place; the lead figure is returned separately so the caller can
+ * put it where the page does — after the TL;DR.
+ */
+function figureLine(f) {
+  if (!f) return '';
+  return `*Figure — ${f.title}${f.caption ? `. ${f.caption}` : ''}*`;
+}
+
+export function leadFigureLine(data) {
+  const figs = Array.isArray(data.figures) ? data.figures : [];
+  return figureLine(figs.find((f) => (f.place ?? 'lead') === 'lead'));
+}
+
+export function bodyAsText(entry) {
+  const figs = Array.isArray(entry.data.figures) ? entry.data.figures : [];
+  return entry.body.replace(/<Figure\s+id="([a-z0-9-]+)"\s*\/>/g, (_, id) => {
+    const f = figs.find((x) => x.id === id);
+    return f ? figureLine(f) : '';
+  });
+}

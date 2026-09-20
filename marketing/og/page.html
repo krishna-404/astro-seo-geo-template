@@ -1,58 +1,97 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>Per-page OG card template</title>
+<title>Per-page social card template</title>
 <!--
-  Template for the per-page social cards in public/og/. Rendered at exactly
-  1200x630 — the size LinkedIn, WhatsApp, Slack and X crop from.
-  `render-pages.mjs` substitutes __BRAND_BG__ / __SITE_NAME__ and fills the
-  hooks below; open this file directly to see the layout with sample content
-  (the raw tokens will show — that is expected).
+  Template for the per-page social cards in public/og/<route>.jpg. Rendered at
+  exactly 1200x630 — the size LinkedIn, WhatsApp, Slack and X crop from.
+  `render-pages.mjs` fills the hooks below from the BUILT page; open this file
+  directly to see the layout with its sample content.
 
-  Self-contained on purpose: system fonts, no external assets, one background
-  colour. The rules that shaped it, and they matter more here because the
-  headline is a page title rather than one hand-tuned line:
+  What a card has to say, in reading order at ~500px wide in a feed:
+    1. who this is — the mark, the name and the tagline (the same for every
+       card: the thing about the company);
+    2. what the page is about — the eyebrow (its section), the title, and the
+       page's own description;
+    3. the page's own visual — the lead figure the page draws (inline SVG,
+       lifted verbatim, painted with the same tokens); a page with no figure
+       gets the tagline on a brand-tinted panel instead.
 
-  - Nothing smaller than 24px. A card is viewed at ~500px wide in a feed.
-  - Everything important stays inside the 72px margin. Clients crop the edges
+  Rules that hold:
+  - Nothing smaller than 22px. A card is viewed at ~500px wide in a feed.
+  - Everything important inside the 64px margin. Clients crop edges
     differently, and a headline running to the margin loses words.
-  - The headline steps down for long titles (set by the renderer) rather than
-    wrapping to four lines.
+  - The visual is a fixed-height band and the figure is fitted into it
+    (xMidYMid meet), so a tall figure shrinks rather than pushing text off.
+  - The :root tokens below MIRROR src/styles/global.css — the lifted SVG is
+    painted by CSS variables. Change one, change both (SETUP Phase 1 sweep).
 
-  Regenerate:  node marketing/og/render-pages.mjs  (after a build)
+  Regenerate:  node marketing/og/render-pages.mjs  (after npm run build)
 -->
 <style>
   :root {
-    /* Substituted by render-pages.mjs — edit BRAND_BG there, not here. */
-    --brand: __BRAND_BG__;
-    --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    /* EDIT FOR YOUR SITE — mirrors src/styles/global.css */
+    --brand:#0f4c81; --brand-strong:#0b3a63; --brand-soft:#e8f0f9;
+    --green:#0f7038; --red:#b91c1c;
+    --ink:#101828; --ink-2:#344054; --ink-3:#576170; --ink-4:#626c7c;
+    --white:#ffffff; --line:#e8e4dd; --line-2:#eaecf0;
+    --viz-1:#1d4ed8; --viz-2:#c2410c; --viz-3:#6d28d9; --viz-1-soft:#eaf1fc; --viz-muted:var(--line-2);
+    --viz-strong:#9a3412; --viz-bad:var(--red); --viz-warn:#b45309; --viz-warn-soft:rgba(180,83,9,.12);
+    --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
   * { box-sizing:border-box; margin:0; padding:0; }
   html,body { width:1200px; height:630px; }
   body {
-    font-family:var(--font);
-    background:var(--brand);
-    color:#fff;
-    display:flex; flex-direction:column; justify-content:space-between;
-    padding:64px 72px; overflow:hidden;
+    font-family:var(--font-sans); color:var(--ink);
+    background:linear-gradient(180deg,#fff 0%,var(--brand-soft) 100%);
+    display:flex; flex-direction:column; overflow:hidden;
   }
+  .top { padding:40px 64px 0; flex:0 0 auto; }
+  .brand { display:flex; align-items:center; gap:14px; margin-bottom:22px; }
+  .brand__mark { width:40px; height:40px; border-radius:10px; background:var(--brand); }
+  .brand__name { font-size:28px; font-weight:800; letter-spacing:-.02em; color:var(--ink); }
+  .brand__tag { font-size:22px; color:var(--ink-3); padding-left:14px; border-left:2px solid var(--line-2); line-height:1.1; }
+  .brand .domain { margin-left:auto; }
   .eyebrow {
-    font-family:var(--mono); font-size:24px; font-weight:600; letter-spacing:.16em;
-    text-transform:uppercase; color:rgba(255,255,255,.75); margin-bottom:18px;
+    font-family:var(--font-mono); font-size:19px; font-weight:600; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--brand); margin-bottom:12px;
   }
-  /* Set by the renderer — a long title steps down rather than wrapping to
-     four lines and running off the card. */
   h1 {
-    font-size:54px; line-height:1.12; letter-spacing:-.02em; font-weight:800;
-    max-width:1040px;
+    font-size:50px; line-height:1.08; letter-spacing:-.03em; font-weight:800;
+    color:var(--ink); max-width:1072px;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
   }
-  .site {
-    font-size:30px; font-weight:800; letter-spacing:-.02em;
-    color:rgba(255,255,255,.9);
+  .desc {
+    margin-top:14px; font-size:23px; line-height:1.3; color:var(--ink-2); max-width:1040px;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
   }
+  .visual {
+    margin:auto 64px 0; height:272px; flex:0 0 auto; position:relative;
+    border:1px solid var(--line-2); border-bottom:0;
+    border-top-left-radius:14px; border-top-right-radius:14px;
+    background:var(--white); overflow:hidden;
+    box-shadow:0 -2px 4px rgba(16,24,40,.03), 0 12px 40px rgba(16,24,40,.10);
+  }
+  .visual--figure { padding:16px 24px 8px; display:flex; justify-content:center; align-items:flex-start; }
+  .visual--figure svg { width:100%; height:100%; max-height:246px; }
+  .visual--portrait { display:flex; align-items:center; gap:36px; padding:0 40px; background:var(--brand-soft); }
+  .visual--portrait img { width:220px; height:220px; object-fit:cover; border-radius:50%; border:4px solid var(--white); box-shadow:0 8px 24px rgba(16,24,40,.12); }
+  .visual--portrait p { font-size:26px; line-height:1.3; color:var(--ink-2); max-width:700px; }
+  .visual--none { display:flex; align-items:center; justify-content:center; background:var(--brand); }
+  .visual--none p { font-size:34px; line-height:1.25; font-weight:700; color:var(--white); max-width:900px; text-align:center; letter-spacing:-.01em; }
+  .domain { font-family:var(--font-mono); font-size:19px; color:var(--ink-3); }
 </style>
-<div>
+<div class="top">
+  <div class="brand">
+    <span class="brand__mark" aria-hidden="true"></span>
+    <span class="brand__name" id="brand">Example Co</span>
+    <span class="brand__tag" id="tagline">A one-line description of what this company does</span>
+    <span class="domain" id="domain">example.com</span>
+  </div>
   <p class="eyebrow" id="eyebrow">Blog</p>
   <h1 id="headline">A sample page title long enough to wrap onto a second line</h1>
+  <p class="desc" id="desc">The page's own description, as the built page carries it in og:description — one or two lines.</p>
 </div>
-<div class="site">__SITE_NAME__</div>
+<div class="visual visual--figure" id="visual">
+  <svg viewBox="0 0 800 200"><rect x="40" y="90" width="720" height="26" rx="4" fill="var(--viz-muted)"/></svg>
+</div>

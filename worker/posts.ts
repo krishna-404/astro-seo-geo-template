@@ -87,6 +87,8 @@ export interface PostInput {
   proprietary: string;
   sources?: { label: string; url?: string; retrieved?: string }[];
   faq?: { q: string; a: string }[];
+  /** Figure declarations (src/data/figureSchema.ts). Validated in full by the build; shape-checked here. */
+  figures?: Record<string, unknown>[];
   body: string;
 }
 
@@ -159,6 +161,21 @@ export function validatePost(raw: unknown): { errors: string[]; post: PostInput 
       && ((s as Record<string, unknown>).retrieved === undefined || (isStr((s as Record<string, unknown>).retrieved) && DATE_RE.test((s as Record<string, unknown>).retrieved as string))));
     need('sources', ok, 'array of { label, url?, retrieved? (YYYY-MM-DD) }');
   }
+  if (r.figures !== undefined) {
+    const kinds = ['timeline', 'flow', 'steps', 'bars', 'tiles', 'compare', 'web', 'outline'];
+    const ok =
+      Array.isArray(r.figures) &&
+      r.figures.length <= 6 &&
+      r.figures.every((f) => {
+        if (!f || typeof f !== 'object') return false;
+        const g = f as Record<string, unknown>;
+        return isStr(g.kind) && kinds.includes(g.kind) && isStr(g.title) && g.title.length >= 8 && g.title.length <= 120;
+      });
+    need('figures', ok, `array (≤6) of figure declarations, each with kind (${kinds.join(', ')}) and a title of 8–120 chars — see AGENTS § Figures; the build validates the full shape`);
+    if (ok && (r.figures as Record<string, unknown>[]).filter((g) => g.place === undefined || g.place === 'lead').length > 1) {
+      need('figures', false, 'at most one figure may lead (place omitted or "lead"); the rest need place: "body" and an id');
+    }
+  }
   if (r.faq !== undefined) {
     need('faq', Array.isArray(r.faq) && r.faq.every((f) => f && typeof f === 'object' && isStr((f as Record<string, unknown>).q) && isStr((f as Record<string, unknown>).a)), 'array of { q, a }');
   }
@@ -188,6 +205,7 @@ export function validatePost(raw: unknown): { errors: string[]; post: PostInput 
       proprietary: r.proprietary as string,
       sources: (r.sources as PostInput['sources']) ?? [],
       faq: (r.faq as PostInput['faq']) ?? [],
+      figures: r.figures as PostInput['figures'],
       body: (r.body as string).trim(),
     },
   };
@@ -220,6 +238,8 @@ export function toMdx(p: PostInput): string {
       if (s.retrieved) lines.push(`    retrieved: ${s.retrieved}`);
     }
   }
+  // JSON is valid YAML flow syntax, so the nested declaration round-trips without a YAML emitter.
+  if (p.figures && p.figures.length) lines.push(`figures: ${JSON.stringify(p.figures)}`);
   if (p.faq && p.faq.length) {
     lines.push('faq:');
     for (const f of p.faq) {

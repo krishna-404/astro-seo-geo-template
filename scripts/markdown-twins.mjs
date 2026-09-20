@@ -33,7 +33,7 @@
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readCollection } from './lib/readContent.mjs';
+import { readCollection, bodyAsText, leadFigureLine } from './lib/readContent.mjs';
 import { SITE_URL } from '../src/data/origin.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -94,8 +94,8 @@ for (const [collection, routePrefix] of Object.entries(COLLECTIONS)) {
 
     const md = [
       `# ${entry.data.title}`,
-      entry.data.tldr ?? entry.data.description ?? '',
-      entry.body,
+      [entry.data.tldr ?? entry.data.description ?? '', leadFigureLine(entry.data)].filter(Boolean).join('\n\n'),
+      bodyAsText(entry),
     ].join('\n\n')
       + bylineFor(entry.data)
       + sourcesSection(entry.data.sources)

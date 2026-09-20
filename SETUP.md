@@ -121,9 +121,13 @@ Generated files are committed, never hand-edited (AGENTS rule 9). Anything
 that checks for a generated file needs two builds: one to emit what the
 generator reads, one to pick the result up.
 
-- [ ] `node marketing/og/render-pages.mjs` (installs its own headless
-      browser ad hoc) — per-page OG cards from the BUILT titles, then
-      rebuild so pages reference them.
+- [ ] `node marketing/og/render-pages.mjs` (Playwright, installed ad hoc)
+      — one social card per built page at `/og/<route>.jpg`, carrying the
+      brand row, the title, the description and the page's lead figure
+      (CHECKLIST §9); set `SITE_NAME` and `TAGLINE` at the top of the script
+      and mirror the `global.css` tokens in `marketing/og/page.html` first.
+      Then rebuild so pages reference them; `check-invariants` fails an
+      indexable page without its own card.
 - [ ] `npm run lastmod` — the git-derived sitemap dates (CI regenerates and
       diffs, so a stale map fails there, not silently).
 - [ ] `npm run build` once more; commit everything it changed
@@ -211,7 +215,8 @@ origin breaks it.
       submit a blog post (`worker/posts.ts`): the worker validates it against
       the blog schema and the source rules, writes it to an `api/post/*`
       branch through GitHub and opens a PR; `.github/workflows/publish-post.yml`
-      regenerates lastmod, inventory and the OG card, runs `npm run verify`,
+      regenerates lastmod, inventory and the OG card (a post may carry
+      `figures` — CHECKLIST §8), runs `npm run verify`,
       squash-merges on green and deploys. Two worker secrets:
       `POSTS_API_TOKEN` (the caller's bearer) and `GITHUB_POSTS_TOKEN` (a
       fine-grained PAT, Contents + Pull requests read/write on this repo

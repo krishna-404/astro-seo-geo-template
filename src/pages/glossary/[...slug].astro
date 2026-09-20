@@ -9,6 +9,10 @@ import { SITE } from '../../data/site';
 import { isPublished } from '../../data/publishing.mjs';
 import { faqPageNode } from '../../lib/faqSchema';
 import { relatedFor, type RelatedCandidate } from '../../lib/related';
+import Figure from '../../components/Figure.astro';
+import BodyFigure from '../../components/BodyFigure.astro';
+import { setFigures } from '../../lib/figureContext';
+import { leadFigure, relatedWebFigure } from '../../lib/figures';
 
 /**
  * Canonical explainer, one URL per term.
@@ -61,6 +65,16 @@ export async function getStaticPaths() {
 const { entry, related } = Astro.props;
 const { data } = entry;
 const { Content, headings } = await render(entry);
+
+// The lead figure: declared in frontmatter, else the term drawn against the
+// terms it is defined with (AGENTS § Figures).
+const lead = leadFigure(data.figures, () =>
+  relatedWebFigure(
+    data.term,
+    related.map((r) => r.title)
+  )
+);
+setFigures(data.figures, `/glossary/${entry.id}`);
 
 const url = new URL(`/glossary/${entry.id}`, SITE.url).href;
 
@@ -149,10 +163,12 @@ const schema = [
       <dd>{data.shortDefinition}</dd>
     </dl>
 
+    {lead && <Figure figure={lead} lead />}
+
     {data.toc && <Toc headings={headings} />}
 
     <div class="term__body prose">
-      <Content />
+      <Content components={{ Figure: BodyFigure }} />
     </div>
 
     <RelatedLinks items={related} />

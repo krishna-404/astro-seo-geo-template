@@ -20,6 +20,14 @@ sources:
   - label: 'Google Search Central — Understanding Core Web Vitals and search results'
     url: 'https://developers.google.com/search/docs/appearance/core-web-vitals'
     retrieved: 2026-08-11
+figures:
+  - kind: tiles
+    title: "The three Core Web Vitals, and what each one measures"
+    caption: "Loading, interaction and visual stability — each with a threshold a page has to clear on real visits."
+    items:
+      - { label: "Largest Contentful Paint", note: "when the main content is on screen", state: neutral }
+      - { label: "Interaction to Next Paint", note: "how fast the page answers a tap", state: neutral }
+      - { label: "Cumulative Layout Shift", note: "how much the layout jumps", state: neutral }
 ---
 
 ## The three metrics

@@ -66,7 +66,7 @@ hand-edit the output:
 | `dist/pagefind/` search index | the built `[data-pagefind-body]` HTML | `pagefind --site dist` (`npm run search:index`) | post-build, every build |
 | sitemap `<lastmod>` | git commit dates (committed map) | `scripts/lastmod.mjs` | on content change; CI verifies |
 | favicons (ico + PNGs + apple) | `public/favicon.svg` | `marketing/favicon.mjs` | on brand change |
-| OG cards (per page + default) | titles read from **built HTML** | `marketing/og/render-pages.mjs` | on title/page change |
+| OG cards (per page + default) | title, description and lead figure read from **built HTML** | `marketing/og/render-pages.mjs` | on any content change (`check-invariants` fails a page without its card) |
 
 ⚠ Anything that checks for a generated file at build time needs **two
 builds**: one to emit what the generator reads, one to pick up the result.

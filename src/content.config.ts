@@ -2,6 +2,7 @@ import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 // Imported directly rather than via astro:content — the re-export is deprecated in Astro 7.
 import { z } from 'zod';
+import { figuresField } from './data/figureSchema';
 import { GLOSSARY_CATEGORY_KEYS } from './data/taxonomy';
 
 /**
@@ -58,6 +59,15 @@ const seo = {
    */
   primaryKeyword: z.string().optional(),
   secondaryKeywords: z.array(z.string()).default([]),
+  /**
+   * The page's pictographs and infographics, drawn at build time as inline
+   * SVG (`src/data/figureSchema.ts`, `Figure.astro`). One `lead` figure sits
+   * after the TL;DR and is lifted onto the social card; `body` figures are
+   * placed with <Figure id="…" /> in the MDX. A page that declares none gets
+   * its collection's automatic figure (src/lib/figures.ts) — every content
+   * page carries a visual, and check-invariants fails one that does not.
+   */
+  figures: figuresField,
 };
 
 const blog = defineCollection({

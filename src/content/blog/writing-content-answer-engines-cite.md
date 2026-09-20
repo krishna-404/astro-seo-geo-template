@@ -23,6 +23,15 @@ sources:
   - label: 'llms.txt proposal'
     url: 'https://llmstxt.org/'
     retrieved: 2026-08-11
+figures:
+  - kind: tiles
+    title: "The three levers with evidence behind them, and the one that measurably hurts"
+    caption: "From the GEO study the post cites: cited sources, quotations and statistics lift visibility in generated answers; keyword stuffing lowers it."
+    items:
+      - { label: "Cited sources", note: "named, linked, checkable", state: ok }
+      - { label: "Quotations from authorities", note: "in their words", state: ok }
+      - { label: "Statistics with provenance", note: "a number and where it came from", state: ok }
+      - { label: "Keyword stuffing", note: "measurably hurts", state: missing }
 ---
 
 ## The levers with evidence behind them

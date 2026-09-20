@@ -17,6 +17,19 @@ sources:
   - label: 'Google Search Central — robots.txt introduction (the convention llms.txt is modelled on)'
     url: 'https://developers.google.com/search/docs/crawling-indexing/robots/intro'
     retrieved: 2026-08-11
+figures:
+  - kind: flow
+    title: "Where llms.txt sits: a site's own index for an automated reader"
+    caption: "Generated at build time from the same content the pages are, so it cannot describe a page that does not exist."
+    nodes:
+      - { label: "Content files", note: "the collections" }
+      - { label: "/llms.txt", note: "the index — one line per page" }
+      - { label: "/llms-full.txt", note: "the corpus — every body" }
+      - { label: "AI assistant", note: "fetches, cites" }
+    edges:
+      - { from: 0, to: 1, label: "build" }
+      - { from: 0, to: 2, label: "build" }
+      - { from: 1, to: 3, label: "read" }
 ---
 
 ## What it is

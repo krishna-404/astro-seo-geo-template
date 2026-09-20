@@ -44,6 +44,23 @@
   --line: #e8e4dd;
   --line-2: #eaecf0;
 
+  /* Figures (src/components/Figure.astro). Three identity hues in FIXED order,
+     validated for colour-vision separation against a light surface with the
+     dataviz palette validator (20 Sep 2026: blue–orange–violet passes; the
+     obvious blue–orange–green fails protan on the orange/green pair). /design-
+     direction may re-tint them to the brand — re-run the validator when it
+     does. --viz-1 is used alone for single-series bars and numbered steps;
+     the semantic four below paint states (a missing tile, a "partly" mark). */
+  --viz-1: #1d4ed8;
+  --viz-2: #c2410c;
+  --viz-3: #6d28d9;
+  --viz-1-soft: #eaf1fc;
+  --viz-muted: var(--line-2);
+  --viz-strong: #9a3412;
+  --viz-bad: var(--red);
+  --viz-warn: #b45309;
+  --viz-warn-soft: rgba(180, 83, 9, 0.12);
+
   /* Type. --font-display is the one knob the design pass turns: point it at
      a self-hosted variable font (public/fonts/, font-src 'self' — see
      marketing/design-brief.md) and every heading follows. The fluid steps
