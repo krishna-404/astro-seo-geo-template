@@ -39,6 +39,16 @@ that way.
 
 ## Phase 0 — decide (nothing in the repo yet)
 
+Before the three decisions below, two conversations that make them cheap:
+`/discover` (the brief — why now, the one job, who signs off, what exists,
+what is off-limits — and the asset intake: logo, colours, fonts with
+licences, screenshots, photography, copy, proof with permission, legal
+identity, access; written to `marketing/brief.md`, every missing asset a
+DATA-SHEET question) and `/landscape` (six to ten sites the buyer compares
+you with, torn down the same way and put to you for a verdict; written to
+`marketing/landscape.md`). Neither touches the repo's config; both are what
+every later phase reads first.
+
 Three decisions that are cheap now and unrecoverable later (PLAYBOOK §0):
 
 - [ ] **One buyer, one primary conversion action.** Every page's CTA
@@ -237,10 +247,10 @@ FAQ answers only in frontmatter, `toc: true` at 4+ headings, and at least
 are quality gates. Scheduled posts:
 future-date `published` and schedule a build for that day (PLAYBOOK §2).
 
-**The content engine.** Ten skills in `.claude/skills/` run the whole
-loop (/new-site, /onboard-marketing, /design-direction, /keyword-map,
-/interview, /write-content, /refresh-anti-ai-rules, /insights-review,
-/content-cadence, /ship), and its
+**The content engine.** Twelve skills in `.claude/skills/` run the whole
+loop (/new-site, /discover, /landscape, /onboard-marketing,
+/design-direction, /keyword-map, /interview, /write-content,
+/refresh-anti-ai-rules, /insights-review, /content-cadence, /ship), and its
 memory lives in `marketing/`. Read `marketing/site-blueprint.md`
 first — it is the transferable doctrine (page-type taxonomy, keyword→content
 mapping, interlinking, conversion, AEO/GEO levers, the straightforward house

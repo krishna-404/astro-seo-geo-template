@@ -11,6 +11,14 @@ help businesses grow" is not a thesis, "importers who paid demurrage because
 a document was late" is. The quality of everything the content engine later
 produces is capped by what this interview captures.
 
+Read `marketing/brief.md` (the /discover output: the one job, the business
+in three sentences, off-limits, the owner's taste) and
+`marketing/landscape.md` (the category teardown, with the voice each
+competitor speaks and the owner's verdicts) before asking anything. Do not
+re-ask what they answer; deepen it. Where a question below is a choice —
+the voice above all — show current examples first (/new-site § The two
+rules) and ask against them.
+
 ## Order of questions
 
 1. **The business** — what is sold, to whom, what the buyer stops suffering.
@@ -42,6 +50,45 @@ produces is capped by what this interview captures.
    "trusted", category clichés), words used on purpose (`keepWords`), and any
    base-layer banned word that is legitimate domain vocabulary here
    (`allowedExceptions`, each with a reason).
+
+   **Show voice before asking about it.** A voice chosen from a blank
+   converges on the category's brochure. Put four things in front of the
+   owner, fetched now, and ask against them:
+
+   - *The category, read aloud.* Three sentences from the money page of
+     the two strongest sites in `marketing/landscape.md § 7`, plus the
+     AI-tell count from one of their posts — the register the buyer is
+     used to, and the counter-example.
+   - *The dimensions.* Nielsen Norman Group's four tone-of-voice
+     dimensions (funny–serious, formal–casual, respectful–irreverent,
+     enthusiastic–matter-of-fact): place the category on each, then ask
+     the owner where this brand sits, one notch at a time. The answer is
+     a row in VOICE-GUIDE § Tone.
+   - *The guides that show their working.* The published voice guides
+     that state a rule, an example and a reason — read two or three
+     closest to this brand's register and quote the rule that fits:
+     Mailchimp's Content Style Guide (voice vs tone, writing for
+     specific situations), GOV.UK's style guide and content design
+     principles (plain language, the reader's words, front-load the
+     answer), Monzo's tone of voice (plain-spoken finance), Shopify
+     Polaris and Atlassian's voice-and-tone pages (product copy, error
+     states, the this-not-that table), Intercom's and Slack's writing
+     principles (warm without being cute), Microsoft's Writing Style
+     Guide and the Apple Style Guide (the mechanical rules — numerals,
+     capitalisation, product names), 18F's content guide and
+     plainlanguage.gov (the evidence that plain copy is read and acted
+     on), 37signals' *Getting Real* on copywriting (interface copy is
+     the product). The straightforward default in `site-blueprint § 6`
+     is an instance of what these agree on; cite the guide, not the
+     memory of it.
+   - *The this-not-that table.* Draft five pairs for this brand — the
+     sentence the category would write against the sentence this site
+     writes — from the interview so far, and ask the owner to correct
+     them. The corrected pairs go into VOICE-GUIDE § Tone verbatim and
+     are the fastest way a future writer learns the voice.
+
+   Record which examples were shown and what the owner chose in the
+   VOICE-GUIDE's Log.
 9. **Cadence** — how often the content engine should run and write
    (default: daily-lite check, weekly writing run — see /content-cadence).
 
@@ -50,7 +97,9 @@ produces is capped by what this interview captures.
 - `marketing/STRATEGY.md` — replace every TODO; delete none of the section
   structure. "Honest state" gets today's date and only what is true.
 - `marketing/VOICE-GUIDE.md` — reader, stance, the tenth house rule, the
-  domain-specific integrity rail.
+  domain-specific integrity rail, § Tone (the four dimensions placed, the
+  this-not-that pairs, the guides cited) and the Log line naming the
+  examples shown.
 - `marketing/writer-brief.md` — formats table if the defaults don't fit.
 - `marketing/keyword-map.md` — then run /keyword-map to turn the clusters and
   page-type plan into the query→page map and the ranked build backlog.
