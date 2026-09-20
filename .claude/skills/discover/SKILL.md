@@ -1,6 +1,6 @@
 ---
 name: discover
-description: The first conversation for a new site — a discovery interview that asks the questions whose answers shape everything downstream (why now, what the site must do, who signs off, what exists today, what is off-limits) and an asset intake that collects or requests every file the build needs (logo, fonts, colours, screenshots, photography, copy, proof, legal identity, access), writing marketing/brief.md and turning every missing asset into a DATA-SHEET question. Use before /new-site Phase 1, when someone says "we need a website", or when marketing/brief.md still carries TODOs.
+description: The first conversation for a new site — reads what a stranger finds about the business today (the old site, the profiles, page one for the brand name) and puts that record to the owner to correct, then a discovery interview that asks the questions whose answers shape everything downstream (why now, what the site must do, who signs off, what exists today, what is off-limits) and an asset intake that collects or requests every file the build needs (logo, fonts, colours, screenshots, photography, copy, proof, legal identity, access), writing marketing/brief.md and turning every missing asset into a DATA-SHEET question. Use before /new-site Phase 1, when someone says "we need a website", or when marketing/brief.md still carries TODOs.
 ---
 
 # Discover — the brief and the asset intake
@@ -12,7 +12,9 @@ skill runs once, before anything is decided, and produces one file:
 `marketing/brief.md` — the brief (what the site is for) and the asset
 register (what we have, what we need, where each lands).
 
-Two rules from /new-site hold here too. **Show before asking:** when a
+Three rules hold here. **Read before asking:** the engine researches what
+it can on its own first (§ 0) and puts that read in front of the owner to
+correct — never ask a question the internet answers. **Show before asking:** when a
 question is a choice (what a homepage's one action is, what a trust page
 carries), fetch two or three current examples from the owner's category
 first and ask against them, never against a blank. **Write, don't
@@ -24,6 +26,30 @@ Ask one question at a time, in the owner's language, and push on generic
 answers. "A modern site that builds trust" is not an answer; "importers
 who compare three freight forwarders and want to see rates before they
 call" is.
+
+## 0. The current record — what a stranger finds today
+
+Before the first question, fetch and read, and date every line:
+
+- **The existing site**, if any: every page (crawl the sitemap or the nav),
+  screenshots at 375 and 1440 (the ad-hoc Playwright the OG pipeline uses:
+  `npm i --no-save playwright`), the hero copy verbatim, the CTAs, the
+  Organization schema and the author bylines it carries, the page weight
+  and the Core Web Vitals read (PageSpeed Insights). Note what it claims
+  and what it proves.
+- **The profiles**: the LinkedIn company page and the founder's profile,
+  Google Business Profile and the knowledge panel, Crunchbase, the
+  directories the category uses, app stores, social handles. Are the name,
+  address and description the same string everywhere?
+- **What the brand name returns** on a search, page one, with the date.
+- **What this repo already knows**: `marketing/brief.md`, `STRATEGY.md`,
+  `DATA-SHEET.md`, `src/data/site.ts`, `facts.json` — anything already
+  filled is not re-asked.
+
+Write the read into `brief.md § 0` as one page of "what a stranger finds"
+and open the conversation with it: the owner corrects the record instead
+of dictating it. Screenshots stay in the scratch directory, never in the
+repo; the record carries URLs and the date.
 
 ## 1. The interview — in this order
 
@@ -115,6 +141,11 @@ the repo: record that access exists and who holds it.
 - `src/data/site.ts`, `facts.json`, `authors.json`, `origin.mjs` — any
   value the interview settled that SETUP Phase 1 lists, so the placeholder
   grep shrinks in the same session.
+- Whatever is already routable goes to its owner now, not later: a
+  directory the owner named into `marketing/link-targets.md`, a number with
+  a source into `facts.json`, an author into `authors.json`. Everything
+  else waits for the skill that owns it; once `STRATEGY.md` is written it
+  wins any conflict with the brief.
 
 ## Finish
 
