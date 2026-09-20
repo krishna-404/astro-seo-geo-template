@@ -10,13 +10,16 @@ name: IndexNow
 # the OLD live sitemap, submitting a URL list that misses exactly the page the
 # commit added. The workflow_run trigger plus the script's own live-sitemap
 # poll closes that race from both ends.
+# OPT-IN, NOT AUTOMATIC (20 Sep 2026). Dispatch by hand, or — the normal
+# path — run `npm run indexnow` from the /ship step after a deploy. The
+# automatic trigger (after CI on main) is commented out for the same reason
+# ci.yml's is: metered minutes, and a wait-for-deploy loop burns them.
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
-    branches: [main]
-  # Manual re-run, for when a deploy landed but the ping did not.
   workflow_dispatch:
+  # workflow_run:
+  #   workflows: [CI]
+  #   types: [completed]
+  #   branches: [main]
 
 # A newer run supersedes an older one: the sitemap it submits is a superset,
 # so cancelling the in-flight wait loses nothing and saves the runner minutes.

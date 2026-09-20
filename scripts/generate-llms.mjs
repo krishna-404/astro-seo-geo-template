@@ -25,7 +25,7 @@
 import { writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readCollection } from './lib/readContent.mjs';
+import { readCollection, bodyAsText, leadFigureLine } from './lib/readContent.mjs';
 import { SITE_URL } from '../src/data/origin.mjs';
 import facts from '../src/data/facts.json' with { type: 'json' };
 
@@ -126,9 +126,9 @@ const corpusEntry = (key, e) => {
   return [
     `# ${e.data.title}`,
     '',
-    e.data.tldr ?? e.data.description ?? '',
+    [e.data.tldr ?? e.data.description ?? '', leadFigureLine(e.data)].filter(Boolean).join('\n\n'),
     '',
-    e.body,
+    bodyAsText(e),
     '',
     `Source: ${url(route)}`,
   ].join('\n');

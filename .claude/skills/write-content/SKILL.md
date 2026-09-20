@@ -194,3 +194,35 @@ cadence run's build is what releases it. Never backdate.
 4. After merge reaches production: OG cards if titles changed; IndexNow is
    automatic on deploy; the GSC request-indexing shortlist goes in the
    cadence report.
+
+## 7. Every piece carries a figure
+
+A page with no picture reads as text a machine produced, and its social card
+has nothing to show but a title. So every piece declares one **lead figure**
+in frontmatter (`figures:` — the kinds and shapes are in
+`src/data/figureSchema.ts`; CHECKLIST §8) and the layout draws it after the
+TL;DR as inline SVG; the card renderer lifts the same SVG onto the page's
+social card. Pick the kind from the argument's shape, not from habit:
+
+| The piece argues… | Kind |
+|---|---|
+| something happens in phases against a clock | `timeline` (phases, markers at the boundaries) |
+| parties or systems hand something to each other | `flow` (nodes in a row, labelled arrows) |
+| do this, then this | `steps` (numbered, with a `when` tag if timing matters) |
+| a magnitude, from facts.json or the entry's own sourced data | `bars` (`fact:` path, or `items` + `source` matching a `sources` label) |
+| a set of things, some present and some missing | `tiles` (states: ok, missing, replaced, neutral) |
+| two things that look alike and are not | `compare` (yes/no/partly cells draw as marks) |
+
+Rules: labels are short (≤64) and in the reader's words; a number appears only
+through `fact:` or beside a `source` the entry cites (check-source-rules fails
+an inline `bars` whose source is not in the entry's `sources`); no figure
+asserts a customer, a measurement or a number the page does not. A body figure
+(`place: body`, an `id`) is placed with `<Figure id="…" />` where the argument
+needs it — the layout passes the component to the MDX body, no import needed.
+A piece that declares none gets the collection's automatic figure (a post: its
+sections as a numbered path; a term: its related terms), which is the floor,
+not the target. Screenshot the page at 375 and 1440 before shipping and look
+at the figure: labels that collide or truncate are fixed in the declaration,
+not tolerated. Then re-render the social cards (`marketing/og/render-pages.mjs`
+after the build) — the card carries the figure.
+

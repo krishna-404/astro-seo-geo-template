@@ -29,6 +29,21 @@ faq:
     a: 'No. Every page renders through BaseLayout, which emits the title, meta description, canonical URL, Open Graph tags and JSON-LD from the props the page passes. You supply a title and description per page; everything else is derived.'
   - q: 'Where do I change the site name, domain and default description?'
     a: 'In src/data/site.ts (and origin.mjs for the domain). Nothing brand-specific is typed into markup: pages import from that one file, so a rename is a one-file change.'
+figures:
+  - kind: flow
+    title: "One source, every surface: what the build derives from the content files"
+    caption: "Nothing on these surfaces is typed twice. Each is generated from the MDX and the data files at build time, so none can say something the page does not."
+    nodes:
+      - { label: "MDX + data files", note: "one source of truth" }
+      - { label: "HTML page", note: "canonical, OG, JSON-LD" }
+      - { label: "Markdown twin", note: "same URL, Accept: text/markdown" }
+      - { label: "llms.txt", note: "index and full corpus" }
+      - { label: "Social card", note: "title, description, figure" }
+    edges:
+      - { from: 0, to: 1, label: "build" }
+      - { from: 0, to: 2, label: "build" }
+      - { from: 0, to: 3, label: "build" }
+      - { from: 1, to: 4, label: "render" }
 ---
 
 ## One layout owns the head

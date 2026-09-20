@@ -111,6 +111,14 @@ const committedCsp = JSON.parse(readFileSync('worker/csp.generated.json', 'utf8'
 if (!committedCsp) bad('worker/csp.generated.json has an empty csp — run npm run build and commit it');
 if (!fail) console.log('   ok');
 
+// ── 3b. build.concurrency stays 1 ───────────────────────────────────────
+// Body figures resolve through module state (src/lib/figureContext.ts), which
+// is only safe while Astro renders one page at a time. Raising
+// build.concurrency would let one page's <Figure id> read another page's list.
+if (/concurrency\s*:\s*(?!1\b)\d/.test(astroConfig)) {
+  bad('astro.config.mjs sets build.concurrency above 1 — figureContext.ts (body figures) assumes pages render one at a time');
+}
+
 // ── 4. /search noindex ↔ sitemap exclusion ────────────────────────────────
 console.log('→ /search is noindex AND excluded from the sitemap (both, always)');
 {

@@ -107,7 +107,15 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
 - ✅ **Cache-Control by file class**: pages 5 min + must-revalidate;
   `/_astro/*` (fingerprinted) 1 year + immutable; favicons/OG cards 7 days
   (stable URLs must never be immutable — a regenerated favicon has to land).
-- ✅ **Deploy from GitHub Actions, gated on CI** (`needs: build`), not
+- ✅ **GitHub Actions are opt-in, not the gate** (20 Sep 2026). `ci.yml` and
+  `indexnow.yml` run on manual dispatch only; `publish-post.yml` is gone. The
+  ancestor site burned the free Actions minutes on a second copy of the
+  battery the hooks already run, and every run then died at job start with
+  no runner. So `.githooks/pre-push` → `npm run verify` is the gate, `/ship`
+  deploys and pings IndexNow, the daily run's PR inbox publishes API posts,
+  and `linkrot.yml` (monthly, minutes, never a gate) is the one scheduled
+  workflow. An organisation with the minutes restores the commented triggers.
+- 🔧 **If you do enable CI: deploy from it gated on the build** (`needs: build`), not
   Cloudflare's git-connected builds — those deploy on push in parallel with
   CI, so a commit that fails an invariant would ship anyway.
 - 🔧 **Zone dashboard settings** (no diff, no history — recorded in
@@ -115,8 +123,8 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   www→apex Redirect Rule, Email Obfuscation OFF, Rocket Loader OFF.
 - ⬜ **Custom domain attach + www handling** — per site, PLAYBOOK §6.
 
-- ✅ **Posts API on the worker** (`worker/posts.ts`,
-  `.github/workflows/publish-post.yml`, Sep 2026): the one door for external
+- ✅ **Posts API on the worker** (`worker/posts.ts`, Sep 2026; published by
+  the daily run's PR inbox — there is no publish workflow): the one door for external
   automation to add a post. The worker does only what is mechanical —
   constant-time bearer check, rate limit, a mirror of the blog schema plus the
   rules the build would catch later (author registry, SERP clamp, description
@@ -264,6 +272,15 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   (`render-pages.mjs` reads the built page's `og:image` meta) — an explicit
   image always wins in BaseLayout precedence, so a generated card for such a
   page is dead weight that could never be referenced.
+- ✅ **Every indexable page has its own social card, and it shows the page**
+  (`check-invariants`, 20 Sep 2026): `render-pages.mjs` renders one card per
+  built page at `/og/<route>.jpg` carrying the brand row (name, tagline,
+  domain), the eyebrow, the `<title>`, the `og:description` and the page's
+  **lead figure** lifted as inline SVG (§8 Figures) — a page with none gets
+  the tagline on a brand panel. No two pages may share a card. On the
+  ancestor site a third of the pages previewed as the default card for weeks
+  because two collections had cards nothing pointed at and one had none.
+  `page.html` mirrors the tokens of `global.css`; change one, change both.
 - ✅ **`<title>` clamped to 60 chars** (`clampTitle`: drops ` — clause`, then
   ` | clause`, then cuts at a word boundary; never appends "…" — Google adds
   its own). `og:title` keeps the full string. CI checks built titles.
@@ -303,10 +320,11 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   solid colour** (iOS composites transparency onto black; Google's crawler
   wants a raster and probes `/favicon.ico` regardless of your HTML).
   Icon `<link>` order in BaseLayout is load-bearing (ico first).
-- ✅ **OG cards generated per page from BUILT HTML titles**
-  (`marketing/og/render-pages.mjs`) — a card cannot claim what the page
-  doesn't say. JPEG not PNG (~5× smaller in-repo). Missing card degrades to
-  `/og/default.png`, never a 404 (`ogCard.ts` checks disk).
+- ✅ **OG cards generated per page from the BUILT HTML** — title,
+  description and figure (`marketing/og/render-pages.mjs`) — a card cannot
+  claim what the page doesn't say. JPEG not PNG (~5× smaller in-repo). Missing
+  card degrades to `/og/default.png`, never a 404 (`ogCard.ts` checks disk),
+  and then fails `check-invariants`, so the degradation is a safety net.
 - ✅ **RSS** at `/rss.xml`: atom self-link, description from `tldr`,
   `lastBuildDate` from the newest post (not the build clock).
 - ✅ **robots.txt open, sitemap referenced** — generated at build
@@ -319,7 +337,7 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   publish time, keeping a 300MB browser out of `npm ci`. **`pagefind` IS a
   devDependency** — the documented exception: it runs on every build (the
   search index must exist wherever dist/ does), it's a ~4MB native binary
-  not a browser, and the deploy job's `npm ci` needs it. Policy:
+  not a browser, and every `npm ci` needs it. Policy:
   devDependencies are acceptable; the live site ships no new runtime
   dependency without a CHECKLIST entry.
 - ⬜ **Structured-data types beyond the defaults** (Product/Offer, Service,
@@ -444,6 +462,26 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   register and the voice are chosen against something. Both are evidence
   files: they decide nothing, `STRATEGY.md` wins any conflict, and every
   finding is routed to the file that owns it.
+- ✅ **Figures: every content page carries a pictograph or infographic**
+  (20 Sep 2026). A page with no picture reads as text a machine produced, and
+  its social card has nothing to show but a title. `figures:` in frontmatter
+  (`src/data/figureSchema.ts` — timeline, flow, steps, bars, tiles, compare,
+  web, outline) is drawn by `Figure.astro` as inline SVG from
+  `src/lib/figureSvg.ts`: zero JS, painted by the `--viz-*` tokens (three
+  identity hues in fixed order, validated for colour-vision separation; text in
+  the ink tokens), `<title>`/`<desc>` for screen readers, a visible caption.
+  One lead figure renders after the TL;DR and is lifted onto the social card;
+  body figures are placed with `<Figure id="…" />` in the MDX (the layout
+  passes the component through `<Content components>`; they resolve via
+  `src/lib/figureContext.ts`, module state that assumes `build.concurrency`
+  stays 1 — `check-parity` guards it). A page that declares none gets its
+  collection's automatic figure (`src/lib/figures.ts`: a term among its
+  related terms, a post's sections as a path) — the floor, not the target.
+  `bars` takes numbers only from `facts.json` (`fact:`, refusing
+  `verified: false`) or inline with a `source` that `check-source-rules`
+  requires to be one of the entry's own `sources` labels. The twins and
+  `llms-full.txt` carry each figure as an italic title-and-caption line.
+  `/write-content` § Every piece carries a figure has the picking table.
 - ✅ **No dead token references.** The stylesheet inherited `var(--orange)`,
   `--orange-soft` and `--orange-strong` from the ancestor site after the
   tokens were renamed to `--brand*` — so `:focus-visible` had an INVISIBLE
@@ -618,8 +656,8 @@ dilutes the battery.
   requests retry so edge propagation doesn't cry wolf. The real form
   submission stays manual — it emails humans.
 - ✅ **Homepage og:image is the brand card** (`check-invariants`): the built
-  homepage must point at `SITE.ogImage` and no `public/og/pages/home.*` may
-  exist. `ogCardFor()` prefers any card on disk for a route, so a card run
+  homepage must point at `SITE.ogImage` and no `public/og/index.*` (or the
+  older `public/og/pages/home.*`) may exist. `ogCardFor()` prefers any card on disk for a route, so a card run
   that renders `/` silently replaces the brand card — on the ancestor site the
   homepage previewed for six weeks as a lower-cased title fragment over a
   screenshot while its docs said it used the brand card. `render-pages.mjs`

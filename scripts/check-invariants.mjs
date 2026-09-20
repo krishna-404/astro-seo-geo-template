@@ -390,7 +390,49 @@ check('homepage og:image is the brand card, not a page card', (bad) => {
   const og = /<meta property="og:image" content="([^"]+)"/.exec(home)?.[1] ?? '';
   if (!og.endsWith(brand)) bad(`dist/index.html og:image is ${og} — expected ${brand} (index.astro passes ogImage={SITE.ogImage}; render-pages.mjs skips '/')`);
   for (const ext of ['jpg', 'png', 'webp']) {
-    if (existsSync(join('public', 'og', 'pages', `home.${ext}`))) bad(`public/og/pages/home.${ext} exists — a stale homepage page card; delete it — render-pages.mjs must keep skipping '/'`);
+    for (const stale of [join('public', 'og', 'pages', `home.${ext}`), join('public', 'og', `index.${ext}`)]) {
+      if (existsSync(stale)) bad(`${stale} exists — a stale homepage page card; delete it — render-pages.mjs must keep skipping '/'`);
+    }
+  }
+});
+
+// Every other indexable page previews as ITSELF: its own card, on disk, shared
+// with no other page. The card is rendered from the built page
+// (marketing/og/render-pages.mjs) and carries the brand row, the title, the
+// description and the page's own lead figure — so a missing card means
+// render-pages was not re-run after a content change. On the ancestor site a
+// third of the pages previewed as the default card for weeks because two
+// collections had cards nothing pointed at and one had none. CHECKLIST §9.
+check('every indexable page has its own social card, and no two pages share one', (bad) => {
+  const site = readFileSync('src/data/site.ts', 'utf8');
+  const brand = /ogImage:\s*'([^']+)'/.exec(site)?.[1] ?? '/og/default.png';
+  const seen = new Map();
+  for (const [f, h] of html) {
+    const route = '/' + f.slice(DIST.length + 1).replace(/\.html$/, '').replace(/(^|\/)index$/, '');
+    if (route === '/' || route === '/404') continue;
+    if (/<meta name="robots" content="[^"]*noindex/.test(h)) continue;
+    const og = /<meta property="og:image" content="([^"]+)"/.exec(h)?.[1];
+    if (!og) { bad(`${f} has no og:image`); continue; }
+    const path = new URL(og).pathname;
+    if (!path.startsWith('/og/')) continue; // the page declared its own ogImage — its call
+    if (path.endsWith(brand.replace(/^\//, '')) || path === brand) { bad(`${f} falls back to the brand card — run marketing/og/render-pages.mjs after npm run build`); continue; }
+    if (!existsSync(join('public', path))) bad(`${f} og:image ${path} is not on disk`);
+    if (path !== `/og${route}.jpg`) bad(`${f} og:image is ${path}, expected /og${route}.jpg (src/lib/ogCard.ts and render-pages.mjs must agree)`);
+    if (seen.has(path)) bad(`${f} and ${seen.get(path)} share the card ${path}`);
+    seen.set(path, f);
+  }
+});
+
+// Every content page carries a figure — a pictograph or infographic drawn at
+// build time (src/components/Figure.astro) — and marks its lead one with
+// data-og-figure, which is what the social card lifts. A page without one
+// reads as text-only and previews as a title alone (AGENTS § Figures).
+check('every content page carries a lead figure (data-og-figure)', (bad) => {
+  const content = /^dist\/(blog|glossary)\/(?!index\.html$).+\.html$/;
+  for (const [f, h] of html) {
+    if (!content.test(f)) continue;
+    const leads = (h.match(/data-og-figure/g) ?? []).length;
+    if (leads !== 1) bad(`${f} has ${leads} lead figures (expected exactly one — declare \`figures:\` in frontmatter or let the collection's auto figure render)`);
   }
 });
 

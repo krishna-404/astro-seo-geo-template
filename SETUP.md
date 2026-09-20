@@ -121,19 +121,24 @@ Generated files are committed, never hand-edited (AGENTS rule 9). Anything
 that checks for a generated file needs two builds: one to emit what the
 generator reads, one to pick the result up.
 
-- [ ] `node marketing/og/render-pages.mjs` (installs its own headless
-      browser ad hoc) — per-page OG cards from the BUILT titles, then
-      rebuild so pages reference them.
-- [ ] `npm run lastmod` — the git-derived sitemap dates (CI regenerates and
-      diffs, so a stale map fails there, not silently).
+- [ ] `node marketing/og/render-pages.mjs` (Playwright, installed ad hoc)
+      — one social card per built page at `/og/<route>.jpg`, carrying the
+      brand row, the title, the description and the page's lead figure
+      (CHECKLIST §9); set `SITE_NAME` and `TAGLINE` at the top of the script
+      and mirror the `global.css` tokens in `marketing/og/page.html` first.
+      Then rebuild so pages reference them; `check-invariants` fails an
+      indexable page without its own card.
+- [ ] `npm run lastmod` — the git-derived sitemap dates (`npm run verify`
+      regenerates and diffs, so a stale map fails there, not silently).
 - [ ] `npm run build` once more; commit everything it changed
       (`public/llms*.txt`, `src/data/lastmod.json`, OG cards, favicons,
       `worker/csp.generated.json` — the CSP hashes derive from your built
-      inline scripts and CI diffs the committed copy).
+      inline scripts and `verify` diffs the committed copy).
 
 **Verify:** `npm run verify` — the full local battery (build, invariants,
-worker smoke, HTML validity, contrast, axe). This is the same set CI runs
-and the same command the pre-push hook runs; green here means green there.
+worker smoke, HTML validity, contrast, axe). This is the command the pre-push
+hook runs, and it is the gate — the template ships no automatic CI
+(CHECKLIST §3: Actions minutes are metered).
 Then `git status` clean after a fresh `npm run build` — if a build dirties a
 committed generated file, commit it; that is the contract.
 
@@ -142,10 +147,14 @@ committed generated file, commit it; that is the contract.
 - [ ] `npx wrangler login`, then `npm run deploy` for a first
       `*.workers.dev` deploy; attach the custom domain (Workers → Domains &
       Routes).
-- [ ] Push to GitHub; add repo secret `CLOUDFLARE_API_TOKEN` (scoped: Edit
-      Workers — never a Global API Key). Green main now deploys via CI;
-      Cloudflare's own git-connected builds stay OFF (they'd deploy in
-      parallel with CI and skip the invariants).
+- [ ] Push to GitHub. Deploys run from the session (`/ship`: build, `npm run
+      deploy`, purge, live smoke, `npm run indexnow`) with `CLOUDFLARE_API_TOKEN`
+      in the session's environment (scoped: Edit Workers + Cache Purge —
+      never a Global API Key). Cloudflare's own git-connected builds stay OFF
+      (they would deploy in parallel and skip the invariants). If your
+      organisation has Actions minutes and wants CI as well, restore the
+      triggers in `.github/workflows/ci.yml` and add the token as a repo
+      secret (CHECKLIST §3).
 - [ ] Walk PLAYBOOK §6 top to bottom — SSL Full (Strict), zone HSTS (the
       one emitter), www→apex redirect, the OFF-switches (Rocket Loader,
       Email Obfuscation, Auto Minify, Hotlink Protection), **and the DNS
@@ -210,9 +219,11 @@ origin breaks it.
 - [ ] **Posts API (optional)** — `POST /api/posts` lets external automation
       submit a blog post (`worker/posts.ts`): the worker validates it against
       the blog schema and the source rules, writes it to an `api/post/*`
-      branch through GitHub and opens a PR; `.github/workflows/publish-post.yml`
-      regenerates lastmod, inventory and the OG card, runs `npm run verify`,
-      squash-merges on green and deploys. Two worker secrets:
+      branch through GitHub and opens a PR; the daily cadence run's PR inbox
+      regenerates lastmod, inventory and the social card (a post may carry
+      `figures` — CHECKLIST §8), runs `npm run verify`, merges under
+      STRATEGY.md's merge model and ships (there is no publish workflow —
+      GitHub Actions are opt-in, CHECKLIST §3). Two worker secrets:
       `POSTS_API_TOKEN` (the caller's bearer) and `GITHUB_POSTS_TOKEN` (a
       fine-grained PAT, Contents + Pull requests read/write on this repo
       only); `GITHUB_REPO` in `wrangler.jsonc`; the repository variable

@@ -3,11 +3,11 @@
  * post, and the only route on this worker that writes anything.
  *
  *   POST /api/posts        validate a post, write it to a branch, open a PR
- *   GET  /api/posts/<n>    where that PR is: queued · running · published · failed
+ *   GET  /api/posts/<n>    where that PR is: queued · published · cancelled
  *
  * WHAT IT DOES NOT DO, AND WHY. A Worker has no Node, no filesystem and no
  * browser, so it cannot run the build, the verify battery or the deploy.
- * Everything that needs those runs in .github/workflows/publish-post.yml on
+ * Everything that needs those is done by the daily cadence run's PR inbox on
  * the branch this route creates: lastmod, inventory and the OG card are
  * regenerated, `npm run verify` is the gate, a green branch is squash-merged
  * and deployed, and the live smoke runs. The caller therefore gets a 202 and
@@ -87,6 +87,8 @@ export interface PostInput {
   proprietary: string;
   sources?: { label: string; url?: string; retrieved?: string }[];
   faq?: { q: string; a: string }[];
+  /** Figure declarations (src/data/figureSchema.ts). Validated in full by the build; shape-checked here. */
+  figures?: Record<string, unknown>[];
   body: string;
 }
 
@@ -159,6 +161,21 @@ export function validatePost(raw: unknown): { errors: string[]; post: PostInput 
       && ((s as Record<string, unknown>).retrieved === undefined || (isStr((s as Record<string, unknown>).retrieved) && DATE_RE.test((s as Record<string, unknown>).retrieved as string))));
     need('sources', ok, 'array of { label, url?, retrieved? (YYYY-MM-DD) }');
   }
+  if (r.figures !== undefined) {
+    const kinds = ['timeline', 'flow', 'steps', 'bars', 'tiles', 'compare', 'web', 'outline'];
+    const ok =
+      Array.isArray(r.figures) &&
+      r.figures.length <= 6 &&
+      r.figures.every((f) => {
+        if (!f || typeof f !== 'object') return false;
+        const g = f as Record<string, unknown>;
+        return isStr(g.kind) && kinds.includes(g.kind) && isStr(g.title) && g.title.length >= 8 && g.title.length <= 120;
+      });
+    need('figures', ok, `array (≤6) of figure declarations, each with kind (${kinds.join(', ')}) and a title of 8–120 chars — see AGENTS § Figures; the build validates the full shape`);
+    if (ok && (r.figures as Record<string, unknown>[]).filter((g) => g.place === undefined || g.place === 'lead').length > 1) {
+      need('figures', false, 'at most one figure may lead (place omitted or "lead"); the rest need place: "body" and an id');
+    }
+  }
   if (r.faq !== undefined) {
     need('faq', Array.isArray(r.faq) && r.faq.every((f) => f && typeof f === 'object' && isStr((f as Record<string, unknown>).q) && isStr((f as Record<string, unknown>).a)), 'array of { q, a }');
   }
@@ -188,6 +205,7 @@ export function validatePost(raw: unknown): { errors: string[]; post: PostInput 
       proprietary: r.proprietary as string,
       sources: (r.sources as PostInput['sources']) ?? [],
       faq: (r.faq as PostInput['faq']) ?? [],
+      figures: r.figures as PostInput['figures'],
       body: (r.body as string).trim(),
     },
   };
@@ -220,6 +238,8 @@ export function toMdx(p: PostInput): string {
       if (s.retrieved) lines.push(`    retrieved: ${s.retrieved}`);
     }
   }
+  // JSON is valid YAML flow syntax, so the nested declaration round-trips without a YAML emitter.
+  if (p.figures && p.figures.length) lines.push(`figures: ${JSON.stringify(p.figures)}`);
   if (p.faq && p.faq.length) {
     lines.push('faq:');
     for (const f of p.faq) {
@@ -298,23 +318,24 @@ export async function handlePosts(request: Request, env: PostsEnv, url: URL, hea
     if (!pr.ok || !pr.data) return json(pr.status === 404 ? 404 : 502, { error: `GitHub answered ${pr.status} for pull request ${id}` }, headerize);
     const head = (pr.data.head as { sha: string; ref: string } | undefined);
     if (!head?.ref?.startsWith('api/post/')) return json(404, { error: `pull request ${id} was not created by the posts API` }, headerize);
-    const runs = await gh(`/repos/${repo}/actions/runs?head_sha=${head.sha}&per_page=20`);
-    const list = ((runs.data?.workflow_runs as unknown[]) ?? []) as { name: string; status: string; conclusion: string | null; html_url: string; updated_at: string }[];
-    const run = list.find((w) => w.name === 'Publish post');
+    // Status is read off the pull request alone. There is no publish
+    // workflow (the template ships no automatic GitHub Actions — metered
+    // minutes; SETUP Phase 3): the daily cadence run reviews the PR in its
+    // PR inbox, merges it when it clears the bar under STRATEGY.md's merge
+    // model, and ships. open → queued; merged → published; closed → cancelled.
     const merged = Boolean(pr.data.merged);
     const slug = head.ref.replace(/^api\/post\//, '').replace(/-\d{12}$/, '');
-    let status: 'queued' | 'running' | 'published' | 'failed' | 'cancelled' = 'queued';
-    if (merged && run?.conclusion === 'success') status = 'published';
-    else if (run?.conclusion && run.conclusion !== 'success') status = 'failed';
-    else if (run && run.status !== 'completed') status = 'running';
-    else if (pr.data.state === 'closed' && !merged) status = 'cancelled';
-    else if (merged) status = 'running';
+    const status: 'queued' | 'published' | 'cancelled' = merged ? 'published' : pr.data.state === 'closed' ? 'cancelled' : 'queued';
     return json(200, {
       id: Number(id), status, slug,
       url: status === 'published' ? `${url.origin}/blog/${slug}` : null,
       pr: pr.data.html_url, merged, mergedAt: pr.data.merged_at ?? null,
-      workflow: run ? { status: run.status, conclusion: run.conclusion, url: run.html_url, updatedAt: run.updated_at } : null,
-      note: run ? undefined : 'no "Publish post" workflow run yet for this head — GitHub Actions may be queued or not running on the repository',
+      note:
+        status === 'queued'
+          ? 'waiting for the daily cadence run, which reviews the post, merges it and deploys — or leaves a review comment on the PR saying why not'
+          : status === 'cancelled'
+            ? 'closed without merging — the reason is on the pull request'
+            : undefined,
     }, headerize);
   }
 
@@ -366,7 +387,7 @@ export async function handlePosts(request: Request, env: PostsEnv, url: URL, hea
         `- Author: ${post.author.name}`,
         `- Proprietary: ${post.proprietary}`,
         `- Sources: ${post.sources?.length ?? 0}`, '',
-        'The **Publish post** workflow regenerates lastmod, inventory and the OG card on this branch, runs `npm run verify`, squash-merges on green and deploys. If it goes red the failure is in the workflow log and the daily cadence run picks the PR up in its PR inbox.',
+        'The daily cadence run picks this PR up in its PR inbox: it regenerates lastmod, inventory and the social card, runs `npm run verify`, does the judgement half (in-body links, glossary, keyword map, voice), and merges and deploys when the post clears the bar — or leaves a review comment here saying exactly why not.',
       ].join('\n'),
     },
   });
@@ -384,6 +405,6 @@ export async function handlePosts(request: Request, env: PostsEnv, url: URL, hea
     pr: pr.data.html_url,
     url: `${url.origin}/blog/${post.slug}`,
     statusUrl: `${url.origin}/api/posts/${number}`,
-    note: 'The publish workflow runs verify, merges and deploys; poll statusUrl. Expect three to five minutes.',
+    note: 'The daily cadence run reviews, merges and deploys API posts; poll statusUrl. Expect it after the next run, not in minutes.',
   }, headerize, { location: `${url.origin}/api/posts/${number}` });
 }

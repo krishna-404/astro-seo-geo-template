@@ -174,8 +174,8 @@ wins any conflict. The rules below are the enforced subset.
   never fabricated. `npm run audit:discovery` scores the discovery levers.
 - **Posts may arrive through the API, and the daily run owns the PR inbox.**
   `POST /api/posts` (`worker/posts.ts`, SETUP Phase 4) validates a post and
-  opens a PR; the **Publish post** workflow verifies, merges and deploys. The
-  API does only what is mechanical. The daily cadence run lists open PRs,
+  opens a PR. The API does only what is mechanical; there is no publish
+  workflow (GitHub Actions are opt-in — CHECKLIST §3). The daily cadence run lists open PRs,
   reviews every API post (tldr, sources, proprietary claim, voice), does the
   judgement half — an in-body link from an indexed page, glossary entries,
   the keyword-map row, the snippet check — and merges where STRATEGY.md's
@@ -191,6 +191,21 @@ wins any conflict. The rules below are the enforced subset.
   this one with and records the owner's verdict on each in
   `marketing/landscape.md`. Record the examples shown with the decision in
   the file that owns it.
+- **Every content page carries a figure, and its social card shows it.** A
+  page with no picture reads as text a machine produced. `figures:` in
+  frontmatter (`src/data/figureSchema.ts`: timeline, flow, steps, bars, tiles,
+  compare, web, outline) is drawn at build time as inline SVG by
+  `Figure.astro` — zero JS, the `--viz-*` tokens, text in the ink tokens, a
+  `<title>`/`<desc>` and a visible caption. One lead figure follows the TL;DR
+  and is lifted verbatim onto the page's social card (`render-pages.mjs`
+  renders one card per built page with the brand row, title, description and
+  figure); body figures are placed with `<Figure id="…" />`. A `bars` figure
+  takes numbers only from `facts.json` (`fact:`) or inline with a `source`
+  that is one of the entry's `sources` labels (rule 1, in a picture). A page
+  that declares none gets its collection's automatic figure — the floor, not
+  the target. `check-invariants` fails a content page without exactly one
+  lead figure, and any indexable page without its own card. CHECKLIST §8,
+  /write-content § Every piece carries a figure.
 - **What the engine cannot find out becomes a question, never an estimate.**
   `marketing/DATA-SHEET.md` holds the open questions only the owner can answer,
   `marketing/link-targets.md` the listings a human has to claim; `npm run ask`

@@ -162,6 +162,33 @@ if (CLAIM_PATTERNS.length) {
 }
 if (!found) console.log(CLAIM_PATTERNS.length ? '   ok' : '   ok (no patterns configured — fill voice.json → site.bannedClaims)');
 
+console.log('→ an inline `bars` figure cites one of the entry’s own sources (AGENTS § Figures)');
+// A `bars` figure states numbers. It may take them from facts.json (`fact:`,
+// resolved and verified at build time) or inline (`items:`), and an inline
+// figure must name a `source` that is one of the entry's `sources` labels —
+// otherwise a chart carries a figure the page never cites (AGENTS rule 1
+// failing in a picture instead of a sentence).
+found = 0;
+for (const p of walkContent('src/content')) {
+  const text = readFileSync(p, 'utf8');
+  const fm = text.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? '';
+  if (!/^figures:/m.test(fm)) continue;
+  const sourceLabels = [...fm.matchAll(/^\s+- label:\s*"((?:[^"\\]|\\.)*)"\s*$/gm)].map((m) => m[1]);
+  const blocks = fm.split(/\n(?=  - kind:)/).filter((b) => /^\s*- kind:\s*"?bars"?/m.test(b));
+  for (const b of blocks) {
+    if (!/^\s+items:/m.test(b)) continue;
+    const source = b.match(/^\s+source:\s*"((?:[^"\\]|\\.)*)"\s*$/m)?.[1];
+    if (!source) {
+      bad(`${p}: an inline bars figure has items but no source`);
+      found = 1;
+    } else if (!sourceLabels.includes(source)) {
+      bad(`${p}: bars figure source "${source.slice(0, 60)}…" is not one of the entry's sources labels`);
+      found = 1;
+    }
+  }
+}
+if (!found) console.log('   ok');
+
 console.log('→ frontmatter titles survive the SERP clamp without a mid-phrase cut');
 // BaseLayout runs every title through src/lib/clampTitle.ts, which clamps to
 // 60 characters for the SERP. It sacrifices in order: a trailing " — clause",

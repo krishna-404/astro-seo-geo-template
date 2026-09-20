@@ -10,6 +10,8 @@
 
 Every page in this template gets a canonical URL, Open Graph tags and JSON-LD from BaseLayout automatically; the sitemap, RSS feed and llms.txt are generated at build time. You write content and frontmatter; the machinery is already wired.
 
+*Figure — One source, every surface: what the build derives from the content files. Nothing on these surfaces is typed twice. Each is generated from the MDX and the data files at build time, so none can say something the page does not.*
+
 ## One layout owns the head
 
 Every page in this template renders through `src/layouts/BaseLayout.astro`, and that is
@@ -63,6 +65,8 @@ Source: https://example.com/blog/how-the-seo-machinery-works
 
 Cited sources, quotations from authorities and statistics measurably improve how often generative engines cite a page; keyword stuffing measurably hurts. This template hard-codes those findings: every entry requires a front-loaded tldr, and glossary entries will not build without at least one source.
 
+*Figure — The three levers with evidence behind them, and the one that measurably hurts. From the GEO study the post cites: cited sources, quotations and statistics lift visibility in generated answers; keyword stuffing lowers it.*
+
 ## The levers with evidence behind them
 
 Most GEO advice is folklore. The one controlled study worth reading (Aggarwal et al.,
@@ -111,6 +115,8 @@ Source: https://example.com/blog/writing-content-answer-engines-cite
 
 Core Web Vitals are Google's three field metrics for page experience: Largest Contentful Paint (loading, good under 2.5s), Interaction to Next Paint (responsiveness, good under 200ms) and Cumulative Layout Shift (visual stability, good under 0.1). A static site with no client JS passes them almost by construction.
 
+*Figure — The three Core Web Vitals, and what each one measures. Loading, interaction and visual stability — each with a threshold a page has to clear on real visits.*
+
 ## The three metrics
 
 - **LCP, Largest Contentful Paint.** How long until the biggest thing in the viewport
@@ -145,6 +151,8 @@ Source: https://example.com/glossary/core-web-vitals
 # llms.txt: what it is and whether to ship one
 
 llms.txt is a proposed convention: a markdown file at the site root that gives LLM-based readers a curated index of the site's important content. This template generates /llms.txt and /llms-full.txt at build time from the content collections, so they can never disagree with the site.
+
+*Figure — Where llms.txt sits: a site's own index for an automated reader. Generated at build time from the same content the pages are, so it cannot describe a page that does not exist.*
 
 ## What it is
 
