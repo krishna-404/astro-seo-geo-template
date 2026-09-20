@@ -22,7 +22,10 @@ Pull queries from evidence, never invention:
 - `marketing/news-log.md` ICP social sweep: the exact phrasing the ICP uses for a
   problem (voice of customer), harvested from where they post.
 - Competitors' ranking pages and the "People also ask" / related-search boxes for
-  the head terms in each cluster.
+  the head terms in each cluster. `marketing/landscape.md` carries the set
+  (which rivals earn a `/vs/` page, on evidence), the SERP shape per money
+  query and the gaps each rival leaves — start there rather than re-reading
+  the rivals from scratch.
 - `STRATEGY.md` clusters: for each declared cluster, the head term and the
   question family around it.
 

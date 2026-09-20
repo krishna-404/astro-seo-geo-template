@@ -7,6 +7,23 @@
      Every TODO left here is a question the owner has not answered yet — it
      belongs in DATA-SHEET.md with an id, not here as a blank. -->
 
+## 0. The current record — what a stranger finds today
+
+<!-- TODO: the engine's own read (/discover § 0), dated, corrected by the
+     owner. The existing site (pages, hero copy verbatim, CTAs, schema,
+     weight, Core Web Vitals), the profiles, and page one for the brand
+     name. URLs and dates only — no screenshots in the repo. -->
+
+Read on: <!-- YYYY-MM-DD -->
+
+| Surface | What it says today | Same string as the site? | Note |
+|---|---|---|---|
+| Existing site | TODO | | claims vs proof |
+| LinkedIn company page | TODO | | |
+| Google Business Profile / knowledge panel | TODO | | |
+| Directories the category uses | TODO | | |
+| Brand name, page one | TODO | | |
+
 ## 1. Why now, and what success is
 
 <!-- TODO: the trigger in one sentence, and the one measurable outcome

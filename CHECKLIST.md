@@ -429,9 +429,21 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   `.reveal` — a scroll-driven `animation-timeline: view()` entry, inside
   the motion query AND `@supports`, zero JS. The homepage uses all of them
   as the template's default direction; `/design-direction` decides a site's
-  own and writes `marketing/design-brief.md`. Constraint stays the brief:
-  borrow composition, type, colour and rhythm from awwwards-class sites,
-  never their WebGL, scroll-jacking or font payloads.
+  own and writes `marketing/design-brief.md` — including § 9, the design
+  language (what a button, a card, a band, the rail, a table and each
+  state mean on this site, each mapped to its token or class). Constraint
+  stays the brief: borrow composition, type, colour and rhythm from
+  awwwards-class sites, never their WebGL, scroll-jacking or font payloads.
+- ✅ **Research before decisions on a new site.** `marketing/brief.md`
+  (`/discover`: the current record as a stranger finds it, the owner's
+  answers in their own words, the asset register with a home in the repo
+  per asset — masters stay in the owner's drive) and `marketing/landscape.md`
+  (`/landscape`: the rivals, the ranking pages, the lists and the admired
+  sites torn down the same way on a dated grid, the pattern read, the
+  owner's verdicts) exist so the thesis, the `/vs/` list, the design
+  register and the voice are chosen against something. Both are evidence
+  files: they decide nothing, `STRATEGY.md` wins any conflict, and every
+  finding is routed to the file that owns it.
 - ✅ **No dead token references.** The stylesheet inherited `var(--orange)`,
   `--orange-soft` and `--orange-strong` from the ancestor site after the
   tokens were renamed to `--brand*` — so `:focus-visible` had an INVISIBLE

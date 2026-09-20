@@ -258,7 +258,9 @@ coverage-layer pages because that is usually where the backlog is.
    sharpen one that has been open a month without an answer (usually it is
    too broad — split it), and add every blocker the week hit. Re-read
    `marketing/link-targets.md`: move rows the owner has claimed to `live`
-   with the URL, add a target the week's competitor reading turned up. **A
+   with the URL, add a target the week's competitor reading turned up
+   (`marketing/landscape.md` keeps that reading; a rival that relaunched
+   or a list that changed gets a dated line there). **A
    directory that now lists the site is a backlink and a page that can
    rank** — note it in the report so the next run can link to it and watch
    for referral traffic. Backlinks are tracked in that file, never

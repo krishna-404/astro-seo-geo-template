@@ -83,6 +83,19 @@ type, colour, layout, motion, imagery — and what it *refuses* to do.
   layers — schema, llms.txt, FAQ blocks — became table stakes). A trend that
   fails Core Web Vitals or screen readers is not a trend for this site.
 
+- **The category itself.** `marketing/landscape.md`'s § 6 lines carry the
+  design register of every rival, read on a date, and its pattern read the
+  register the buyer is used to. The direction is chosen against that:
+  match the ~80% that makes the site credible in its category, spend the
+  20% where the rivals are all the same.
+
+Galleries show what is being made; the writing above explains why it
+works — both are read live, never from memory (AGENTS: decisions are made
+against current references). Some galleries refuse non-browser fetches
+(awwwards and Land-book among them): use the ad-hoc Playwright the OG
+pipeline installs (`npm i --no-save playwright`), or have the owner share
+screenshots.
+
 Do not copy a specific site's layout. References tell you the *register*;
 the direction has to be this brand's.
 

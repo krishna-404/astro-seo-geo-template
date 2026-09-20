@@ -4,7 +4,9 @@
      or voice are decided. One block per site, always in the same order so
      they compare; the owner's verdict under each, verbatim; the category's
      gaps at the end. Read by /new-site § Decide, /keyword-map,
-     /design-direction and /onboard-marketing. Re-fetched once a year. -->
+     /design-direction and /onboard-marketing. Re-fetched once a quarter
+     with the cadence; this file keeps the evidence and decides nothing —
+     STRATEGY.md wins any conflict. -->
 
 ## The set
 
@@ -14,6 +16,20 @@
 
 Money queries searched to build the set: TODO (the three to five
 transactional phrasings from `marketing/keyword-map.md § High-intent`).
+
+### The SERP shape, per money query
+
+| Query | Vendors on page one | Lists on page one | Who owns #1 | Note |
+|---|---|---|---|---|
+| TODO | | | | |
+
+### The lists — listicles and directories that shape the category
+
+<!-- Every row here is also a `todo` row in link-targets.md. -->
+
+| Query | List | Owner (publisher / directory) | Includes | Leaves out |
+|---|---|---|---|---|
+| TODO | | | | |
 
 ## Teardowns
 
@@ -41,6 +57,19 @@ transactional phrasings from `marketing/keyword-map.md § High-intent`).
 **Owner's verdict.** Wins deals: yes / no / don't know (→ DATA-SHEET) ·
 Admire: "TODO" · Reject: "TODO" · Where we differ: "TODO".
 
+## The pattern read
+
+<!-- Observations across the set, each with a URL; the owner's read comes
+     after and is recorded under each teardown. -->
+
+- **What the category always does** (the ~80% the site must match to be credible): TODO
+- **The claim every rival makes** (so the thesis cannot be that): TODO
+- **The proof nobody shows:** TODO
+- **The page type nobody has built:** TODO
+- **The pricing convention:** TODO
+- **The design register the buyer is used to:** TODO
+- **The voice the category defaults to:** TODO
+
 ## What nobody in the category does
 
 1. TODO
@@ -52,6 +81,15 @@ Admire: "TODO" · Reject: "TODO" · Where we differ: "TODO".
 <!-- TODO: inside the category's visual and verbal norms, or deliberately
      outside them — and why. Cited by design-brief.md § 1 and VOICE-GUIDE
      § 2. -->
+
+## Where each finding went
+
+<!-- /landscape § 4: every finding routed to the file that owns it, same
+     session. -->
+
+| Finding | Went to |
+|---|---|
+| TODO | |
 
 ## Log
 
