@@ -5,10 +5,18 @@ name: CI
 # dependent job rather than using Cloudflare's git-connected Workers Builds:
 # Workers Builds deploys on push in parallel with CI, so a commit that fails an
 # invariant would ship anyway. `needs: build` makes green checks a precondition.
+# OPT-IN, NOT AUTOMATIC (20 Sep 2026). This workflow runs only when dispatched
+# by hand. GitHub Actions minutes are metered and the free quota runs out fast
+# on a site that pushes daily (the ancestor site burned through it and every
+# run died at job start with no runner). The hooks already run the identical
+# battery on every push (`.githooks/pre-push` → `npm run verify`), so a second
+# automatic copy buys nothing the hooks do not. If your organisation has the
+# minutes and wants the belt AND the braces, restore the triggers below.
 on:
-  pull_request:
-  push:
-    branches: [main]
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+  # pull_request:
 
 jobs:
   build:

@@ -35,10 +35,11 @@ Three decisions that are cheap now and unrecoverable later:
    git push
       │
       ▼
-  GitHub Actions ── collection-route check · astro check · build ·
-      │             lastmod check · invariants (h1, tables, titles,
-      │             broken links, CTA measurement) · contrast sweep
-      ▼  (only if green, only on main)
+  .githooks/pre-push ── npm run verify: collection-route check · astro
+      │                 check · build · lastmod check · invariants ·
+      │                 worker smoke · html-validate · contrast · axe
+      │                 (the gate; GitHub Actions are opt-in — §3 of CHECKLIST)
+      ▼  (only if green)
   wrangler deploy ── dist/ → Cloudflare asset store (free, unlimited)
       │              worker/index.ts → the metered edge routes
       ▼
@@ -64,7 +65,7 @@ hand-edit the output:
 | `llms.txt`, `llms-full.txt` | site config + content collections | `scripts/generate-llms.mjs` | pre-build |
 | `.md` twin per content page | the same MDX the page renders | `scripts/markdown-twins.mjs` | post-build |
 | `dist/pagefind/` search index | the built `[data-pagefind-body]` HTML | `pagefind --site dist` (`npm run search:index`) | post-build, every build |
-| sitemap `<lastmod>` | git commit dates (committed map) | `scripts/lastmod.mjs` | on content change; CI verifies |
+| sitemap `<lastmod>` | git commit dates (committed map) | `scripts/lastmod.mjs` | on content change; `npm run verify` checks it |
 | favicons (ico + PNGs + apple) | `public/favicon.svg` | `marketing/favicon.mjs` | on brand change |
 | OG cards (per page + default) | title, description and lead figure read from **built HTML** | `marketing/og/render-pages.mjs` | on any content change (`check-invariants` fails a page without its card) |
 
@@ -151,7 +152,7 @@ Lessons encoded (each cost the ancestor site a bug):
   banner that owns its tag. See README § Analytics and CHECKLIST §5.
 - ⚠ Conversions leave the page (outbound, `tel:`, `mailto:`, form POST) — no
   pageview fires. Every CTA carries `data-umami-event` +
-  `data-umami-event-place`; CI enforces; the thanks page turns form
+  `data-umami-event-place`; `check-invariants` enforces; the thanks page turns form
   submissions into pageviews.
 - ⚠ Proxying analytics same-origin requires BOTH hops (script + collector) —
   the script derives its endpoint from its own src. One hop = zero data.
@@ -428,7 +429,7 @@ literal-hostname `proxy_pass` taking the site down with a DNS outage ·
 `mirror`-and-loopback contraptions · Docker layer/`.git` exclusion killing
 lastmod.
 
-Traps that still apply in full — each encoded in code or CI here, details in
+Traps that still apply in full — each encoded in code or the verify battery here, details in
 `CHECKLIST.md`: measured contrast (2.8:1 brand colours look fine) ·
 autofilled honeypots · Apps Script versioning/scopes/quota ·
 `Vary: Accept` on negotiated content · noindex⇔sitemap agreement ·

@@ -6,10 +6,10 @@ description: Merge the current PR to main and deploy the site to Cloudflare Work
 # Ship: merge to main + deploy to Cloudflare
 
 One command-shaped workflow. Every step verifies before the next; stop and
-report at the first failure rather than pushing on. CI's deploy job does the
-same sequence on green main once the `CLOUDFLARE_API_TOKEN` repo secret
-exists (SETUP Phase 3); this skill is the session-side path — for a repo
-whose CI deploy is not armed, or when a human wants to watch it land.
+report at the first failure rather than pushing on. This is THE deploy path:
+the template ships no automatic GitHub Actions (CHECKLIST §3 — metered
+minutes), so nothing deploys a merge except this sequence run from a session
+that holds the Cloudflare token.
 
 ## Preconditions — check, don't assume
 
@@ -18,7 +18,8 @@ whose CI deploy is not armed, or when a human wants to watch it land.
    evidence). If verify has not run on this exact head, run it now.
 2. There is an open PR for the branch. If not, create one first (draft is
    fine; mark ready before merge).
-3. CI note: if GitHub Actions checks are failing with the no-runner signature
+3. Actions note: there are no automatic checks to wait for — `npm run verify`
+   on the branch head is the evidence. If a site has enabled CI and it fails with the no-runner signature
    (job dies in seconds, `runner_id: 0`, no logs — an account billing issue,
    not the diff), local verify green is the gate that counts. A *real* CI
    failure (a runner ran and a step failed) blocks the merge — fix it first.
@@ -40,11 +41,13 @@ whose CI deploy is not armed, or when a human wants to watch it land.
    PLAYBOOK §6 the first time). If purge 401s, say so and note pages
    self-refresh in ≤5 min (`max-age=300`) — do not treat it as a deploy
    failure.
-6. **Verify live**: `curl -sI <origin>/ | grep -i cf-cache-status` twice —
+6. **IndexNow**: `npm run indexnow` — submits the live sitemap to Bing,
+   Yandex and Seznam; nothing else pings them (the workflow is manual-only).
+7. **Verify live**: `curl -sI <origin>/ | grep -i cf-cache-status` twice —
    expect MISS then HIT — and spot-check one piece of content this deploy
    actually changed (grep the live HTML for it). Then
    `node scripts/smoke-live.mjs` for the full live smoke.
-7. **Report**: merged SHA, deployed version id, what was spot-checked. If the
+8. **Report**: merged SHA, deployed version id, what was spot-checked. If the
    branch is the designated working branch, restart it from the new main
    (`git checkout -B <branch> origin/main`) so follow-up work never stacks on
    merged history (PLAYBOOK §11: squash merges make stacked branches a

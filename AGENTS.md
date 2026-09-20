@@ -174,8 +174,8 @@ wins any conflict. The rules below are the enforced subset.
   never fabricated. `npm run audit:discovery` scores the discovery levers.
 - **Posts may arrive through the API, and the daily run owns the PR inbox.**
   `POST /api/posts` (`worker/posts.ts`, SETUP Phase 4) validates a post and
-  opens a PR; the **Publish post** workflow verifies, merges and deploys. The
-  API does only what is mechanical. The daily cadence run lists open PRs,
+  opens a PR. The API does only what is mechanical; there is no publish
+  workflow (GitHub Actions are opt-in — CHECKLIST §3). The daily cadence run lists open PRs,
   reviews every API post (tldr, sources, proprietary claim, voice), does the
   judgement half — an in-body link from an indexed page, glossary entries,
   the keyword-map row, the snippet check — and merges where STRATEGY.md's

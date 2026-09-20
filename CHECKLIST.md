@@ -107,7 +107,15 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
 - ✅ **Cache-Control by file class**: pages 5 min + must-revalidate;
   `/_astro/*` (fingerprinted) 1 year + immutable; favicons/OG cards 7 days
   (stable URLs must never be immutable — a regenerated favicon has to land).
-- ✅ **Deploy from GitHub Actions, gated on CI** (`needs: build`), not
+- ✅ **GitHub Actions are opt-in, not the gate** (20 Sep 2026). `ci.yml` and
+  `indexnow.yml` run on manual dispatch only; `publish-post.yml` is gone. The
+  ancestor site burned the free Actions minutes on a second copy of the
+  battery the hooks already run, and every run then died at job start with
+  no runner. So `.githooks/pre-push` → `npm run verify` is the gate, `/ship`
+  deploys and pings IndexNow, the daily run's PR inbox publishes API posts,
+  and `linkrot.yml` (monthly, minutes, never a gate) is the one scheduled
+  workflow. An organisation with the minutes restores the commented triggers.
+- 🔧 **If you do enable CI: deploy from it gated on the build** (`needs: build`), not
   Cloudflare's git-connected builds — those deploy on push in parallel with
   CI, so a commit that fails an invariant would ship anyway.
 - 🔧 **Zone dashboard settings** (no diff, no history — recorded in
@@ -115,8 +123,8 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   www→apex Redirect Rule, Email Obfuscation OFF, Rocket Loader OFF.
 - ⬜ **Custom domain attach + www handling** — per site, PLAYBOOK §6.
 
-- ✅ **Posts API on the worker** (`worker/posts.ts`,
-  `.github/workflows/publish-post.yml`, Sep 2026): the one door for external
+- ✅ **Posts API on the worker** (`worker/posts.ts`, Sep 2026; published by
+  the daily run's PR inbox — there is no publish workflow): the one door for external
   automation to add a post. The worker does only what is mechanical —
   constant-time bearer check, rate limit, a mirror of the blog schema plus the
   rules the build would catch later (author registry, SERP clamp, description
@@ -329,7 +337,7 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   publish time, keeping a 300MB browser out of `npm ci`. **`pagefind` IS a
   devDependency** — the documented exception: it runs on every build (the
   search index must exist wherever dist/ does), it's a ~4MB native binary
-  not a browser, and the deploy job's `npm ci` needs it. Policy:
+  not a browser, and every `npm ci` needs it. Policy:
   devDependencies are acceptable; the live site ships no new runtime
   dependency without a CHECKLIST entry.
 - ⬜ **Structured-data types beyond the defaults** (Product/Offer, Service,
