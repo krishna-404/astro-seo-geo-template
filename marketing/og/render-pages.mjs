@@ -68,7 +68,13 @@ function discoverRoutes(dir = distDir, out = []) {
     } else if (name.endsWith('.html')) {
       const rel = relative(distDir, p).split(sep).join('/');
       const route = '/' + rel.replace(/(^|\/)index\.html$/, '$1').replace(/\.html$/, '');
-      out.push({ route: route === '/' ? '/' : route.replace(/\/$/, ''), file: p });
+      // The homepage is deliberately NOT rendered. Its card is the brand card
+      // (public/og/default.png from marketing/og/default.html); ogCardFor()
+      // prefers any card it finds on disk, so a home card here would silently
+      // replace the brand card — which is exactly what happened on the
+      // ancestor site for six weeks. check-invariants guards it.
+      if (route === '/') continue;
+      out.push({ route: route.replace(/\/$/, ''), file: p });
     }
   }
   return out;

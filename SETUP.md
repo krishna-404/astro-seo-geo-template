@@ -66,6 +66,18 @@ Work top to bottom; later files read earlier ones.
       `node marketing/favicon.mjs`. ⚠ Colour is measured, not eyeballed:
       `npm run build && npm run check:contrast` — do not ship a colour the
       checker rejects; darken it until it passes.
+- [ ] **Design direction** — run `/design-direction` before anyone outside
+      the team sees the site. It pulls references from awwwards (the site's
+      category and the current Sites of the Day) and a standing list of the
+      best-designed product sites, decides type, colour, layout motif,
+      motion and imagery inside the template's constraints (AA measured,
+      CSS-only motion, no client JS, LCP), writes `marketing/design-brief.md`
+      and applies it through the tokens in `global.css` — `--font-display`
+      (self-hosted woff2 in `public/fonts/`, `font-src 'self'`), the fluid
+      `--step-*` scale, the band and `--on-ink-*` tokens — and the patterns
+      the homepage already uses (editorial hero, bento, numbered rail,
+      inverted band, scroll reveal). A site that skips this ships the
+      template's look, and a buyer reads "template" as "nobody is home".
 - [ ] `public/.well-known/security.txt` — `Contact`, `Canonical` (your real
       host — RFC 9116 makes the file assert which host it belongs to, so a
       wrong value is worse than none), `Expires` ~1 year out. Put the annual
@@ -163,6 +175,18 @@ origin breaks it.
       the `sc-domain:` property); `CLOUDFLARE_READ_ANALYTICS` (token scoped
       Zone:Read + Analytics:Read only). `--inspect` runs URL Inspection over
       the live sitemap and explains any page that is not indexed.
+      **Two more surfaces, both optional and both about answer engines:**
+      the Search Console **Generative AI** report (Performance → Generative
+      AI — impressions inside AI Overviews and AI Mode) has no API, so once
+      a week export it (date range *Last 28 days* → Export → Download CSV)
+      and drop the zip in `marketing/insights/genai/` as
+      `genai-YYYY-MM-DD.zip`; the script reads the newest one and joins it
+      with the web rows (`marketing/insights/genai/README.md`). And
+      `BING_WEBMASTER_API_KEY` (Bing Webmaster Tools → Settings → API
+      access) reads back the index that feeds Copilot and ChatGPT search.
+      `npm run audit:discovery` scores twenty discovery levers from the
+      build and the newest snapshot — run it after the first pull to see
+      where the site stands.
 - [ ] **Privacy page**: clear the `privacy.json` TODOs, then flip
       `status.draft` to `false` — one flag publishes it and its
       indexability together.
@@ -191,8 +215,10 @@ FAQ answers only in frontmatter, `toc: true` at 4+ headings, dates spread
 links per post — the last two are enforced by `check-source-rules`. Scheduled posts:
 future-date `published` and schedule a build for that day (PLAYBOOK §2).
 
-**The content engine.** Six skills in `.claude/skills/` run the whole
-loop, and its memory lives in `marketing/`. Read `marketing/site-blueprint.md`
+**The content engine.** Eight skills in `.claude/skills/` run the whole
+loop (/onboard-marketing, /keyword-map, /interview, /write-content,
+/refresh-anti-ai-rules, /insights-review, /content-cadence, /ship), and its
+memory lives in `marketing/`. Read `marketing/site-blueprint.md`
 first — it is the transferable doctrine (page-type taxonomy, keyword→content
 mapping, interlinking, conversion, AEO/GEO levers, the straightforward house
 voice) that everything below is an instance of.
@@ -216,14 +242,32 @@ voice) that everything below is an instance of.
    site's repo environment → schedule a Routine, or ask Claude Code to
    create one) with a prompt like:
    > Run /content-cadence. Daily mode on weekdays; weekly mode on Monday.
-   Daily runs measure (insights snapshot + deltas), log news candidates,
-   and email you the report — including the 10 URLs to paste into Search
-   Console's "Request indexing" by hand, which the API cannot do. Weekly
-   runs additionally refresh the anti-AI rules from their public sources
-   (sweeping the latest posts for newly landed tells) and do the writing
-   run. Everything lands as PRs; **you merge — nothing auto-publishes.**
-   Give the Routine's environment the insights credentials and
-   `CADENCE_REPORT_TOKEN` (both above).
+   Daily runs measure (insights snapshot + deltas), work the high-intent
+   queries first, make one to three evidence-backed improvements, log news
+   candidates, and email you the report — including the 10 URLs to paste
+   into Search Console's "Request indexing" by hand, which the API cannot
+   do. Weekly runs additionally refresh the anti-AI rules from their public
+   sources (sweeping the latest posts for newly landed tells), do the
+   writing run and the tools sweep, and maintain the keyword map, data
+   sheet and link targets. Everything lands as PRs; **you merge — nothing
+   auto-publishes.** Give the Routine's environment the insights
+   credentials and `CADENCE_REPORT_TOKEN` (both above). Schedule exactly
+   one firing a day: a second scheduled firing on the same date stands
+   down by design, and a Routine recreated while the old one still exists
+   is the usual cause.
+4. **Answer what the engine asks.** Two report sections ask rather than
+   tell, and both come from files you own. `marketing/DATA-SHEET.md` holds
+   the open questions only you can answer (a rate, a permission, whether an
+   account exists) — type under **Answer:**; "don't know" is a real answer.
+   The answer then moves to `facts.json` or its data file with a source and
+   the question is marked ✅. `marketing/link-targets.md` holds the directory
+   and entity-anchor listings (review platforms, LinkedIn company page,
+   Crunchbase, Wikidata…) with a status each — claiming one needs a human
+   with an email address, so a run only surfaces the next three; tick the
+   row and it stops asking. `npm run ask` prints both, and the
+   `.claude/settings.json` SessionStart hook runs it when a session opens so
+   nobody starts work blind to what is blocked. Replace the sheet's example
+   question with your first real one.
 
 From here the rhythm is PLAYBOOK §9 (weekly GSC glance, monthly link-rot
 run, quarterly crawl, annual security.txt/HSTS/domain review) — put the

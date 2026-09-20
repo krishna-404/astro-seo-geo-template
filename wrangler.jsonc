@@ -33,6 +33,8 @@
     //   /hi, /hi/*         cookieless attribution rewrite to /contact
     //   /blog/*, /glossary/*  markdown-twin content negotiation (Accept header)
     //   /s.js              (optional) same-origin analytics script proxy
+    //   (+ every key of worker PERMANENT_REDIRECTS, exactly — a redirect whose
+    //   path is not listed here never reaches the worker; check-parity enforces)
     "run_worker_first": ["/api/*", "/hi", "/hi/*", "/blog/*", "/glossary/*", "/s.js"]
   },
   // Non-secret config. Secrets are NOT set here:

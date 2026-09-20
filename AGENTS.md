@@ -52,7 +52,12 @@ being checked is not a reason to ignore it here; the prose carries the WHY.
    `src/styles/global.css`; never a hex literal in a component. Every token
    that carries or sits behind text must clear WCAG AA on every band
    background — `npm run check:contrast` sweeps every built page and runs in
-   CI.
+   CI. **Design is chosen, not inherited**: the expressive layer in
+   `global.css` (fluid `--step-*` type scale, `--font-display`, the inverted
+   `.band--ink`, `.bento`, `.rail`, `.reveal`) is how a site gets its own look
+   inside those constraints; `/design-direction` decides it and
+   `marketing/design-brief.md` records it. Borrow composition, type and
+   rhythm from the best sites — never their WebGL or their JavaScript.
 7. **One `<h1>` per page.** Templates render the frontmatter `title` as the
    h1 — MDX bodies start at `##`.
 8. **noindex and the sitemap must agree.** A page excluded from one is
@@ -139,7 +144,40 @@ wins any conflict. The rules below are the enforced subset.
 - Every page traces to a query in `marketing/keyword-map.md` (one page = one
   primary query = one intent), and every priority query traces to a page there,
   live or planned. /keyword-map maintains the map; /write-content picks targets
-  from it.
+  from it. A money page declares the query it claims in frontmatter
+  (`primaryKeyword`, `secondaryKeywords`) and its collection is listed in
+  `src/data/intent.json → claimFrom`.
+- **High-intent first.** Search Console's transactional rows ("<category>
+  software", "<x> vs <y>", "… pricing") are a handful of impressions under
+  hundreds of informational ones, and they are the words a buyer with budget
+  types. `npm run insights` prints them as its first block
+  (`src/data/intent.json` signal words + watch list, `scripts/lib/intent.mjs`)
+  with the page Google shows against the page that claims the query; every
+  cadence run works that block before anything else and the report carries a
+  High-intent section. Keep `intent.json → watch` and `marketing/keyword-map.md
+  § High-intent` in step, same commit.
+- **A claim the site may not make is a regex, not a reminder.** `voice.json →
+  site.bannedClaims` lists the assertions of fact this site must never make (a
+  measurement nobody took, a customer that does not exist, a result the product
+  has not produced); `check-source-rules` fails any page that says one. State a
+  figure flat and unattributed; omit what cannot be asserted — omitting is fine,
+  asserting is not. Match the CLAIM, not the verb the last edit used.
+- **Generative AI is measured, not assumed.** Search Console's Generative AI
+  report (impressions inside AI Overviews and AI Mode) has no API; the owner
+  exports it into `marketing/insights/genai/` and `npm run insights` reads the
+  newest zip (`scripts/lib/genai.mjs`), joins AI vs web impressions per page
+  and adds two proxies — prompt-shaped queries and referrals from AI
+  assistants. Every cadence run works that block (content-cadence step 2e):
+  a cited page is strengthened and linked, never rewritten; an uncited page
+  gets an answer-shaped `tldr`, a FAQ block in the searcher's words and named
+  sources. The monthly AI prompt panel lives in `marketing/ai-panel.md` and is
+  never fabricated. `npm run audit:discovery` scores the discovery levers.
+- **What the engine cannot find out becomes a question, never an estimate.**
+  `marketing/DATA-SHEET.md` holds the open questions only the owner can answer,
+  `marketing/link-targets.md` the listings a human has to claim; `npm run ask`
+  prints both (and runs at session start). A run that hits a blocker adds the
+  question in the same commit; a run never answers one by guessing and never
+  claims a listing.
 - Every blog author lives in `src/data/authors.json` (enforced): the byline
   links to `/author/<slug>` — the verifiable credential behind the name — and
   a guest author gets their own entry with a real profile and bio, never a
@@ -222,7 +260,9 @@ wins any conflict. The rules below are the enforced subset.
 
 | Change | Also do |
 |---|---|
-| A page title | Re-run OG cards (`marketing/og/render-pages.mjs`) |
+| A page title | Re-run OG cards (`marketing/og/render-pages.mjs`); keep it ≤60 characters or put the sacrificial half after " — " (`check-source-rules` fails a title the SERP clamp would hard-cut) |
+| A URL that must keep working (page moved, folded, or visitors keep typing it) | One row in `worker/index.ts → PERMANENT_REDIRECTS` with a one-line reason, AND the exact path in `wrangler.jsonc → run_worker_first` (`check-parity` fails one without the other; `smoke-worker` asserts the 301) |
+| A blocker only the owner can resolve | Add it to `marketing/DATA-SHEET.md` in the documented format, same commit — `npm run ask` will surface it |
 | Any inline `<script is:inline>` | `npm run build` regenerates the CSP hashes; commit the changed `worker/csp.generated.json` (CI diffs it). Never add an inline `onclick=`-style handler — the CSP generator fails the build on those |
 | Brand colour / favicon.svg | Edit the literal `BRAND_BG` in BOTH `marketing/favicon.mjs` and `marketing/og/render-pages.mjs`, plus `--brand` in `marketing/og/default.html`; then `node marketing/favicon.mjs`, re-run OG cards, `npm run check:contrast` |
 | Any vendor or data collection | `src/data/privacy.json` in the same commit |

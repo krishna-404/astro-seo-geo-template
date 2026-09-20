@@ -18,6 +18,22 @@ Generated/updated: <!-- date -->
 - **evidence**: impressions/position from `npm run insights`, or `social sweep` /
   `cluster head` / `competitor gap` for queries not yet earning impressions.
 
+## High-intent — the buyer's queries, worked first
+
+<!-- Every transactional or commercial query with impressions — the
+     `searchConsole.highIntent` block of the latest snapshot (★ = watch-list
+     term in src/data/intent.json) — has a row here, ranked by impressions
+     then position, with the money page that claims it and the supporting
+     pieces planned or published for it. A query is high-intent when a buyer
+     choosing would type it: "software", "system", "tool", "pricing", "vs",
+     "calculator". These rows are worked before any informational cluster
+     (content-cadence step 2). Keep intent.json → watch in step with this
+     section: a term added here is added there with its page, same commit. -->
+
+| Query (★ = watch list) | Impr · position | Page Google shows | Claiming page | Status | Supporting pieces |
+|---|---|---|---|---|---|
+| <!-- e.g. "<category> software" --> | <!-- 15 · 65 --> | <!-- /solutions/x --> | <!-- /solutions/x --> | ok / wrong-page / unmapped | <!-- planned or live URLs --> |
+
 ## The map, by cluster
 
 <!-- One section per cluster from STRATEGY.md. Example row shape: -->

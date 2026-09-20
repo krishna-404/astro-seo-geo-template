@@ -86,7 +86,13 @@ bottom-up; impressions alone are worth nothing:
    its conversion path and snippet done, not as bare reach.
 
 Cap new posts at what the week's fuel honestly supports (never more than
-the cadence in STRATEGY.md; the hard cap is 5/week, enforced).
+the cadence in STRATEGY.md; the hard cap is 5/week and one per date, both
+enforced). Count the posts already dated in the current ISO week — including
+future-dated ones on main — before drafting; high-intent supporting pieces
+(`marketing/keyword-map.md § High-intent`) have first claim on the week's
+slots, and a piece that finds no slot ships as an uncapped type (glossary
+entry, FAQ block on a money page, comparison page) rather than as a sixth
+post.
 
 ## 3. Draft
 
@@ -160,6 +166,16 @@ Rules for building one (the ancestor site's calculator is the precedent):
   Shipping a second JS page is a deliberate architecture change: extend the
   invariant deliberately and document it in CHECKLIST per the
   self-extending rule — never sneak it past the battery.
+- **Two kinds of calculator, and only one is buildable now.** *Input-driven*:
+  it computes from numbers the reader already has (their own rates, their
+  own fees, their own salaries) — deterministic code over the reader's
+  inputs, publishing no reference data, so nothing on the page can be wrong
+  for somebody else's case. Buildable when the signals converge.
+  *Reference-data-driven*: it needs a table the site would have to publish
+  (a tariff, a duty schedule, a rate card) — gated until every row is
+  sourced per AGENTS rule 1. Ship the input-driven version, say on the page
+  which numbers the reader has to bring, and record the reference-data
+  version as a `marketing/DATA-SHEET.md` question naming the rows it needs.
 - Propose the tool in the cadence report first with the signals that
   justify it; build on the owner's go-ahead. It ships like everything else:
   a PR, interlinked from the pages whose queries it serves, output framed

@@ -25,6 +25,10 @@
  *   5. (optional) /s.js + /api/send — same-origin Umami proxy, so a
  *      domain-level blocker cannot drop analytics. Both hops or neither: the
  *      tracker derives its collector endpoint from its own script src.
+ *   6. Permanent redirects (PERMANENT_REDIRECTS) — exact paths answered with
+ *      a 301 instead of the 404 page: a URL that once existed and reached a
+ *      sitemap or an IndexNow ping, or one visitors keep typing that the site
+ *      never had. Empty until a site needs one.
  *
  * Everything else falls through to the static asset store, where requests are
  * free and unlimited. Keep it that way: wrangler.jsonc's run_worker_first list
@@ -114,6 +118,15 @@ const HI_RE = /^\/hi(?:\/[A-Za-z0-9][A-Za-z0-9-]{0,39})?$/;
 /** Routes that have .md twins on disk (the content collections — must match
  *  scripts/markdown-twins.mjs COLLECTIONS and wrangler.jsonc run_worker_first). */
 const TWIN_PREFIXES = ['/blog/', '/glossary/'];
+
+/** Exact paths answered with a 301 instead of the 404 page. Every key must
+ *  also be in wrangler.jsonc run_worker_first or the request never reaches
+ *  this worker and the visitor gets dist/404.html — scripts/check-parity.mjs
+ *  enforces that, and scripts/smoke-worker.mjs asserts each entry live.
+ *  Give every row a one-line reason in a comment (why the URL is asked for,
+ *  why a 301 rather than a page) — a row without one is a mystery in a year.
+ *  Example: '/cookies': '/privacy-policy'  // the page was folded into the policy after reaching the sitemap */
+const PERMANENT_REDIRECTS: Record<string, string> = {};
 
 export default {
   async fetch(request: Request, env: Env, ctx: Ctx): Promise<Response> {
@@ -279,6 +292,17 @@ export default {
       h.set('x-robots-tag', 'noindex, nofollow');
       h.set('link', LLMS_LINK_HEADER);
       return new Response(page.body, { status: page.status, headers: h });
+    }
+
+    // ── 6. Permanent redirects for URLs visitors ask for and we don't have ─
+    // 301 rather than a new page: the URL keeps working and its authority
+    // transfers to the page that actually answers it.
+    const redirectTo = PERMANENT_REDIRECTS[pathname];
+    if (redirectTo) {
+      return new Response(null, {
+        status: 301,
+        headers: withSecurityHeaders(new Headers({ location: new URL(redirectTo, url).toString() })),
+      });
     }
 
     // ── 4. Markdown twins — Accept negotiation on content routes ─────────

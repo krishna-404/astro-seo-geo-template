@@ -192,13 +192,20 @@ function handleReport(p) {
   var subject = trim(p.subject, 180) || 'Content cadence report';
   // Sheets caps a cell at 50,000 characters; the email carries the full body.
   var body = String(p.body || '').slice(0, 100000);
+  // Optional rendered twin of the markdown (scripts/report-html.mjs builds
+  // it): when present it becomes the HTML body and the markdown stays as the
+  // plain-text fallback, so a client that cannot show HTML still gets the
+  // report. Without it the mail is plain text, which reads as raw markdown.
+  var html = String(p.html || '').slice(0, 200000);
   var mailed = false;
   try {
-    MailApp.sendEmail({
+    var mail = {
       to: NOTIFY_TO,
       subject: '[cadence] ' + subject,
       body: body,
-    });
+    };
+    if (html) mail.htmlBody = html;
+    MailApp.sendEmail(mail);
     mailed = true;
   } catch (err) {
     console.error('REPORT MAIL FAILED: ' + err);

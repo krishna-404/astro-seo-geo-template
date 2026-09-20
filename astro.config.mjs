@@ -21,11 +21,27 @@ import { SITE_URL } from './src/data/origin.mjs';
  */
 function rehypeWrapTables() {
   return (tree) => {
+    // Two passes: count first, then wrap. role="region" makes each wrapper a
+    // LANDMARK, and landmarks of the same type must carry UNIQUE names
+    // (html-validate unique-landmark) — so a page with several tables numbers
+    // them, while a single table keeps the plain label.
+    let total = 0;
+    const count = (node) => {
+      if (!Array.isArray(node.children)) return;
+      for (const child of node.children) {
+        count(child);
+        if (child.type === 'element' && child.tagName === 'table') total += 1;
+      }
+    };
+    count(tree);
+
+    let seen = 0;
     const walk = (node) => {
       if (!Array.isArray(node.children)) return;
       node.children = node.children.map((child) => {
         walk(child);
         if (child.type === 'element' && child.tagName === 'table') {
+          seen += 1;
           return {
             type: 'element',
             tagName: 'div',
@@ -33,7 +49,10 @@ function rehypeWrapTables() {
               className: ['table-scroll'],
               tabIndex: 0,
               role: 'region',
-              'aria-label': 'Table, scrolls horizontally',
+              'aria-label':
+                total > 1
+                  ? `Table ${seen} of ${total}, scrolls horizontally`
+                  : 'Table, scrolls horizontally',
             },
             children: [child],
           };

@@ -21,6 +21,7 @@
  * detail, and anything Lighthouse-shaped (field data is the metric — §5).
  */
 
+import { readFileSync } from 'node:fs';
 import { SITE_URL } from '../src/data/origin.mjs';
 
 const origin = process.argv[2] ?? SITE_URL;
@@ -67,6 +68,15 @@ check('trailing slash normalises (307 — CHECKLIST §2)', [301, 307, 308].inclu
 r = await req(`${origin}/definitely-not-a-page-${Date.now()}`);
 check('unknown route → real 404', r?.status === 404, `got ${r?.status}`);
 
+// Worker PERMANENT_REDIRECTS, parsed from the source so the live check cannot
+// drift from the map; an empty map asserts nothing.
+const redirectMap = readFileSync('worker/index.ts', 'utf8')
+  .match(/PERMANENT_REDIRECTS:\s*Record<string,\s*string>\s*=\s*\{([\s\S]*?)\}/)?.[1] ?? '';
+for (const [, from, to] of redirectMap.matchAll(/'(\/[^']*)':\s*'([^']+)'/g)) {
+  r = await req(`${origin}${from}`);
+  check(`${from} → 301 ${to}`, r?.status === 301 && new URL(r.headers.get('location'), origin).pathname === to, `got ${r?.status} → ${r?.headers.get('location')}`);
+}
+
 // ── headers (PLAYBOOK §8 "Headers") ────────────────────────────────────────
 r = await req(`${origin}/`);
 const hsts = r?.headers.get('strict-transport-security');
@@ -91,6 +101,29 @@ if (twinUrl) {
 for (const path of ['/favicon.ico', '/robots.txt', '/llms.txt', '/rss.xml', '/sitemap-index.xml', '/.well-known/security.txt']) {
   const res = await req(`${origin}${path}`);
   check(`${path} → 200`, res?.status === 200, `got ${res?.status}`);
+}
+
+// ── answer-engine crawlers get through the edge ────────────────────────────
+// robots.txt permission means nothing if the WAF or a bot-management rule
+// silently 403s the crawler: that failure is invisible in analytics and fatal
+// to being cited (the Sep 2026 discovery-audit frame, OFF-03). AI crawlers identify
+// themselves honestly and do not retry cleverly, so each named UA must get the
+// same 200 a browser gets, on the homepage and on the machine brief. Cloudflare
+// "Bot Fight Mode" and "Block AI bots" are the two toggles that break this.
+const CRAWLERS = {
+  GPTBot: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; GPTBot/1.2; +https://openai.com/gptbot',
+  'OAI-SearchBot': 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot',
+  ClaudeBot: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; ClaudeBot/1.0; +claudebot@anthropic.com)',
+  PerplexityBot: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; PerplexityBot/1.0; +https://perplexity.ai/perplexitybot)',
+  Bingbot: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm) Chrome/116.0.1938.76 Safari/537.36',
+  Googlebot: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Googlebot/2.1; +http://www.google.com/bot.html) Chrome/W.X.Y.Z Safari/537.36',
+};
+for (const [name, ua] of Object.entries(CRAWLERS)) {
+  for (const path of ['/', '/llms.txt']) {
+    const res = await req(`${origin}${path}`, { headers: { 'user-agent': ua } });
+    const challenged = /cf-mitigated|cf-chl/i.test([...(res?.headers ?? [])].map(([k, v]) => `${k}:${v}`).join(' '));
+    check(`${name} fetches ${path} → 200, no challenge`, res?.status === 200 && !challenged, `got ${res?.status}${challenged ? ' (Cloudflare challenge)' : ''}`);
+  }
 }
 
 if (fail) {
