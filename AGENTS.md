@@ -304,7 +304,7 @@ wins any conflict. The rules below are the enforced subset.
 | A URL that must keep working (page moved, folded, or visitors keep typing it) | One row in `worker/index.ts → PERMANENT_REDIRECTS` with a one-line reason, AND the exact path in `wrangler.jsonc → run_worker_first` (`check-parity` fails one without the other; `smoke-worker` asserts the 301) |
 | A blocker only the owner can resolve | Add it to `marketing/DATA-SHEET.md` in the documented format, same commit — `npm run ask` will surface it |
 | Any inline `<script is:inline>` | `npm run build` regenerates the CSP hashes; commit the changed `worker/csp.generated.json` (CI diffs it). Never add an inline `onclick=`-style handler — the CSP generator fails the build on those |
-| Brand colour / favicon.svg | Edit the literal `BRAND_BG` in BOTH `marketing/favicon.mjs` and `marketing/og/render-pages.mjs`, plus `--brand` in `marketing/og/default.html`; then `node marketing/favicon.mjs`, re-run OG cards, `npm run check:contrast` |
+| Brand colour / favicon.svg | Edit the literal `BRAND_BG` in `marketing/favicon.mjs`, the `:root` tokens in `marketing/og/page.html` (they mirror `global.css`), and `--brand` in `marketing/og/default.html`; then `node marketing/favicon.mjs`, `node marketing/og/render.mjs`, re-run the page cards, `npm run check:contrast` |
 | Any vendor or data collection | `src/data/privacy.json` in the same commit |
 | Domain | `src/data/origin.mjs` (one place) |
 | Sheet tabs | `src/data/sheets.config.json` (build) — the worker reads the same file |

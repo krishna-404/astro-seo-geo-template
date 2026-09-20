@@ -171,8 +171,9 @@ informed it and the constraint that bounds it:
 ## 3. Apply
 
 - Tokens first: `src/styles/global.css` `:root` — fonts, steps, colours,
-  bands, radius. Then `marketing/og/default.html` and `marketing/favicon.mjs`
-  / `marketing/og/render-pages.mjs` `BRAND_BG` so the cards and icons follow
+  bands, radius. Then `marketing/og/default.html`, `marketing/og/page.html`
+  (its `:root` mirrors the tokens — the lifted figures are painted by them)
+  and `marketing/favicon.mjs` `BRAND_BG`, so the cards and icons follow
   (SETUP Phase 1 lists every file the brand colour lives in).
 - Composition second: `src/pages/index.astro` chooses its hero pattern and
   panel, the bento's lead card, the one inverted band. Other pages inherit

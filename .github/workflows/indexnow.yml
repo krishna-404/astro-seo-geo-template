@@ -5,7 +5,7 @@ name: IndexNow
 # pages through the sitemap, which is why this is a supplement, not a
 # replacement.
 #
-# Triggers when the CI workflow (which contains the deploy job) has finished
+# When enabled, triggers after the CI workflow (which contains the deploy job) has finished
 # successfully on main — NOT on push. On push it would race the deploy and read
 # the OLD live sitemap, submitting a URL list that misses exactly the page the
 # commit added. The workflow_run trigger plus the script's own live-sitemap

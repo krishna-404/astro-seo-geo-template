@@ -101,7 +101,8 @@ workflow). Date-only YAML (`published: 2026-09-01`) means midnight UTC.
   Phase 4). Bearer-authenticated and rate-limited; validates a blog post
   against a mirror of the blog schema plus the source rules, writes it to an
   `api/post/*` branch through the GitHub API and opens a PR; `GET` reads the
-  PR and the **Publish post** workflow run for its status. The only route
+  PR for its status (queued for the daily run's PR inbox · published ·
+  cancelled). The only route
   that writes anything, and it writes to GitHub, never to the site. Both
   secrets unset = 503 and nothing else changes.
 - Permanent redirects live in ONE map, `PERMANENT_REDIRECTS` in
@@ -302,7 +303,7 @@ serving pages, which is exactly why they get forgotten)
 ## 8. Verification — against the LIVE site, not localhost
 
 **The routing/header items below marked ⚙ run automatically after every
-deploy** (`scripts/smoke-live.mjs`, last step of the deploy job) once
+deploy** (`scripts/smoke-live.mjs`, the last step of `/ship`) once
 `origin.mjs` carries the real domain. They stay listed because this section
 is also the launch-day manual checklist and the smoke test's specification —
 if the script and this list disagree, one of them is wrong. Unmarked items
