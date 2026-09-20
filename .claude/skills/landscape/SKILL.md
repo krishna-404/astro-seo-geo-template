@@ -106,7 +106,10 @@ next, and it should not be anchored on yours.
 ## 3. Put it to the owner
 
 Show the teardowns in one sitting, site by site, the strongest competitor
-first. For each, ask three things and record the answers verbatim:
+first, and ask in the session with `AskUserQuestion` — one call per site
+carries the three questions below, with options built from that site's
+teardown (the claim it makes, the pattern it uses, the gap it leaves) and the
+owner's own reading arriving through "Other". Record the answers verbatim:
 
 - **Do they actually win?** Deals, not awards. The owner knows which
   competitor's name comes up on calls.
@@ -116,7 +119,7 @@ first. For each, ask three things and record the answers verbatim:
   the owner cannot say, that is the finding: positioning is the first
   thing /new-site § Decide has to settle.
 
-Then ask the two questions the set as a whole raises:
+Then ask the two questions the set as a whole raises, in one more call:
 
 - **What does nobody in the category do?** Publish prices, name the
   people, answer the question the buyer types at 11pm, show the product,
@@ -148,7 +151,7 @@ owns it, in the same session, and record where it went in
 | Two rivals' pages heavy with AI tells, and one written well | /onboard-marketing step 8's counter-examples → `VOICE-GUIDE.md § Tone` |
 | The rivals to name in the compare prompts | `marketing/ai-panel.md` prompt set |
 | Any admired or rejected site the session surfaced, with the reason | `marketing/brief.md § 8` |
-| Anything only the owner can answer (which competitor a prospect chose and why, a lost-deal list) | `marketing/DATA-SHEET.md`, a `Q-D` question — never a guess |
+| Anything only the owner can answer (which competitor a prospect chose and why, a lost-deal list) | Asked here first; what they defer goes to `marketing/DATA-SHEET.md` as a `Q-D` question with their words — never a guess, never an unasked question |
 
 ## 5. Revisit
 

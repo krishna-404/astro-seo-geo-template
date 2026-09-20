@@ -29,11 +29,15 @@ becomes a calculator input the reader fills in, never a published figure. No
 customer, logo or testimonial until a real one agrees. Mark anything
 **confidential** and it stays in the internal record.
 
-**Two rules for the engine.** A run never answers a question here by
+**Three rules for the engine.** A run never answers a question here by
 estimating — it may propose an answer in the report's Decisions *with a
-source*, for the owner to confirm. And a blocker a run hits for the first time
+source*, for the owner to confirm. A blocker a run hits for the first time
 is **added** here in the same commit, in this format: a run that says "blocked
-on X" without recording X has lost the finding.
+on X" without recording X has lost the finding. And a question reaches this
+file only after it was put to the owner: in a session with them present, a
+run asks with `AskUserQuestion` and writes down what they deferred, in their
+words — this file is the record of pending answers, never a queue of
+questions nobody asked.
 
 **Format is load-bearing.** `scripts/data-sheet.mjs` parses the `### Q-…`
 headings and their status marks. Keep the shape: heading with an id, a middle

@@ -43,11 +43,13 @@ Before the three decisions below, two conversations that make them cheap:
 `/discover` (the brief — why now, the one job, who signs off, what exists,
 what is off-limits — and the asset intake: logo, colours, fonts with
 licences, screenshots, photography, copy, proof with permission, legal
-identity, access; written to `marketing/brief.md`, every missing asset a
-DATA-SHEET question) and `/landscape` (six to ten sites the buyer compares
-you with, torn down the same way and put to you for a verdict; written to
-`marketing/landscape.md`). Neither touches the repo's config; both are what
-every later phase reads first.
+identity, access; written to `marketing/brief.md`) and `/landscape` (six to
+ten sites the buyer compares you with, torn down the same way and put to you
+for a verdict; written to `marketing/landscape.md`). Both ask you their
+questions in the session, as you run them — only what you defer ("don't
+know", "not yet", "I have to check") becomes a DATA-SHEET question to answer
+later. Neither touches the repo's config; both are what every later phase
+reads first.
 
 Three decisions that are cheap now and unrecoverable later (PLAYBOOK §0):
 

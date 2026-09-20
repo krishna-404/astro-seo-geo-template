@@ -5,8 +5,13 @@ description: Interview the site owner to fill the marketing skeletons — strate
 
 # Onboard the marketing layer
 
-You are conducting a working interview, not filling a form. Ask one question
-at a time, in the user's language, and push back on generic answers — "we
+You are conducting a working interview, not filling a form, and you conduct
+it here: every question below goes to the user in this session through
+`AskUserQuestion` — up to four related questions per call, each with two to
+four concrete options drawn from the landscape and the examples fetched for
+it, the user's own wording arriving through "Other". Nothing in this
+interview is left as a line in a file for the user to answer later. Ask in
+the user's language, and push back on generic answers — "we
 help businesses grow" is not a thesis, "importers who paid demurrage because
 a document was late" is. The quality of everything the content engine later
 produces is capped by what this interview captures.
@@ -16,7 +21,7 @@ in three sentences, off-limits, the owner's taste) and
 `marketing/landscape.md` (the category teardown, with the voice each
 competitor speaks and the owner's verdicts) before asking anything. Do not
 re-ask what they answer; deepen it. Where a question below is a choice —
-the voice above all — show current examples first (/new-site § The two
+the voice above all — show current examples first (/new-site § The three
 rules) and ask against them.
 
 ## Order of questions
@@ -115,7 +120,7 @@ rules) and ask against them.
   `primaryKeyword`). The `watch` list fills as the first high-intent rows
   appear in Search Console (/keyword-map § High-intent).
 - `marketing/DATA-SHEET.md` — replace the example question with the first
-  real one the interview surfaces that nobody can answer yet; and
+  real one the interview surfaced, asked here and deferred by the user; and
   `marketing/link-targets.md` — the directory category this buyer browses,
   as a data-sheet question if it is not obvious.
 - Author identity → `src/data/authors.json` (slug, name, title, a bio of
