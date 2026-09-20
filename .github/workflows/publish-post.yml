@@ -1,0 +1,138 @@
+# Publish post — the build-side half of the posts API (worker/posts.ts).
+#
+# The worker validates a submitted post, writes it to an `api/post/<slug>-<stamp>`
+# branch and opens a PR. A Worker cannot build, verify or deploy, so this
+# workflow does: it regenerates what a new page needs (lastmod, inventory, the
+# OG card), runs the same verify battery every push runs, squash-merges on
+# green, deploys from the merged commit, purges the edge cache and runs the
+# live smoke. Red at any step = the PR stays open with the log, the caller's
+# GET /api/posts/<n> answers `failed`, and the daily cadence run's PR inbox
+# picks it up.
+#
+# Three things that are deliberate:
+#   - It deploys ITSELF after the merge. A merge made with GITHUB_TOKEN does
+#     not trigger ci.yml's push run (GitHub does not fire workflows for events
+#     the token created), so waiting for the main deploy job would wait forever.
+#   - The prep commit is pushed back to the PR branch with GITHUB_TOKEN, which
+#     for the same reason does not re-trigger this workflow — no loop.
+#   - The deploy step soft-skips (green) while CLOUDFLARE_API_TOKEN is unset,
+#     exactly like ci.yml: the post is then merged and waits for the next
+#     session deploy; the status endpoint reports `published` only on success,
+#     so a skipped deploy reads as `running` until a deploy happens. SETUP.md
+#     Phase 4 explains what the owner has to set for the end-to-end path.
+name: Publish post
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: publish-post-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: startsWith(github.head_ref, 'api/post/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # The first build: types, zod, llms.txt, twins, pagefind, CSP — and dist/
+      # for the card renderer, which reads static-page titles from built HTML.
+      - name: Build
+        run: npm run build
+
+      # What a new page needs that the author cannot supply: its sitemap date,
+      # its row in the generated inventory, and its social card. One command
+      # per generated surface, all in the repo's own tooling — never by hand.
+      # Installs are batched into ONE npm install --no-save (PLAYBOOK trap 68).
+      - name: Regenerate lastmod, inventory and the OG card
+        run: |
+          npm run lastmod
+          npm run inventory
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+          node marketing/og/render-pages.mjs
+
+      - name: Commit the publish prep back to the branch
+        run: |
+          git config user.name "publish-post[bot]"
+          git config user.email "publish-post@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "nothing to prep"
+          else
+            git commit -m "Publish prep: lastmod, inventory, OG card"
+            git push origin HEAD:${{ github.head_ref }}
+          fi
+
+      # The same battery every contributor's push runs. Red = the PR stays
+      # open with this log; nothing merges.
+      - name: Verify
+        run: npm run verify
+
+      - name: Squash-merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr merge ${{ github.event.pull_request.number }} \
+            --squash --delete-branch \
+            --subject "${{ github.event.pull_request.title }} (#${{ github.event.pull_request.number }})" \
+            --body "Merged by the Publish post workflow after a green verify run."
+
+      # ── deploy from the merged commit ────────────────────────────────────
+      - name: Check deploy is configured
+        id: gate
+        run: |
+          if [ -n "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "CLOUDFLARE_API_TOKEN is not set — merged, not deployed; the next session deploy publishes it (SETUP.md Phase 3)."
+          fi
+
+      - name: Check out the merged main
+        if: steps.gate.outputs.configured == 'true'
+        run: |
+          git fetch origin main
+          git checkout --detach FETCH_HEAD
+
+      # Never deploy a dist/ built from a different commit than what merged.
+      - name: Build the merged commit
+        if: steps.gate.outputs.configured == 'true'
+        run: npm run build:ci
+
+      - uses: cloudflare/wrangler-action@v3
+        if: steps.gate.outputs.configured == 'true'
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      # CLOUDFLARE_ZONE_ID is a repository VARIABLE (Settings → Variables), not
+      # a secret — it is on the zone's overview page. Unset = skip the purge;
+      # pages self-refresh within 5 minutes (max-age=300).
+      - name: Purge the edge cache
+        if: steps.gate.outputs.configured == 'true' && vars.CLOUDFLARE_ZONE_ID != ''
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
+        run: npm run purge || echo "purge failed — pages self-refresh within 5 minutes (max-age=300)"
+
+      - name: Smoke test the live site
+        if: steps.gate.outputs.configured == 'true'
+        run: node scripts/smoke-live.mjs

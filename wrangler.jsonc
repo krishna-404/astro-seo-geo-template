@@ -42,10 +42,20 @@
   // The worker treats an unset/empty CONTACT_SCRIPT_ID as "feature off": the
   // form still redirects to /contact/thanks and nothing crashes — a broken
   // feature, never a broken site (the empty-default rule).
+  // Secrets are never set here:
+  //   npx wrangler secret put CONTACT_SCRIPT_ID   ← Google Apps Script deployment id
+  //   npx wrangler secret put POSTS_API_TOKEN     ← bearer callers of /api/posts present
+  //   npx wrangler secret put GITHUB_POSTS_TOKEN  ← fine-grained PAT, Contents + Pull
+  //                                                  requests read/write on GITHUB_REPO
+  // A missing secret turns its feature off; nothing crashes (the empty-default rule).
   "vars": {
     // e.g. "https://umami.example.com" — enables the same-origin analytics
     // proxy at /s.js and /api/send. Empty string = proxy disabled.
-    "UMAMI_UPSTREAM": ""
+    "UMAMI_UPSTREAM": "",
+    // The posts API (worker/posts.ts) writes here: "owner/repo" and the branch
+    // it opens PRs against. Empty = the API answers 503.
+    "GITHUB_REPO": "",
+    "GITHUB_BASE": "main"
   },
   // /api/contact budget — the same 10 req/min/IP nginx enforced. Per-edge-
   // location counting (approximate, which is fine: this protects quotas, it
@@ -56,6 +66,13 @@
     {
       "name": "CONTACT_RATE",
       "namespace_id": "1001",
+      "simple": { "limit": 10, "period": 60 }
+    },
+    // /api/posts — each accepted call opens a branch and a PR, so this is a
+    // budget on GitHub writes as much as on worker invocations.
+    {
+      "name": "POSTS_RATE",
+      "namespace_id": "1002",
       "simple": { "limit": 10, "period": 60 }
     }
   ],

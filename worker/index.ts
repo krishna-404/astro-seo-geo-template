@@ -29,6 +29,11 @@
  *      a 301 instead of the 404 page: a URL that once existed and reached a
  *      sitemap or an IndexNow ping, or one visitors keep typing that the site
  *      never had. Empty until a site needs one.
+ *   7. POST /api/posts, GET /api/posts/<n> — the posts API (worker/posts.ts):
+ *      external automation submits a blog post; the worker validates it,
+ *      writes it to a branch and opens a PR; the publish workflow verifies,
+ *      merges and deploys. The only route that writes anything, and it writes
+ *      to GitHub, never to the site. Off until its two secrets are set.
  *
  * Everything else falls through to the static asset store, where requests are
  * free and unlimited. Keep it that way: wrangler.jsonc's run_worker_first list
@@ -37,8 +42,9 @@
 
 import sheetsConfig from '../src/data/sheets.config.json';
 import cspGenerated from './csp.generated.json';
+import { handlePosts, type PostsEnv } from './posts';
 
-interface Env {
+interface Env extends PostsEnv {
   ASSETS: { fetch(request: Request | string): Promise<Response> };
   /** Google Apps Script deployment id — a secret (`wrangler secret put CONTACT_SCRIPT_ID`).
    *  Empty/unset = form proxy off; the visitor still gets the thanks page. */
@@ -208,6 +214,11 @@ export default {
           new Headers({ location: new URL('/contact/thanks', url).toString() })
         ),
       });
+    }
+
+    // ── 1b. Posts API (worker/posts.ts) ──────────────────────────────────
+    if (pathname === '/api/posts' || pathname.startsWith('/api/posts/')) {
+      return handlePosts(request, env, url, withSecurityHeaders);
     }
 
     // ── 2. Published-sheet data for the client-side silent refresh ───────
