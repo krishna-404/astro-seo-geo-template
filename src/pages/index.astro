@@ -3,10 +3,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { SITE } from '../data/site';
 
 /**
- * Homepage. The hero is deliberately plain: h1 from SITE.tagline, lede from
- * SITE.description — so pointing the template at a new brand rewrites this
- * page from site.ts without touching markup. The sections below demonstrate
- * the band/card/FAQ patterns the rest of the site reuses.
+ * Homepage. The h1 comes from SITE.tagline and the lede from SITE.description,
+ * so pointing the template at a new brand rewrites this page from site.ts
+ * without touching markup. The composition is the template's default design
+ * direction — editorial hero, bento grid, one inverted band — built from the
+ * expressive layer in global.css so it can be re-skinned in tokens; the
+ * /design-direction skill is where a new site decides its own.
  */
 
 const faq = [
@@ -55,31 +57,64 @@ const schema = [
 ];
 ---
 
-<BaseLayout title={`${SITE.name} — ${SITE.tagline}`} description={SITE.description} schema={schema}>
-  <!-- Hero. One h1 per page, and it comes from site.ts. -->
-  <section class="band band--white hero">
-    <div class="wrap">
-      <p class="eyebrow">{SITE.name}</p>
-      <h1>{SITE.tagline}</h1>
-      <p class="lede">{SITE.description}</p>
-      <div class="btn-row">
-        <a
-          class="btn btn--primary"
-          href="/contact"
-          data-umami-event="cta-contact"
-          data-umami-event-place="home-hero">Get in touch</a
-        >
-        <a
-          class="btn"
-          href="/about"
-          data-umami-event="cta-about"
-          data-umami-event-place="home-hero">How the template works</a
-        >
+<BaseLayout
+  title={`${SITE.name} — ${SITE.tagline}`}
+  description={SITE.description}
+  schema={schema}
+  ogImage={SITE.ogImage}
+>
+  <!--
+    ogImage is explicit: the homepage shares as the BRAND card
+    (marketing/og/default.html → public/og/default.png), never as a per-page
+    title card. BaseLayout's precedence is "a card on disk for the route wins",
+    so a page that must use the brand card has to say so. check-invariants
+    fails a build whose homepage points anywhere else.
+  -->
+  <!--
+    Hero: the editorial pattern from the expressive layer (global.css). One
+    oversized h1 from SITE.tagline, a narrow lede, two measured CTAs — and a
+    panel beside it that shows the site's own doctrine as a numbered rail, so
+    the page has a second visual weight without a stock illustration. The
+    design pass (/design-direction) swaps the panel for whatever this brand's
+    proof is: a product screen, a figure from facts.json, a photograph.
+  -->
+  <section class="band band--white hero hero--editorial">
+    <div class="wrap hero__grid">
+      <div>
+        <p class="eyebrow">{SITE.name}</p>
+        <h1>{SITE.tagline}</h1>
+        <p class="lede">{SITE.description}</p>
+        <div class="btn-row">
+          <a
+            class="btn btn--primary"
+            href="/contact"
+            data-umami-event="cta-contact"
+            data-umami-event-place="home-hero">Get in touch</a
+          >
+          <a
+            class="btn"
+            href="/about"
+            data-umami-event="cta-about"
+            data-umami-event-place="home-hero">How the template works</a
+          >
+        </div>
       </div>
+      <aside class="card hero__panel" aria-labelledby="contract-heading">
+        <p class="eyebrow">The page contract</p>
+        <h2 id="contract-heading" class="hero__panel-title">Every page obeys the same five links</h2>
+        <ol class="rail">
+          <li><strong>One primary query</strong> — a page with no query is invisible.</li>
+          <li><strong>One search intent</strong> — a sales page on a definition query ranks for nothing.</li>
+          <li><strong>The page type that matches</strong> — glossary, money page, comparison, tool.</li>
+          <li><strong>Wired into a cluster</strong> — a page nothing links to is stranded.</li>
+          <li><strong>Carrying the answer-engine levers</strong> — the answer first, cited, quotable.</li>
+        </ol>
+      </aside>
     </div>
   </section>
 
-  <!-- Three-card grid: the standard "what you get" section pattern. -->
+  <!-- Bento: one lead card spanning four of six columns, then four supporters
+       — 4+2 over 2+2+2 on desktop. The asymmetry is the design. -->
   <section class="band band--cream">
     <div class="wrap">
       <div class="section-head">
@@ -90,30 +125,42 @@ const schema = [
           already built and tested.
         </p>
       </div>
-      <div class="grid grid--3">
-        <div class="card">
-          <h3>SEO machinery</h3>
+      <div class="bento">
+        <div class="card card--feature card--ink bento__wide reveal">
+          <p class="eyebrow">SEO machinery</p>
+          <h3>One layout emits every signal</h3>
           <p>
             Canonical URLs, Open Graph tags, JSON-LD (Organization, Person, BlogPosting,
-            DefinedTerm, FAQPage, BreadcrumbList), sitemap and RSS — all emitted from one
-            layout and the collection templates.
+            DefinedTerm, FAQPage, ItemList, BreadcrumbList), sitemap and RSS — from one
+            layout and the collection templates, so no page can forget one.
           </p>
         </div>
-        <div class="card">
-          <h3>AEO &amp; GEO surfaces</h3>
+        <div class="card card--feature reveal">
+          <p class="eyebrow">Checked, not asked</p>
+          <h3>Three rungs</h3>
+          <p>Pre-commit, pre-push, CI — the same scripts at each, so they cannot disagree.</p>
+        </div>
+        <div class="card card--feature reveal">
+          <p class="eyebrow">AEO &amp; GEO</p>
+          <h3>The answer, first</h3>
           <p>
-            Every entry front-loads its answer with a required <code>tldr</code>, glossary
-            terms won't build without sources, and <a href="/llms.txt">llms.txt</a>,
-            <a href="/llms-full.txt">llms-full.txt</a> and <a href="/for-llms">/for-llms</a>
-            are generated from the same content at build time.
+            Every entry front-loads a required <code>tldr</code>; glossary terms will not
+            build without sources; <a href="/llms.txt">llms.txt</a>,{' '}
+            <a href="/llms-full.txt">llms-full.txt</a> and <a href="/for-llms">/for-llms</a>{' '}
+            are generated from the same content.
           </p>
         </div>
-        <div class="card">
-          <h3>Zero-cost hosting</h3>
+        <div class="card card--feature card--brand reveal">
+          <p class="eyebrow">Measured</p>
+          <h3>Colour clears AA on every band</h3>
+          <p>A sweep of every text node on every built page fails the build under 4.5:1.</p>
+        </div>
+        <div class="card card--feature reveal">
+          <p class="eyebrow">Zero-cost hosting</p>
+          <h3>Static files, no server</h3>
           <p>
-            Static files, no server, no database. The contact form posts to a Google Apps
-            Script and lands in a Sheet you own; analytics is cookieless by default, so
-            there is no consent banner to maintain.
+            The form lands in a Sheet you own; analytics is cookieless by default, so
+            there is no consent banner until you add a vendor that needs one.
           </p>
         </div>
       </div>
@@ -140,16 +187,18 @@ const schema = [
     </div>
   </section>
 
-  <!-- Final CTA band. -->
-  <section class="band band--blue">
+  <!-- Final CTA on the inverted band: the one dark moment on the page. -->
+  <section class="band band--ink">
     <div class="wrap">
       <div class="section-head">
+        <p class="eyebrow">Next</p>
         <h2>Make it yours</h2>
         <p class="lede">
-          Read how the pieces fit, then replace this copy with your own pitch.
+          Read how the pieces fit, then replace this copy with your own pitch — and run the
+          design pass before anyone sees it.
         </p>
       </div>
-      <div class="btn-row btn-row--center">
+      <div class="btn-row">
         <a
           class="btn btn--primary"
           href="/contact"
@@ -168,11 +217,19 @@ const schema = [
 </BaseLayout>
 
 <style>
-  .hero {
-    padding-block: 4rem 4.5rem;
+  .hero__panel {
+    padding: 1.5rem;
   }
-  .hero .lede {
-    max-width: 38em;
+  .hero__panel-title {
+    font-size: var(--step-2);
+    margin-bottom: 1rem;
+  }
+  .hero__panel .rail li {
+    font-size: var(--step--1);
+    color: var(--ink-2);
+  }
+  .hero__panel .rail strong {
+    color: var(--ink);
   }
   .faq {
     display: grid;
@@ -187,8 +244,5 @@ const schema = [
   }
   .faq details p {
     margin: 0.75rem 0 0;
-  }
-  .btn-row--center {
-    justify-content: center;
   }
 </style>
