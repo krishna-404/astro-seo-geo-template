@@ -115,6 +115,23 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   www→apex Redirect Rule, Email Obfuscation OFF, Rocket Loader OFF.
 - ⬜ **Custom domain attach + www handling** — per site, PLAYBOOK §6.
 
+- ✅ **Posts API on the worker** (`worker/posts.ts`,
+  `.github/workflows/publish-post.yml`, Sep 2026): the one door for external
+  automation to add a post. The worker does only what is mechanical —
+  constant-time bearer check, rate limit, a mirror of the blog schema plus the
+  rules the build would catch later (author registry, SERP clamp, description
+  band, two in-body links, no second h1, no MDX imports), a branch and a PR
+  through the GitHub API, a `202` with a status URL. A Worker cannot build or
+  deploy, so the workflow does: regenerate lastmod/inventory/OG card, verify,
+  squash-merge, then build the MERGED commit and deploy — deploying itself
+  because a merge made with GITHUB_TOKEN never triggers ci.yml. Both secrets
+  unset = 503 and nothing else changes. The judgement half (interlinks,
+  glossary, keyword map, voice) is the daily cadence's PR inbox, never the API.
+  Rejected: a runtime store the pages read from (breaks the static build, the
+  zod gates, twins, llms.txt, cards and search) and a synchronous
+  "deployed-or-error" answer (three to five minutes of build cannot live
+  inside one HTTP request).
+
 ## 3. Data
 
 - ✅ **Every published number lives in `src/data/facts.json` with a `source`
@@ -558,6 +575,13 @@ dilutes the battery.
   **canonicals self-consistent** (extensionless, no trailing slash,
   resolving back to the very file that carries them) · **robots.txt has an
   absolute Sitemap line, rss.xml well-formed**.
+- ✅ **The posts API is smoke-tested short of a write** (`smoke-worker.mjs`,
+  Sep 2026): `wrangler dev` runs with a smoke bearer and a repo var but NO
+  GitHub token, so the test can assert 405, 401 (missing and wrong bearer),
+  400 on non-JSON, 400 naming every failure on a thin payload (author
+  registry and in-body links among them), 400 on a title the SERP clamp
+  would hard-cut, and 503 on a VALID payload — proving validation passed and
+  the write stopped at the missing token, with no GitHub request ever made.
 - ✅ **Worker behavioral smoke test** (`scripts/smoke-worker.mjs`) — the
   worker is the only code with logic and tsc proves nothing about behavior.
   `wrangler dev` against the built dist, asserting every behavior it exists

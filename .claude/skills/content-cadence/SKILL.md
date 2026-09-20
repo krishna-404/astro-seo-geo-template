@@ -63,20 +63,14 @@ still existed).
 
 **A manual run is never skipped.** If a human typed `/content-cadence`, run it
 in full no matter how many runs have already gone out today — they asked for a
-run; give them one. The only thing that still binds is the mechanical cap,
-which fails closed regardless of who fired the run: one post per date, five
-per ISO week (`check-source-rules.mjs`). On a day that already carries a post,
-a run that writes publishes an uncapped piece (a glossary entry, a
-coverage-layer page, a FAQ block on a money page) instead of skipping the
-writing. Say in the report which cap redirected it.
+run; give them one. The only things that still bind are the mechanical
+quality gates in `check-source-rules.mjs` — schema, sources, voice, in-body
+links — which fail closed regardless of who fired the run.
 
-**The post budget, whatever the schedule.** Before drafting any post, count
-the posts already dated in the current ISO week — including future-dated ones
-on main — and check today's date is free. High-intent supporting pieces have
-first claim on the week's slots; everything else takes a slot only if one
-remains, otherwise ships as an uncapped type. A schedule that fires on all
-seven days cannot publish seven posts: weekend runs publish glossary entries
-or coverage-layer pages, and buy depth, not volume.
+**No post caps.** There is no per-date or per-week limit on posts; a run
+writes what its fuel supports, high-intent pieces first, and dates each piece
+with the real day it goes live. Weekend runs still lean towards glossary and
+coverage-layer pages because that is usually where the backlog is.
 
 ## Daily-lite (every run)
 
@@ -85,6 +79,27 @@ or coverage-layer pages, and buy depth, not volume.
    prioritised plan. Reuse its output; do not duplicate the pull. Read the
    whole query set and the page-by-query block (`pageQueries`), not the top
    rows: on a zero-click site the top rows are noise.
+1b. **PR inbox.** List the repository's open pull requests before anything
+   else is written, and work each one:
+   - **Posts from the API** (`api/post/*` branches, label `api-post`,
+     frontmatter `via: posts-api` — the posts API in `worker/posts.ts`, if
+     the site has enabled it). Read the post as a reviewer would: does the
+     `tldr` answer, do the sources hold, is the `proprietary` claim real,
+     does the voice pass VOICE-GUIDE's judgement checklist. Then do the
+     judgement half the API cannot: an in-body link to it from an *indexed*
+     page on its target anchor, glossary entries for terms it leans on, its
+     row in `marketing/keyword-map.md`, a title and description in the
+     searcher's words when Search Console already shows the phrasing. Push
+     those to the branch and run `npm run verify`. Whether the run then
+     **merges** is the site's decision in STRATEGY.md: a site whose cadence
+     commits to `main` merges green posts that clear the bar and deploys
+     them with its ship step; a PR-review site leaves them ready-for-review
+     with the updates pushed and says so in the report.
+   - **Every other open PR** (a previous run's, a human's, a fix branch):
+     the same rule — merge when the site allows it, the PR is the site's own
+     work, verify is green and the change is confident, small and in scope;
+     otherwise leave it and put it in Decisions with what would unblock it.
+     Never merge over a red verify; never rewrite someone else's branch.
 2. **High-intent first.** Take the `searchConsole.highIntent` block from the
    snapshot (★ rows are watch-list terms; `notShowing` lists watch terms with
    no impressions yet) and work it in this order, before step 3:
@@ -110,8 +125,8 @@ or coverage-layer pages, and buy depth, not volume.
      piece first: a category guide, a spreadsheet-vs-software page, a "how to
      choose" page, a comparison page (every cell verified), or a FAQ block on
      the money page in the searcher's words. Pick from `marketing/keyword-map.md
-     § High-intent` backlog order; the post budget decides whether it ships
-     as a post or an uncapped type.
+     § High-intent` backlog order; it ships as a post when the fuel is a
+     post's worth, otherwise as the smaller type.
    - **(d) Record it.** The report's High-intent section names each query,
      its position (previous → current), the page, and what this run did.
      "Nothing today, because X" is a valid line; silence is not.
@@ -204,8 +219,7 @@ or coverage-layer pages, and buy depth, not volume.
    sweep of the latest posts for newly landed tells).
 11. **Writing run.** Run /write-content (its own PR: drafts with spread
    dates, page updates, glossary upkeep, interlinks, news-log entry). The
-   step-2c high-intent supporting piece is drafted first and takes the first
-   post slot. Its weekly ICP social sweep runs here in full — read where the
+   step-2c high-intent supporting piece is drafted first. Its weekly ICP social sweep runs here in full — read where the
    ICP posts, harvest pain-points and the ICP's own keyword phrasing, log
    them to news-log (the daily scan only notes candidates). The fuel rule
    holds — field notes are an add-on, never a gate: news, ICP-social and
@@ -309,6 +323,11 @@ words, the action first, the tables last. Compose markdown in this order:
    with its anchor, the supporting piece with its URL, or "nothing today,
    because …"). Mandatory even when every line says "no change" — the owner
    reads it as the buyer's-eye view of the site.
+3a. **Pull requests** — one line per PR the inbox found: its title, where it
+   came from (API post, previous run, human), what this run did (merged with
+   which updates; pushed updates and left ready for review; left open,
+   because …), and the live URL for anything now published. Omit only when
+   there were no open PRs.
 3b. **Generative AI** — mandatory, even when it says the export is missing.
    Four lines then a table: AI impressions in the newest export (previous
    export → now, both dated) and how many pages were shown; visitors who
@@ -323,7 +342,7 @@ words, the action first, the tables last. Compose markdown in this order:
 4. **What changed on the site** — the new piece first (URL, primary query,
    the fuel it came from), then one bullet per improvement: the page, what
    changed, the query or number it targets. If nothing was written, one line
-   saying which source or cap blocked it.
+   saying which source blocked it.
 5. **Do this today** — a numbered list. First the 10 request-indexing URLs
    as bare URLs, one per list item (`scripts/report-html.mjs` turns each into
    an "Inspect in Search Console" button); then the PRs awaiting merge; then

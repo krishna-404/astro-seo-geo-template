@@ -172,6 +172,21 @@ wins any conflict. The rules below are the enforced subset.
   gets an answer-shaped `tldr`, a FAQ block in the searcher's words and named
   sources. The monthly AI prompt panel lives in `marketing/ai-panel.md` and is
   never fabricated. `npm run audit:discovery` scores the discovery levers.
+- **Posts may arrive through the API, and the daily run owns the PR inbox.**
+  `POST /api/posts` (`worker/posts.ts`, SETUP Phase 4) validates a post and
+  opens a PR; the **Publish post** workflow verifies, merges and deploys. The
+  API does only what is mechanical. The daily cadence run lists open PRs,
+  reviews every API post (tldr, sources, proprietary claim, voice), does the
+  judgement half — an in-body link from an indexed page, glossary entries,
+  the keyword-map row, the snippet check — and merges where STRATEGY.md's
+  merge model allows; a PR it will not merge is named in the report with the
+  reason.
+- **Decisions are made against current references, never from memory.**
+  Positioning, design, voice, schema, consent, infrastructure: before a
+  decision is put to the owner, fetch what the best sites and the current
+  guidance do today and show three to five concrete examples with a reading
+  of each (`/new-site` § The two rules; `/design-direction` § 1). Record the
+  examples shown with the decision in the file that owns it.
 - **What the engine cannot find out becomes a question, never an estimate.**
   `marketing/DATA-SHEET.md` holds the open questions only the owner can answer,
   `marketing/link-targets.md` the listings a human has to claim; `npm run ask`
@@ -187,10 +202,8 @@ wins any conflict. The rules below are the enforced subset.
   on anything factual; `tldr` front-loads the answer (that's the GEO lever
   with actual evidence behind it — alongside citations, quotes and
   statistics; keyword stuffing measurably hurts).
-- Blog cadence and interlinking (enforced by `check-source-rules`): no two
-  posts share a `published` date and no ISO week carries more than 5 — a
-  same-day batch reads as generated content to anyone who checks. Every post
-  carries at least 2 contextual in-body internal links, anchored on the
+- Interlinking (enforced by `check-source-rules`): every post carries at
+  least 2 contextual in-body internal links, anchored on the
   phrase a searcher types ("goes to demurrage", not "click here"); a
   generated related-posts footer does not count. Site-wide, the link graph
   is also checked (`check-link-graph`): no orphan content pages (an
@@ -200,6 +213,12 @@ wins any conflict. The rules below are the enforced subset.
   static check cannot see — that a new page's inbound link comes from an
   *already-indexed* page, anchored on its target keyword — is worked at cadence
   time from Search Console (site-blueprint § 3; /write-content § Interlink).
+- No volume cap on posts. `published` is the real date a piece went live;
+  several posts on one day are fine when each carries its own fuel. What
+  reads as generated content is a thin post, not a dated one, so the gates
+  are the schema, the sources, the `proprietary` field, the voice check and
+  the in-body links — never a count. (The ancestor site enforced one post
+  per date and five per ISO week until 20 Sep 2026 and removed both.)
 - The voice standard has two halves. Mechanical: `npm run check:voice`
   enforces `src/data/voice.json` (banned AI-tell vocabulary and shapes,
   em-dash density, stacked bold lead-ins, Title Case headings) at all three

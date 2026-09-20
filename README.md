@@ -94,7 +94,9 @@ marketing/       human-run: favicon gen, OG cards, apps-script source ·
                  what it is waiting on: DATA-SHEET (open questions, no answers),
                  link-targets (listings a human claims), channel-gaps (what is
                  deliberately not done off-site) · insights/ (dated snapshots)
-.claude/skills/  the content engine: onboard-marketing · design-direction
+.claude/skills/  the content engine: new-site (the whole setup as a
+                 conversation, every decision with live examples) ·
+                 onboard-marketing · design-direction
                  (the site's own look, from awwwards-class references, inside
                  the constraints) · keyword-map · interview · write-content ·
                  refresh-anti-ai-rules · insights-review · content-cadence

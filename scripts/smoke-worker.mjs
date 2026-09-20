@@ -45,7 +45,12 @@ if (!blogSlug) {
   process.exit(1);
 }
 
-const wrangler = spawn('npx', ['wrangler', 'dev', '--port', String(PORT)], {
+// POSTS_API_TOKEN is set for the run so the posts API's auth and validation
+// paths can be exercised; GITHUB_POSTS_TOKEN is deliberately NOT, so a valid
+// payload stops at the 503 "nothing can be written" answer and no GitHub
+// request is ever made from a smoke test. GITHUB_REPO is set too, or the 503
+// would fire one step earlier and hide the validation result.
+const wrangler = spawn('npx', ['wrangler', 'dev', '--port', String(PORT), '--var', 'POSTS_API_TOKEN:smoke-token', '--var', 'GITHUB_REPO:example/example'], {
   stdio: ['ignore', 'pipe', 'pipe'],
   detached: true, // its own process group, so cleanup kills workerd children too
 });
@@ -96,6 +101,41 @@ check(
 );
 r = await get('/api/contact');
 check('GET /api/contact → 405 + Allow: POST', r.status === 405 && r.headers.get('allow') === 'POST', `got ${r.status}`);
+
+// ── 1b. posts API (worker/posts.ts) ────────────────────────────────────────
+const postsAuth = { authorization: 'Bearer smoke-token', 'content-type': 'application/json' };
+r = await get('/api/posts');
+check('GET /api/posts → 405 + Allow: POST', r.status === 405 && r.headers.get('allow') === 'POST', `got ${r.status}`);
+r = await get('/api/posts', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+check('POST /api/posts without a bearer → 401', r.status === 401 && /bearer/i.test(r.headers.get('www-authenticate') ?? ''), `got ${r.status}`);
+r = await get('/api/posts', { method: 'POST', headers: { ...postsAuth, authorization: 'Bearer wrong' }, body: '{}' });
+check('POST /api/posts with the wrong bearer → 401', r.status === 401, `got ${r.status}`);
+r = await get('/api/posts', { method: 'POST', headers: postsAuth, body: 'not json' });
+check('POST /api/posts with a non-JSON body → 400', r.status === 400, `got ${r.status}`);
+r = await get('/api/posts', { method: 'POST', headers: postsAuth, body: JSON.stringify({ title: 'x' }) });
+let j = await r.json();
+check('POST /api/posts with a thin payload → 400 naming every failure', r.status === 400 && Array.isArray(j.errors) && j.errors.length >= 5, `got ${r.status}: ${JSON.stringify(j).slice(0, 120)}`);
+check('…including the author registry and the in-body-link rules', j.errors?.some((e) => /author/.test(e)) && j.errors?.some((e) => /body/.test(e)), JSON.stringify(j.errors).slice(0, 200));
+const { authors } = JSON.parse(readFileSync('src/data/authors.json', 'utf8'));
+const validPost = {
+  title: 'Smoke test post that never publishes anywhere',
+  description: 'A payload the smoke test sends to prove validation passes and the write stops at the missing GitHub token, never touching GitHub.',
+  tldr: 'This post exists only inside scripts/smoke-worker.mjs and is never written to the repository or the site.',
+  author: { name: authors[0].name, title: authors[0].title, sameAs: authors[0].sameAs },
+  proprietary: 'proprietary-numbers',
+  sources: [{ label: 'The smoke test itself' }],
+  body: ('## A heading\n\nA paragraph that links to [a glossary entry](/glossary/core-web-vitals) and to [the blog](/blog/how-the-seo-machinery-works) so the in-body link rule passes. ').repeat(8),
+};
+r = await get('/api/posts', { method: 'POST', headers: postsAuth, body: JSON.stringify(validPost) });
+j = await r.json();
+check('POST /api/posts with a valid payload and no GitHub token → 503, validated', r.status === 503 && j.slug === 'smoke-test-post-that-never-publishes-anywhere', `got ${r.status}: ${JSON.stringify(j).slice(0, 120)}`);
+r = await get('/api/posts', { method: 'POST', headers: postsAuth, body: JSON.stringify({ ...validPost, title: 'A title that is far too long for the SERP and has no clause the clamp could drop cleanly' }) });
+j = await r.json();
+check('…a title the SERP clamp would hard-cut → 400', r.status === 400 && j.errors?.some((e) => /clamp/.test(e)), JSON.stringify(j.errors).slice(0, 160));
+r = await get('/api/posts/12');
+check('GET /api/posts/<n> without a bearer → 401', r.status === 401, `got ${r.status}`);
+r = await get('/api/posts/12', { headers: postsAuth });
+check('GET /api/posts/<n> with no GitHub token → 503', r.status === 503, `got ${r.status}`);
 
 // ── 2. sheet data ──────────────────────────────────────────────────────────
 r = await get('/api/data/definitely-not-a-tab');
