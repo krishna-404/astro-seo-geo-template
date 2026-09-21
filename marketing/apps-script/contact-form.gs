@@ -27,22 +27,55 @@
  * 3. IT NEVER THROWS. An uncaught exception in doPost returns Google's own
  *    error page, on a script.googleusercontent.com URL, to someone who was
  *    trying to buy something. Every path is wrapped.
+ *
+ * 4. IT ASKS FOR ONE SHEET, NOT THE DRIVE ACCOUNT. This script is meant to be
+ *    created from inside the spreadsheet (Extensions -> Apps Script), which
+ *    binds it to that file, and it reaches the file with getActiveSpreadsheet()
+ *    rather than openById(). That one choice is the difference between a
+ *    consent screen that says "this spreadsheet" and one that says every
+ *    spreadsheet in the account: openById() cannot run under the narrow
+ *    .../auth/spreadsheets.currentonly scope, so using it forces the
+ *    account-wide .../auth/spreadsheets scope on the person clicking Allow.
+ *
+ *    The scopes are PINNED in appsscript.json next to this file. Pin them or
+ *    the fix does not hold: left to itself Apps Script infers scopes by
+ *    scanning the source, and it infers broadly. The two it needs are
+ *      https://www.googleapis.com/auth/spreadsheets.currentonly  (this sheet)
+ *      https://www.googleapis.com/auth/script.send_mail          (send as you)
+ *    Neither one grants Drive. Nothing here reads a second file, so nothing
+ *    here needs a Drive scope; if a future change adds one, that is the moment
+ *    to ask whether it is worth the prompt it will cause.
  * ------------------------------------------------------------------------
  */
 
 /**
  * ─── EDIT FOR YOUR SITE ─────────────────────────────────────────────────────
  * Apps Script cannot import site.ts, so the values it needs live here. Change:
- *   SHEET_ID   — the spreadsheet this script writes to
  *   NOTIFY_TO  — where enquiry emails go
  *   NOTIFY_BCC — colleagues copied on every enquiry
  *   THANKS     — your live thank-you page URL
  * plus the 'Example Co' placeholder in the email subjects (sendNotification,
  * lastResort, selfTest) and the doGet() title.
+ *
+ * SHEET_ID is deliberately NOT on that list — it stays empty so the script
+ * writes to the sheet it is bound to and asks for that sheet only. See rule 4.
  */
 
-/** The spreadsheet's ID — the long string in its URL between /d/ and /edit. */
-var SHEET_ID = 'PASTE_THE_SPREADSHEET_ID_HERE';
+/**
+ * NORMALLY EMPTY — leave it empty. See design rule 4 above.
+ *
+ * Empty means "the spreadsheet this script is bound to", which is what you get
+ * by opening Extensions -> Apps Script from inside the sheet, and it is what
+ * keeps the Sheets permission down to this one file.
+ *
+ * Setting it switches book() to SpreadsheetApp.openById(), the escape hatch for
+ * a standalone script that must write to a file it is not bound to. openById()
+ * does not work under the currentonly scope, so you must ALSO widen
+ * appsscript.json to https://www.googleapis.com/auth/spreadsheets — which is
+ * every spreadsheet in the account, re-consented by whoever deploys. Do not
+ * pay that for convenience.
+ */
+var SHEET_ID = '';
 
 /** Tab names. Both are created automatically, with headers, if missing. */
 var TAB = 'Leads';
@@ -262,13 +295,20 @@ function quarantine(reason, p, e) {
  * RUN THIS FROM THE EDITOR FIRST — choose `selfTest` in the toolbar, press Run.
  *
  * It does what a real submission does but deliberately catches NOTHING, so a
- * missing permission or a wrong SHEET_ID surfaces as a red error instead of a
+ * missing permission or an unbound project surfaces as a red error instead of a
  * swallowed false. It is also what makes Google show the authorization prompt:
  * a web app deployed without the Sheets and Gmail scopes granted will run,
  * report "Completed", and write nothing at all.
+ *
+ * READ THE PROMPT, do not just click through it. With appsscript.json pasted in
+ * first, it should offer exactly two things — this one spreadsheet, and sending
+ * email as you. Anything about Drive, or about all your spreadsheets, means the
+ * manifest did not save or SHEET_ID is set; fix that before granting, because a
+ * grant already given is not narrowed by a later edit (revoke it at
+ * myaccount.google.com/permissions and run this again).
  */
 function selfTest() {
-  var sheet = SpreadsheetApp.openById(SHEET_ID);
+  var sheet = book();
   console.log('Sheet opened: ' + sheet.getName());
 
   MailApp.sendEmail({
@@ -348,9 +388,30 @@ function proxyValue(e, key, max) {
   return trim(all[0], max);
 }
 
+/**
+ * The spreadsheet this script writes to.
+ *
+ * getActiveSpreadsheet() on a bound script returns its container — no lookup,
+ * no Drive, and the narrow currentonly scope covers it. It keeps working in
+ * doPost: the binding is a property of the project, not of who is signed in,
+ * so an anonymous visitor's submission resolves to the same file.
+ */
+function book() {
+  if (SHEET_ID) return SpreadsheetApp.openById(SHEET_ID);
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) {
+    throw new Error(
+      'No bound spreadsheet. Create this script from inside the sheet ' +
+        '(Extensions > Apps Script). A standalone copy needs SHEET_ID set AND ' +
+        'the wider spreadsheets scope in appsscript.json.'
+    );
+  }
+  return ss;
+}
+
 function append(tab, headers, row) {
   try {
-    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var ss = book();
     var sheet = ss.getSheetByName(tab);
     if (!sheet) {
       sheet = ss.insertSheet(tab);
