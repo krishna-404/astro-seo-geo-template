@@ -16,6 +16,7 @@ executes its loop and flags when the picture no longer fits it.
 mkdir -p marketing/insights
 npm run insights -- --inspect --json > marketing/insights/$(date +%F).json
 npm run insights -- --inspect > /tmp/insights-report.md   # human-readable twin for the reply
+npm run aeo -- --trend                                    # the funnel, every snapshot
 ```
 
 - Credentials are workspace env vars (SETUP § Insights read-back). If a
@@ -40,6 +41,15 @@ skip to the plan). Compute and report, in this order:
   `wrong-page`, and any high-intent query that crossed 20 or 10. A snapshot
   taken before the `highIntent` block existed is not "absent" — derive the
   previous values from its `queries` rows with the same rules.
+- **Answer-engine funnel — with the high-intent block, before the detail**:
+  the snapshot's `aeo` block, or `npm run aeo -- --trend` for every snapshot at
+  once. Report the five stage scores then → now, the `focus` stage (the highest
+  one under its bar — that is the stage to work, not the lowest number), and
+  every entry in `blockers`. A stage-1 blocker (the edge returning 401/403/429
+  to an answering agent) outranks everything else in the plan. Say per stage
+  how it was measured: `auto`, `partial` with the missing credential named, or
+  `manual`. Snapshots taken before the `aeo` block existed carry no funnel;
+  report them as "not measured", never as zero.
 - **Generative AI — second, every time**: the snapshot's `generativeAi`
   block. With an export: total AI impressions this export vs the previous
   export (both dated), pages shown then → now (`movers`), the AI share per page

@@ -188,6 +188,26 @@ const snapDate = snaps.at(-1)?.slice(0, 10) ?? 'none';
   else lever('off', 'Generative AI visibility (Google)', Math.min(100, 20 + Math.round(Math.log10(1 + ai.total) * 20) + (ai.stale ? -20 : 0)), `${ai.total} AI impressions across ${ai.pagesCited} pages (export ${ai.exportDate}${ai.stale ? ', STALE' : ''}); ${ai.uncited?.length ?? 0} pages shown on the web but never in AI`, 'GSC gen-AI');
 }
 
+// Answer-engine crawl — do the agents that build the answering indexes
+// actually fetch pages, and are we refusing any of them. The edge is the only
+// place this is visible at all, so it is off-site by construction even though
+// the defect it catches (a WAF rule) is ours.
+{
+  const cr = snap?.cloudflare?.aiCrawlers;
+  if (!cr) lever('off', 'Answer-engine crawl (ingest)', null, `n/a — no aiCrawlers block in the ${snapDate} snapshot; needs CLOUDFLARE_READ_ANALYTICS and a pull from a build that reads it`, 'npm run aeo');
+  else {
+    const answering = (cr.agents ?? []).filter((a) => a.role === 'index' || a.role === 'live');
+    const engines = new Set(answering.map((a) => a.engine));
+    const refused = answering.filter((a) => (a.refused ?? 0) > 0);
+    const want = ['Google', 'Microsoft', 'OpenAI', 'Anthropic', 'Perplexity'];
+    const seen = want.filter((e) => engines.has(e));
+    lever('off', 'Answer-engine crawl (ingest)', refused.length ? Math.min(40, pct(seen.length, want.length)) : pct(seen.length, want.length),
+      `${seen.length}/${want.length} answering indexes crawled in ${cr.daysCovered} day(s): ${seen.join(', ') || 'none'}` +
+      (refused.length ? ` — REFUSING ${refused.map((a) => `${a.agent} (${a.refused})`).join(', ')}` : '') +
+      `; llms.txt read ${cr.llmsTxt?.total ?? 0}×`, 'npm run aeo');
+  }
+}
+
 // AI-assistant referrals — citations that were followed.
 {
   const refs = snap?.generativeAi?.referrals ?? [];
@@ -200,7 +220,7 @@ const snapDate = snaps.at(-1)?.slice(0, 10) ?? 'none';
   const verified = /bing:\s*'[0-9A-F]{16,}'/i.test(readIf('src/data/site.ts'));
   const b = snap?.bing;
   const read = b && !b.skipped && !b.error;
-  lever('off', 'Bing (Copilot, ChatGPT search)', (verified ? 50 : 0) + (read ? 50 : 0), `${verified ? 'verified in Bing Webmaster Tools' : 'NOT verified'}; ${read ? `${b.topQueries?.length ?? 0} Bing queries read back` : 'no Bing read-back (BING_WEBMASTER_API_KEY)'}`, '§16');
+  lever('off', 'Bing (Copilot, ChatGPT search)', (verified ? 50 : 0) + (read ? 50 : 0), `${verified ? 'verified in Bing Webmaster Tools' : 'NOT verified'}; ${read ? `${b.topQueries?.length ?? 0} Bing queries and ${b.pages?.length ?? 0} pages read back, ${b.crawl?.lastInIndex ?? '—'} pages in Bing's index` : 'no Bing read-back (BING_WEBMASTER_API_KEY)'}`, '§16');
 }
 
 // Entity anchors and directory listings — link-targets.md statuses.

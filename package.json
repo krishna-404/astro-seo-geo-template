@@ -30,6 +30,7 @@
     "check:contrast": "node scripts/check-contrast.mjs",
     "indexnow": "node scripts/indexnow.mjs",
     "insights": "node scripts/insights.mjs",
+    "aeo": "node scripts/aeo.mjs",
     "ask": "node scripts/data-sheet.mjs",
     "audit:discovery": "node scripts/discovery-audit.mjs",
     "report:html": "node scripts/report-html.mjs",

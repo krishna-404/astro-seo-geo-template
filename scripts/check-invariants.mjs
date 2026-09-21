@@ -11,6 +11,7 @@
 
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
+import { ROBOTS_AGENTS } from './lib/crawlers.mjs';
 
 const DIST = 'dist';
 let fail = 0;
@@ -323,10 +324,15 @@ check('robots.txt does not Disallow an answer-engine crawler', (bad) => {
   const robotsPath = join(DIST, 'robots.txt');
   if (!existsSync(robotsPath)) return;
   const groups = readFileSync(robotsPath, 'utf8').split(/\n(?=User-agent:)/i);
-  const WATCH = /^(googlebot|bingbot|gptbot|oai-searchbot|chatgpt-user|claudebot|claude-user|claude-searchbot|perplexitybot|perplexity-user|google-extended|applebot|applebot-extended|ccbot|meta-externalagent|\*)$/i;
+  // Derived from the registry, not repeated here: an engine added to
+  // crawlers.mjs and forgotten here would silently lose this guard, which is
+  // the exact defect class AGENTS rule 18 says to mechanize rather than
+  // remember. `*` is not in the registry (it is not a crawler) and is watched
+  // because a Disallow on it takes the whole site out of every index at once.
+  const WATCH = new Set(['*', ...ROBOTS_AGENTS.map((a) => a.toLowerCase())]);
   for (const g of groups) {
     const ua = /User-agent:\s*(\S+)/i.exec(g)?.[1];
-    if (!ua || !WATCH.test(ua)) continue;
+    if (!ua || !WATCH.has(ua.toLowerCase())) continue;
     if (/^Disallow:\s*\/\s*$/im.test(g)) bad(`robots.txt disallows ${ua} — AGENTS § Content rules: being cited is a distribution channel, and the robots.txt generator's own comment is the decision`);
   }
 });

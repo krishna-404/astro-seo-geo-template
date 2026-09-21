@@ -203,10 +203,26 @@ it, joins AI vs web impressions per page and diffs against the previous export,
 and `npm run insights` prints it as its own section beside two proxies for what
 the report withholds (prompt-shaped web queries; referrals from AI assistants in
 Umami). `BING_WEBMASTER_API_KEY` adds Bing's read-back — the index behind
-Copilot and ChatGPT search. `marketing/ai-panel.md` is the monthly manual
-share-of-voice panel across the assistants; `npm run audit:discovery` scores
-the whole picture on twenty levers. The cadence works all of it
-(`.claude/skills/content-cadence/SKILL.md` step 2e, weekly step 17).
+Copilot and ChatGPT search, and the only one of the two big non-Google
+answer indexes that will tell you what it holds. `marketing/ai-panel.md` is
+the monthly manual share-of-voice panel across the assistants;
+`npm run audit:discovery` scores the whole picture on twenty levers. The
+cadence works all of it (`.claude/skills/content-cadence/SKILL.md` step 2e,
+weekly step 17).
+
+**And the one-screen answer: `npm run aeo`.** The numbers above are five
+tables that a person has to reconcile before they mean anything, which is the
+manual step worth deleting. `scripts/lib/aeo.mjs` folds them into the funnel
+that getting cited actually is — **reachable → ingested → indexed → shown →
+followed** — scores each stage 0–100, and names the highest stage that is
+under its bar, because a site an engine is refusing at the edge does not need
+more content. Two of its inputs are new and both are automatic: the Cloudflare
+pull now classifies every answer-engine user-agent at the edge
+(`scripts/lib/crawlers.mjs`) into the agents that build an index, the agents
+that fetch a page mid-answer, and the agents that only train — and counts
+401/403/429 apart from 404, because a refused crawler is a rule we wrote and a
+404 is link rot. Each stage declares whether it was measured automatically,
+partially, or by a human, so "we don't know" never reads as "we're fine".
 
 ## 6. Cloudflare dashboard — setting by setting
 
@@ -384,7 +400,11 @@ has already cost something.
       indexed" (canonical/internal-linking smells, §7).
 - [ ] GSC Security & Manual Actions: must be empty. This is the check where
       finding something a week late is a disaster and a day late is fine.
-- [ ] AI-citation log (§5): run the target queries, note who got cited.
+- [ ] `npm run aeo` (§5): the answer-engine funnel, one screen. Work the
+      stage it names, not the lowest number on it.
+- [ ] AI-citation log (§5): run the target queries, note who got cited. This
+      is the half `npm run aeo` cannot automate — no assistant sells a "were
+      we named" endpoint, so stage 4 stays part human.
 - [ ] `npm run insights` (§5): queries at position 4–20 with impressions are
       the work shortlist; position 50+ means links and authority, not a
       better title. Match titles/headings to the query language the report

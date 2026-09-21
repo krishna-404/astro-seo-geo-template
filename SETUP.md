@@ -219,7 +219,27 @@ origin breaks it.
       `genai-YYYY-MM-DD.zip`; the script reads the newest one and joins it
       with the web rows (`marketing/insights/genai/README.md`). And
       `BING_WEBMASTER_API_KEY` (Bing Webmaster Tools → Settings → API
-      access) reads back the index that feeds Copilot and ChatGPT search.
+      access → Generate) reads back the index that feeds Copilot and
+      ChatGPT search: query rows, per-page impressions, how many pages are
+      in Bing's index, crawl errors. ⚠ Set this one even if Bing's search
+      market share is irrelevant to you — it is the only automatic read of
+      the index two of the three biggest assistants answer from, and
+      without it stage 3 of the answer-engine funnel below is a blind spot
+      on its Google half.
+- [ ] **Answer-engine funnel — "how are we doing on AEO and GEO"**
+      (`npm run aeo`, and the first section of every `npm run insights`).
+      Five stages, each capped by the one above it: **reachable** (the
+      answering agents get a page, not a 403) → **ingested** (which engines
+      actually crawl) → **indexed** (Bing's and Google's counts against the
+      sitemap) → **shown** (inside an answer) → **followed** (a citation
+      somebody clicked). Stages 1, 2 and 5 are fully automatic once
+      `CLOUDFLARE_READ_ANALYTICS` and Umami are set; stage 3 becomes
+      automatic with `BING_WEBMASTER_API_KEY`; stage 4 is the one Google
+      still withholds from every API, so it scores from a proxy
+      (prompt-shaped query impressions, capped at 60) until a Generative AI
+      export lands. The report says per stage which of those it is, so the
+      blind spots are never silent. `npm run aeo -- --trend` scores every
+      committed snapshot to show the funnel moving.
       `npm run audit:discovery` scores twenty discovery levers from the
       build and the newest snapshot — run it after the first pull to see
       where the site stands.
