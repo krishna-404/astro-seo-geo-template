@@ -189,7 +189,9 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   discarded (AI agents fill honeypots now); colleagues on **Bcc** (Reply-All
   cannot leak them); `replyTo` = the enquirer; `selfTest()` catches nothing
   on purpose (surfaces missing OAuth scopes); `e.parameters` (plural) detects
-  spoofed proxy params.
+  spoofed proxy params; **scopes pinned in `appsscript.json` and the sheet
+  reached by binding, not `openById`** — the consent screen asks for this one
+  spreadsheet, never the Drive account.
 - ✅ **Honeypot named `hp`**, positioned off-screen (not `display:none`),
   `aria-hidden` + `tabindex="-1"` + `autocomplete="off"`. Names like
   `website` are autofill bait that silently rejects real people.

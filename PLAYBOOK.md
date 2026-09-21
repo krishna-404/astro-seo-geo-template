@@ -146,6 +146,15 @@ Lessons encoded (each cost the ancestor site a bug):
   `replyTo` = the enquirer.
 - **Store rejects in a `Filtered` tab** — buyers increasingly send AI agents
   that fill every field including the honeypot. Read it occasionally.
+- **Ask for one sheet, not the Drive account** — Apps Script infers scopes by
+  scanning the source and rounds up, so a single `openById()` forces
+  account-wide `…/auth/spreadsheets` on whoever clicks Allow. The script is
+  **container-bound** (`SHEET_ID` empty, `getActiveSpreadsheet()` via `book()`,
+  which still resolves inside an anonymous `doPost`) and
+  `marketing/apps-script/appsscript.json` **pins** `oauthScopes` to
+  `…/spreadsheets.currentonly` + `…/script.send_mail`. Both halves or neither.
+  A grant already given is not narrowed by editing the manifest — revoke, then
+  re-consent. ⚠
 
 ## 5. Measurement
 

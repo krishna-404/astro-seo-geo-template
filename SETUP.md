@@ -171,13 +171,21 @@ origin breaks it.
 
 ## Phase 4 — services (each independent; site works without all of them)
 
-- [ ] **Forms**: Google Sheet → Extensions → Apps Script → paste
-      `marketing/apps-script/contact-form.gs`, set its config constants, run
-      `selfTest()` IN THE EDITOR first (it triggers the OAuth prompts —
-      skipping it is why deployed scripts "Complete" and write nothing),
-      Deploy → Web app, then `npx wrangler secret put CONTACT_SCRIPT_ID`.
+- [ ] **Forms**: Google Sheet → Extensions → Apps Script **from inside that
+      sheet** (a standalone project cannot have the narrow permission) → paste
+      `marketing/apps-script/contact-form.gs`, set its config constants but
+      **leave `SHEET_ID` empty**, then Project Settings → show the manifest and
+      paste `marketing/apps-script/appsscript.json` — that file is what keeps
+      the consent screen to "this spreadsheet" + "send email as you" instead of
+      every spreadsheet in the account. Run `selfTest()` IN THE EDITOR first (it
+      triggers the OAuth prompts — skipping it is why deployed scripts
+      "Complete" and write nothing) and **read the prompt**: anything about
+      Drive means the manifest did not save. Deploy → Web app, then
+      `npx wrangler secret put CONTACT_SCRIPT_ID`.
       ⚠ Verify the failure path, not the redirect: submit the real form and
       check the row lands in the Sheet AND the email arrives.
+      Detail, including how to narrow an already-granted wide scope:
+      `marketing/apps-script/README.md`.
 - [ ] **Analytics**: read README § Analytics first. Umami (cookieless, no
       banner): `ANALYTICS.umami` in `site.ts` + `UMAMI_UPSTREAM` in
       `wrangler.jsonc` — both hops or neither. GA4 instead: `measurementId`
