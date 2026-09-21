@@ -681,6 +681,11 @@ dilutes the battery.
   (`check-invariants`): the open policy is the decision in
   `robots.txt.ts`'s comments; a slipped `Disallow: /` under GPTBot or
   OAI-SearchBot removes the site from the citation path with no symptom.
+  The watch list is DERIVED from `scripts/lib/crawlers.mjs` (`ROBOTS_AGENTS`)
+  rather than repeated — it was repeated once, and the copy went stale the
+  first time the registry grew: six engines were in the registry and outside
+  the guard, silently. `*` is watched alongside them because a `Disallow` on
+  it takes the site out of every index at once.
 - ✅ **Answer-engine crawlers get through the edge** (`smoke-live`): GPTBot,
   OAI-SearchBot, ClaudeBot, PerplexityBot, Bingbot and Googlebot user-agents
   each fetch `/` and `/llms.txt` and must get a plain 200 with no Cloudflare

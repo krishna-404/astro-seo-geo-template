@@ -26,9 +26,22 @@
  * reading, not a finding — the registry says so, so nothing downstream has to
  * rediscover it.
  *
- * Kept as data, in one file, because three things need the same list and had
- * been keeping three copies: the robots.txt allow-list, the smoke test's
- * user-agent fetches, and the edge read-back in insights.mjs.
+ * WHAT READS THIS, AND WHAT DELIBERATELY DOES NOT. The edge read-back in
+ * insights.mjs classifies every user-agent against it, and
+ * check-invariants.mjs derives its "robots.txt must not Disallow an answer
+ * engine" watch list from ROBOTS_AGENTS — so an engine added here gets that
+ * guard on the same commit instead of when somebody remembers.
+ *
+ * src/pages/robots.txt.ts keeps its own named groups on purpose and is NOT
+ * generated from this file. The two answer different questions: this is the
+ * measurement list (who arrived, and what are they doing with the page),
+ * robots.txt is the policy list (what this site has decided to say out loud).
+ * robots.txt opens with `User-agent: * / Allow: /`, so an agent it does not
+ * name is already allowed — the named groups are emphasis and documentation,
+ * and which engines earn that emphasis is the site owner's call, not a
+ * consequence of adding a row here. scripts/smoke-live.mjs likewise keeps a
+ * short hand-written set of real user-agent STRINGS, which is a different kind
+ * of data from these tokens.
  */
 
 /**
