@@ -52,6 +52,20 @@ never rewritten; a page shown on the web and never in AI gets the three levers
 with evidence behind them — an answer-shaped opening, a FAQ block in the
 searcher's words, named sources.
 
+**AEO and GEO have a number, and most of it needs nobody.** `npm run insights`
+opens with the **answer-engine funnel** (`scripts/lib/aeo.mjs`): reachable →
+ingested → indexed → shown → followed, each stage scored 0–100 and each capped
+by the one above it. Read it top-down and work the stage it names, never the
+lowest number on it — a site whose edge is refusing PerplexityBot does not need
+another post. Four of the five stages run unattended from the Cloudflare,
+Umami, Bing and Search Console credentials; stage 4 (**shown**) is the one that
+still needs a person, because Google withholds AI-feature data from every API
+and no assistant sells a "were we named" endpoint, so it scores from a capped
+proxy until an export lands. Each stage prints whether it was measured
+`auto`, `partial` (and which credential is missing) or `manual`, so a blind
+spot never reads as a pass. `npm run aeo -- --trend` scores every committed
+snapshot and is the only view that shows the funnel MOVING.
+
 **One SCHEDULED firing a day; a second one stands down.** When this skill was
 fired by a Routine rather than typed by a human, read `marketing/news-log.md`
 first for a run entry dated today. If one exists this is a duplicate firing:
@@ -290,7 +304,16 @@ coverage-layer pages because that is usually where the backlog is.
    are the site's (a missing ItemList, an unsourced page). (e) Read the
    **Bing** block when `BING_WEBMASTER_API_KEY` is set: Bing's index feeds
    Copilot and ChatGPT search, so a query Bing shows the site for and Google
-   does not is a phrasing to say on the page too.
+   does not is a phrasing to say on the page too, and a page with Bing
+   impressions is a page those two assistants can reach for. When the key is
+   NOT set, say so once in **What I need from you** with what it would unblock
+   (the funnel's INDEXED stage, currently Google-only) — and do not repeat the
+   ask in later runs once it has been declined. (f) Print
+   `npm run aeo -- --trend` and carry its **focus** stage into Decisions. A
+   stage-1 blocker — the edge refusing an answering agent with 401/403/429 —
+   outranks every other item in the run, content included: it is a rule we
+   wrote, it is invisible in a browser, and it removes the site from an index
+   rather than from a page.
 
 ## Changing the engine
 
@@ -330,6 +353,12 @@ words, the action first, the tables last. Compose markdown in this order:
    which updates; pushed updates and left ready for review; left open,
    because …), and the live URL for anything now published. Omit only when
    there were no open PRs.
+3a2. **Answer-engine funnel** — the AEO/GEO headline, one table, every run:
+   the five stages with score, band and how each was measured (`auto` /
+   `partial` / `manual`), then the focus stage and any blockers. Overall score
+   then → now when a previous snapshot exists. This section answers "how are
+   we doing on AEO and GEO" on its own, so it goes ABOVE the detail below it.
+
 3b. **Generative AI** — mandatory, even when it says the export is missing.
    Four lines then a table: AI impressions in the newest export (previous
    export → now, both dated) and how many pages were shown; visitors who

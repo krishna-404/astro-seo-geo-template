@@ -172,6 +172,23 @@ wins any conflict. The rules below are the enforced subset.
   gets an answer-shaped `tldr`, a FAQ block in the searcher's words and named
   sources. The monthly AI prompt panel lives in `marketing/ai-panel.md` and is
   never fabricated. `npm run audit:discovery` scores the discovery levers.
+- **AEO and GEO have one number, and it says what it does not know.**
+  `npm run aeo` (also the first section of `npm run insights`) scores the
+  funnel that getting cited actually is — reachable → ingested → indexed →
+  shown → followed — and names the HIGHEST stage under its bar, because a
+  stage is capped by the one above it: an engine the edge is refusing will
+  never index the page, however well it is written. `scripts/lib/crawlers.mjs`
+  is the one registry of answer-engine user-agents, split by what the agent
+  does with the page (`index` builds the index an assistant answers from,
+  `live` fetched it mid-answer, `train` affects no answer today and is never
+  scored); the Cloudflare pull classifies the edge against it and counts
+  401/403/429 apart from 404, because a refused crawler is a rule we wrote and
+  a 404 is link rot. Every stage declares `auto`, `partial` (naming the
+  missing credential) or `manual` — an unmeasured stage scores `null`, never
+  zero, and never enters the mean. Stage 4 is the honest hole: no API carries
+  Google's AI-feature data and no assistant sells a "were we named" endpoint,
+  so it scores from a proxy capped at 60 and says so rather than passing a
+  guess off as a measurement.
 - **Posts may arrive through the API, and the daily run owns the PR inbox.**
   `POST /api/posts` (`worker/posts.ts`, SETUP Phase 4) validates a post and
   opens a PR. The API does only what is mechanical; there is no publish

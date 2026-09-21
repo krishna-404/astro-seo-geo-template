@@ -40,8 +40,30 @@
  * with web impressions and zero AI impressions), and adds the two proxies the
  * report withholds — prompt-shaped queries from the web rows, and referrals
  * from AI assistants in Umami. Bing Webmaster Tools is a FIFTH, optional:
- * Bing's index feeds Copilot and ChatGPT search, so its query and link
- * numbers are the other half of the answer-engine picture (BING_WEBMASTER_API_KEY).
+ * Bing's index feeds Copilot and ChatGPT search, so its query, per-page and
+ * index-count numbers are the other half of the answer-engine picture
+ * (BING_WEBMASTER_API_KEY).
+ *
+ * THE ANSWER-ENGINE FUNNEL, printed first. Five sources is four more than
+ * anybody reconciles on a Monday, so the report opens with one screen
+ * (scripts/lib/aeo.mjs): reachable → ingested → indexed → shown → followed,
+ * each stage scored and each capped by the one above it, with the stage to
+ * work next named. It adds no network call — it folds what the sections below
+ * already pulled. Its two new inputs are the ones that make "how are we doing
+ * on AEO" answerable without a human at all:
+ *
+ *   - the Cloudflare pull now classifies answer-engine user-agents at the
+ *     edge (scripts/lib/crawlers.mjs) into the ones that build an index, the
+ *     ones that fetch a page while answering somebody, and the ones that only
+ *     train — and counts 401/403/429 apart from 404, because a refused
+ *     crawler is a rule we wrote and a 404 is link rot;
+ *   - the live sitemap is read on every pull, so coverage has a denominator.
+ *
+ * Every stage says whether it was measured automatically, partially (a
+ * credential is missing, and which) or by a person. Stage 4 is the honest
+ * hole: Google withholds AI-feature data from its API and no assistant sells
+ * a "were we named" endpoint, so it scores from a proxy, capped at 60, and
+ * says so. `npm run aeo` re-scores the committed snapshots without pulling.
  *
  * Each section runs iff its credentials are present and soft-skips with a note
  * otherwise, so a partially-configured workspace still gets a partial report.
@@ -61,6 +83,14 @@
  *   CLOUDFLARE_READ_ANALYTICS   scoped API token, Zone → Zone: Read + Zone →
  *                          Analytics: Read. Nothing else — it can read traffic
  *                          numbers for a public site and do nothing to anyone.
+ *   BING_WEBMASTER_API_KEY optional but load-bearing for AEO: Bing Webmaster
+ *                          Tools → Settings → API access → Generate. Read-only
+ *                          here. Bing's index is what Copilot answers from and
+ *                          what ChatGPT search pulls web results from, so
+ *                          without this key the funnel's INDEXED stage knows
+ *                          only Google's half — and a site can be invisible in
+ *                          two assistants for a reason that is pure classic
+ *                          indexing and has nothing to do with "AI".
  *
  * Two API quirks learned by probing the live services, not from docs:
  *   - This Umami build's metrics endpoint takes `type=path`, not `type=url`
@@ -79,9 +109,12 @@
  */
 
 import crypto from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
 import { SITE_URL } from '../src/data/origin.mjs';
 import { highIntentReport } from './lib/intent.mjs';
 import { readGenAiExports, genAiReport, GENAI_DIR } from './lib/genai.mjs';
+import { classify } from './lib/crawlers.mjs';
+import { aeoReport, aeoMarkdown } from './lib/aeo.mjs';
 
 const SITE = new URL(SITE_URL).host;
 if (/example\.com$/.test(SITE)) {
@@ -89,6 +122,8 @@ if (/example\.com$/.test(SITE)) {
   process.exit(0);
 }
 const GSC_PROPERTY = `sc-domain:${SITE}`;
+/** The one AEO input with no API anywhere: what the assistants said when asked. */
+const AI_PANEL = 'marketing/ai-panel.md';
 
 const args = process.argv.slice(2);
 const DAYS = Number(args[args.indexOf('--days') + 1]) || 28;
@@ -246,6 +281,26 @@ async function gsc() {
   }
 }
 
+/** ---------- The live sitemap — the denominator for every coverage figure ---------- */
+
+/**
+ * Read every <loc> out of the live sitemap index and its children. No
+ * credentials, so it runs on every pull: "23 of 41 pages are in Bing's index"
+ * needs the 41, and the 41 has to come from what is PUBLISHED right now, not
+ * from a local build that may be ahead of the deploy. Same source of truth as
+ * indexnow.mjs. Failure is soft — a scorecard without a denominator says so.
+ */
+async function sitemapUrls() {
+  const locs = async (url) =>
+    [...(await (await fetch(url, { signal: AbortSignal.timeout(20_000) })).text()).matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+  const sitemaps = await locs(`https://${SITE}/sitemap-index.xml`);
+  // A one-file sitemap lists pages directly; an index lists sitemaps. Telling
+  // them apart by extension is wrong (both end .xml), so recurse only into
+  // entries the index actually points at, and fall back to the top level.
+  const children = (await Promise.all(sitemaps.map((u) => locs(u).catch(() => [])))).flat();
+  return [...new Set(children.length ? children : sitemaps)];
+}
+
 /**
  * --inspect: run Google's URL Inspection API over every URL in the LIVE
  * sitemap (same source of truth as indexnow.mjs — only pages that exist right
@@ -259,10 +314,7 @@ async function gscInspect() {
   const sa = JSON.parse(Buffer.from(key, 'base64').toString());
   const token = await gscToken(sa);
 
-  const locs = async (url) =>
-    [...(await (await fetch(url)).text()).matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
-  const sitemaps = await locs(`https://${SITE}/sitemap-index.xml`);
-  const urls = (await Promise.all(sitemaps.map(locs))).flat();
+  const urls = await sitemapUrls();
 
   const results = [];
   let denied = null;
@@ -364,6 +416,75 @@ async function cloudflare() {
       limit: 12, orderBy: [count_DESC]) { count dimensions { clientRequestPath } }
   } } }`);
 
+  // ---- Answer-engine crawlers: the GEO half of the edge ----
+  //
+  // WHY THIS LIVES HERE AND NOWHERE ELSE. A visit from OAI-SearchBot or
+  // PerplexityBot is invisible to every other source this script reads: Umami
+  // needs JavaScript and a bot runs none, Search Console reports Google and
+  // only Google, and Bing reports Bing. The edge sees every request that was
+  // ever made, which makes this the only automatic answer to "do the answer
+  // engines actually read this site" — and, more usefully, to "are we
+  // REFUSING one of them", which a browser check can never reveal because the
+  // rule that blocks a crawler leaves a browser alone.
+  //
+  // Two constraints shape the shape of the query. The adaptive dataset takes
+  // one day of range per call on this plan (same limit the 404 table lives
+  // with), so the window is walked a day at a time and days that return
+  // nothing are simply absent — retention, not an error. And there is no
+  // server-side pattern filter on userAgent, so each day pulls the top 500
+  // agent/status pairs and classification happens here; on a site whose human
+  // traffic pushes crawlers past rank 500 the counts would under-read, which
+  // `truncatedDays` reports rather than hides.
+  const CRAWLER_DAYS = Math.min(DAYS, 7);
+  const agents = new Map();
+  const brief = { total: 0, agents: new Set() };
+  let truncatedDays = 0;
+  let crawlerDays = 0;
+  const dayResults = await Promise.all(
+    Array.from({ length: CRAWLER_DAYS }, (_, i) => isoDate(now - (i + 1) * DAY)).map(async (date) => {
+      const d = await gql(`query { viewer { zones(filter: {zoneTag: "${zoneTag}"}) {
+        agents: httpRequestsAdaptiveGroups(filter: {date: "${date}"}, limit: 500, orderBy: [count_DESC]) {
+          count dimensions { userAgent edgeResponseStatus } }
+        brief: httpRequestsAdaptiveGroups(filter: {date: "${date}", clientRequestPath: "/llms.txt"}, limit: 50, orderBy: [count_DESC]) {
+          count dimensions { userAgent } }
+      } } }`);
+      return { date, ...d };
+    }).map((pr) => pr.catch(() => null)),
+  );
+  for (const d of dayResults) {
+    if (!d) continue;
+    crawlerDays += 1;
+    if (d.agents.length >= 500) truncatedDays += 1;
+    for (const row of d.agents) {
+      const hit = classify(row.dimensions.userAgent);
+      if (!hit) continue;
+      const a = agents.get(hit.agent) ?? {
+        agent: hit.agent, engine: hit.engine, product: hit.product, role: hit.role,
+        requests: 0, ok: 0, refused: 0, notFound: 0, failed: 0, days: new Set(), statuses: {},
+      };
+      // 403 and 404 are both "4xx" and mean opposite things here. A 404 to a
+      // crawler is link rot — a URL we removed or never had, already covered
+      // by the 404 table above. A 401/403/429 is a rule WE wrote, invisible
+      // in a browser, and the one failure mode that takes a site out of an
+      // index rather than out of a page. Counting them together would bury
+      // the serious one under the ordinary one, so they are counted apart.
+      const status = Number(row.dimensions.edgeResponseStatus);
+      a.requests += row.count;
+      if (status >= 500) a.failed += row.count;
+      else if (status === 401 || status === 403 || status === 429) a.refused += row.count;
+      else if (status >= 400) a.notFound += row.count;
+      else a.ok += row.count;
+      a.statuses[status] = (a.statuses[status] ?? 0) + row.count;
+      a.days.add(d.date);
+      agents.set(hit.agent, a);
+    }
+    for (const row of d.brief) {
+      brief.total += row.count;
+      const hit = classify(row.dimensions.userAgent);
+      if (hit) brief.agents.add(hit.agent);
+    }
+  }
+
   return {
     daysCovered: days.length,
     totals: {
@@ -376,6 +497,15 @@ async function cloudflare() {
     statuses,
     countries: Object.entries(countries).sort((a, b) => b[1] - a[1]).slice(0, 10),
     notFoundYesterday: adaptive.notFound.map((r) => ({ path: r.dimensions.clientRequestPath, count: r.count })),
+    aiCrawlers: {
+      daysCovered: crawlerDays,
+      daysRequested: CRAWLER_DAYS,
+      truncatedDays,
+      llmsTxt: { total: brief.total, agents: [...brief.agents] },
+      agents: [...agents.values()]
+        .map((a) => ({ ...a, days: a.days.size }))
+        .sort((a, b) => b.requests - a.requests),
+    },
   };
 }
 
@@ -400,10 +530,16 @@ async function bing() {
     const j = await r.json();
     return j.d ?? j;
   };
-  const [queries, links, crawl] = await Promise.all([
+  const [queries, links, crawl, pageStats, traffic] = await Promise.all([
     call('GetQueryStats').catch((e) => ({ error: e.message })),
     call('GetLinkCounts').catch((e) => ({ error: e.message })),
     call('GetCrawlStats').catch((e) => ({ error: e.message })),
+    // Per-PAGE Bing impressions. The AEO reading of this table: a page with
+    // Bing impressions is a page Copilot and ChatGPT search can reach for,
+    // and a page with none is invisible to both however well it does on
+    // Google. Nothing else this script reads can say that.
+    call('GetPageStats').catch((e) => ({ error: e.message })),
+    call('GetRankAndTrafficStats').catch((e) => ({ error: e.message })),
   ]);
   const rows = Array.isArray(queries) ? queries : [];
   // The query endpoint returns one row per query per day; fold to per query.
@@ -419,9 +555,22 @@ async function bing() {
   const topQueries = [...byQuery.values()].sort((a, b) => b.impressions - a.impressions).slice(0, 30);
   const crawlRows = Array.isArray(crawl) ? crawl : [];
   const last = crawlRows.at(-1) ?? {};
+  const pages = (Array.isArray(pageStats) ? pageStats : [])
+    .map((r) => ({
+      page: String(r.Query ?? r.Url ?? r.query ?? '').replace(`https://${SITE}`, '') || '/',
+      impressions: Number(r.Impressions ?? 0),
+      clicks: Number(r.Clicks ?? 0),
+    }))
+    .filter((r) => r.page)
+    .sort((a, b) => b.impressions - a.impressions)
+    .slice(0, 30);
+  const trend = (Array.isArray(traffic) ? traffic : []).slice(-1)[0] ?? null;
   return {
     topQueries,
     queriesError: queries?.error,
+    pages,
+    pagesError: pageStats?.error,
+    trend: trend ? { impressions: trend.Impressions ?? null, clicks: trend.Clicks ?? null, indexed: trend.InIndex ?? null } : (traffic?.error ? { error: traffic.error } : null),
     links: links?.error ? { error: links.error } : links,
     crawl: crawl?.error ? { error: crawl.error } : { days: crawlRows.length, lastInIndex: last.InIndex ?? null, lastCrawledPages: last.CrawledPages ?? null, lastHttp4xx: last.Code4xx ?? null },
   };
@@ -452,14 +601,31 @@ const settle = async (fn) => {
   try { return await fn(); } catch (e) { return { error: e.message }; }
 };
 
-const [u, g, c, b, ins] = await Promise.all([
+const [u, g, c, b, ins, sitemap] = await Promise.all([
   settle(umami), settle(gsc), settle(cloudflare), settle(bing),
   INSPECT ? settle(gscInspect) : Promise.resolve(null),
+  sitemapUrls().catch(() => null),
 ]);
 let ai;
 try { ai = genai(u, g); } catch (e) { ai = { error: e.message }; }
+
+// The answer-engine funnel, folded from the blocks above. It adds no network
+// call of its own: everything it scores was already pulled, it just refuses to
+// leave "how are we doing on AEO" as five tables a person has to reconcile.
+let aeo;
+try {
+  aeo = aeoReport({
+    site: SITE, windowDays: DAYS, cloudflare: c, bing: b, searchConsole: g,
+    generativeAi: ai, indexing: ins, sitemapCount: sitemap?.length ?? null,
+    panel: existsSync(AI_PANEL) ? readFileSync(AI_PANEL, 'utf8') : '', now,
+  });
+} catch (e) { aeo = { error: e.message }; }
+
 const report = {
+  site: SITE,
   generated: new Date(now).toISOString(), windowDays: DAYS,
+  sitemapUrls: sitemap?.length ?? null,
+  aeo,
   umami: u, searchConsole: g, generativeAi: ai, bing: b, cloudflare: c,
   ...(ins && { indexing: ins }),
 };
@@ -479,6 +645,13 @@ const table = (headers, rows) => {
 const pct = (n, d) => (d ? `${((100 * n) / d).toFixed(1)}%` : '—');
 
 out.push(`# ${SITE} — insight pull, last ${DAYS} days (${isoDate(now)})`);
+
+section('Answer-engine funnel (AEO / GEO) — the headline');
+if (aeo?.error) out.push(`_${aeo.error}_`);
+else {
+  out.push('Getting cited is a funnel, and each stage is capped by the one above it: an engine that cannot FETCH the page will never index it, and a page no index carries will never be shown in an answer however well it is written. Read it top down and work the first stage that is under its bar — the tables further down this report are the detail behind these five rows.\n');
+  out.push(aeoMarkdown(aeo));
+}
 
 section('Umami — human visitors');
 if (u.skipped || u.error) out.push(`_${u.skipped ?? u.error}_`);
@@ -583,6 +756,13 @@ else {
   if (b.queriesError) out.push(`_Query stats: ${b.queriesError}_`);
   else if (!b.topQueries.length) out.push('_No Bing query rows in the window._');
   else table(['Query (Bing)', 'Impressions', 'Clicks'], b.topQueries.map((r) => [r.query, r.impressions, r.clicks]));
+  if (b.pagesError) out.push(`\n_Page stats: ${b.pagesError}_`);
+  else if (b.pages?.length) {
+    out.push('\n**Pages Bing shows** — the AEO reading: a page with Bing impressions is a page Copilot and ChatGPT search can reach for; a page with none is invisible to both however well it does on Google\n');
+    table(['Page', 'Impressions', 'Clicks'], b.pages.map((r) => [r.page, r.impressions, r.clicks]));
+  }
+  if (b.trend?.error) out.push(`\n_Rank and traffic: ${b.trend.error}_`);
+  else if (b.trend) out.push(`\nLatest day Bing reports: ${b.trend.impressions ?? '—'} impressions, ${b.trend.clicks ?? '—'} clicks, ${b.trend.indexed ?? '—'} pages indexed.`);
   if (b.crawl?.error) out.push(`\n_Crawl stats: ${b.crawl.error}_`);
   else if (b.crawl) out.push(`\nCrawl: ${b.crawl.days} days of data · pages in Bing's index ${b.crawl.lastInIndex ?? '—'} · crawled ${b.crawl.lastCrawledPages ?? '—'} · 4xx ${b.crawl.lastHttp4xx ?? '—'} (latest day)`);
   if (b.links?.error) out.push(`\n_Link counts: ${b.links.error}_`);
@@ -621,6 +801,15 @@ else {
   else table(['Path', 'Hits'], c.notFoundYesterday.map((r) => [r.path, r.count]));
   out.push('\n**Requests by country**\n');
   table(['Country', 'Requests'], c.countries.map(([k, v]) => [k, v.toLocaleString()]));
+
+  const cr = c.aiCrawlers;
+  if (cr) {
+    out.push(`\n**Answer-engine crawlers** — ${cr.daysCovered}/${cr.daysRequested} days of adaptive data (one day of range per call on this plan; missing days are retention, not an error)${cr.truncatedDays ? `; ${cr.truncatedDays} day(s) hit the 500-agent cap, so counts there under-read` : ''}. Roles: \`index\` builds the index an assistant answers FROM, \`live\` fetched the page while answering somebody's question, \`train\` affects no answer given today.\n`);
+    if (!cr.agents.length) out.push('_No answer-engine crawler reached the edge in this window._');
+    else table(['Agent', 'Engine → product', 'Role', 'Requests', 'Days', 'Served', 'REFUSED (401/403/429)', '404', '5xx'],
+      cr.agents.map((a) => [a.agent, `${a.engine} → ${a.product}`, a.role, a.requests.toLocaleString(), a.days, a.ok.toLocaleString(), a.refused ? `**${a.refused}**` : '0', a.notFound || '0', a.failed || '0']));
+    out.push(`\n\`/llms.txt\` fetched ${cr.llmsTxt.total} time(s)${cr.llmsTxt.agents.length ? ` by ${cr.llmsTxt.agents.join(', ')}` : ''} — the machine brief is only worth maintaining if something reads it.`);
+  }
 }
 
 out.push('\n---\n_Read-only report. No figure here may be published on the site — pages cite `facts.json`, per AGENTS rule 1._');
