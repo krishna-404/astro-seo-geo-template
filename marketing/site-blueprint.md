@@ -139,7 +139,7 @@ is the mechanism by which a new page becomes a ranking page.
   point at it. So on publish, every new page gains **at least one in-body inbound
   link from an existing indexed page in its cluster, anchored on the new page's
   target keyword.** "Indexed" is a live fact, not a static one: the cadence run
-  reads Search Console (`npm run insights --inspect`) to know which pages are
+  reads Search Console (`npm run insights -- --inspect`) to know which pages are
   actually indexed and picks the inbound-link source from among them — linking a
   new page only from other brand-new pages leaves the whole group stranded. The
   static half of this (no page ships an orphan) is enforced by
@@ -266,6 +266,12 @@ in `src/data/voice.json`. The generic rules — the ones true for any business:
 - **Be concrete.** Replace abstractions with numbers, names and observable
   outcomes. State the specific result, not "great results".
 
+- **Remove all mannered prose.** No metaphor where a literal phrase exists;
+  the full definition and the rest of the writing rules (answer first, islands,
+  extractable passages, write for objections) are in
+  `marketing/content-guidelines.md`; what each page type contains is in
+  `marketing/page-guidelines.md`.
+
 Plain, objective, factual copy is not just nicer — it measurably works: NN/g found
 objective language raised usability 27% over promotional "marketese", and concise
 + scannable + objective together raised it 124%.
@@ -300,7 +306,7 @@ questions — it never silently "fixes" architecture.
   only churns the freshness signal)?
 
 The audit's output is the same shape as everything else the engine produces: a
-prioritised list in the cadence report's "Needs you", and PRs for the parts that
+prioritised list in the cadence report's **What I need from you** and **Decisions**, and PRs for the parts that
 are confident, small and in scope. A human merges; nothing auto-publishes.
 
 ---
@@ -308,11 +314,11 @@ are confident, small and in scope. A human merges; nothing auto-publishes.
 ### Where each rule is enforced
 
 Doctrine is only real when it is checked. The mechanizable parts of this blueprint
-live in the battery (see CHECKLIST § enforcement for the full table):
+live in the battery (CHECKLIST §9 lists every check with its WHY):
 
 - **Orphans, dead internal links, junk anchors, anchor-uniqueness** →
   `check-link-graph.mjs`
-- **Blog cadence (spread dates), ≥2 in-body links, registered author** →
+- **Blog dates parse, ≥2 in-body links, registered author** →
   `check-source-rules.mjs`
 - **Front-loaded `tldr`, FAQ single-source, one H1, every collection has a route**
   → the schemas + `check-collection-routes.mjs` + `check-invariants.mjs`

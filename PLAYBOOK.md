@@ -50,9 +50,10 @@ Three decisions that are cheap now and unrecoverable later:
 ```
 
 There is no server. Static assets serve unmetered from Cloudflare's store;
-exactly five behaviours run in a ~150-line worker (forms proxy, sheet data,
-`/hi` rewrites, markdown-twin negotiation, optional analytics proxy); Google
-Apps Script handles form storage + email off the critical path.
+a handful of behaviours run in one worker (forms proxy, sheet data, `/hi`
+rewrites, markdown-twin negotiation, optional analytics proxy, permanent
+redirects, the posts API in `worker/posts.ts`); Google Apps Script handles
+form storage + email off the critical path.
 
 ## 2. Build-time architecture
 
@@ -77,14 +78,17 @@ OG cards land on the build after they're generated.
 off every surface (pages, sitemap, RSS, llms.txt, twins, lastmod — one filter,
 `src/data/publishing.mjs`) until a build runs on or after that date. A static
 site has no runtime clock: the post appears on the FIRST BUILD after the
-instant passes, so schedule a rebuild for launch-time posts (a
-`workflow_dispatch` run of CI, or a per-site cron trigger on the deploy
-workflow). Date-only YAML (`published: 2026-09-01`) means midnight UTC.
+instant passes and the deploy that follows it. Nothing deploys by itself
+(Actions are opt-in): the daily cadence run builds and opens its PR, and a
+human's `/ship` is what releases the post — so a launch-time post needs a
+`/ship` on or after its date. Date-only YAML (`published: 2026-09-01`)
+means midnight UTC.
 
 ## 3. Serve-time architecture (Workers static assets)
 
 - `astro build.format: 'file'` + `wrangler html_handling:
-  "drop-trailing-slash"` → `/about.html` served at `/about`, `/about/` 301s.
+  "drop-trailing-slash"` → `/about.html` served at `/about`, `/about/`
+  redirects (307 — CHECKLIST §2).
   ⚠ These two settings must change together or every route breaks.
 - Headers in `public/_headers` — rules **merge**, so the nginx trap class
   "one location's header wipes the inherited set" cannot occur. Security
@@ -189,7 +193,7 @@ Lessons encoded (each cost the ancestor site a bug):
   dimension is pulled too, so a title rewrite uses the words the page is
   actually shown for.
 - Before organic traffic exists, the metric that matters is **AI citations**:
-  keep a list of target queries, periodically run each in ChatGPT,
+  keep a list of target queries, run each monthly in ChatGPT,
   Perplexity and Google AI Overviews, and log who got cited. Rankings and
   pageviews say nothing yet; citations move weeks before the traffic
   reports do.
@@ -308,11 +312,9 @@ serving pages, which is exactly why they get forgotten)
       Copilot/DuckDuckGo/ChatGPT search): verify via `VERIFICATION.bing`
       meta, submit sitemap.
 - [ ] IndexNow: key file at `public/<key>.txt` containing exactly the key;
-      `indexnow.yml` submits automatically after each green deploy — only the
-      URLs that deploy changed (`--changed` derives routes from the commit's
-      diff; a layout/style/data change falls back to the full sitemap, and a
-      manual dispatch always submits everything). Google
-      does not participate — the sitemap covers Google.
+      `/ship` runs `npm run indexnow` after every deploy (the full live
+      sitemap; `indexnow.yml` exists for manual dispatch). Google does not participate
+      — the sitemap covers Google.
 - [ ] robots.txt is a generated route — the AI-crawler list (with intent
       comments) lives in `src/pages/robots.txt.ts` and the Sitemap URL
       derives from `origin.mjs`, so a domain change needs no manual edit.
@@ -390,64 +392,30 @@ header-scoping bugs; the page half is automated, the asset half manual)
 
 ## 9. Recurring cadence — the site is launched, now what
 
-Launch verification (§8) is a snapshot; these are the things that only fail
-with the passage of time. Small, boring, and each one is invisible until it
-has already cost something.
+Launch verification (§8) is a snapshot; what follows only fails with the
+passage of time. The full checklists live in **`marketing/runbook.md`**
+(daily, weekly, monthly, quarterly, annual: who does each item, which
+script, which report section) and the human half is the ledger in
+**`marketing/ACTIONS.md`**, which `npm run actions` verifies on every run
+and every session start. The launch itself is `marketing/launch-playbook.md`.
+This section keeps only the traps those lists cannot explain in a row:
 
-**Weekly (5 minutes, GSC + Bing)**
-- [ ] GSC Page indexing report: new exclusions, especially "Duplicate,
-      Google chose a different canonical" and "Discovered – currently not
-      indexed" (canonical/internal-linking smells, §7).
-- [ ] GSC Security & Manual Actions: must be empty. This is the check where
-      finding something a week late is a disaster and a day late is fine.
-- [ ] `npm run aeo` (§5): the answer-engine funnel, one screen. Work the
-      stage it names, not the lowest number on it.
-- [ ] AI-citation log (§5): run the target queries, note who got cited. This
-      is the half `npm run aeo` cannot automate — no assistant sells a "were
-      we named" endpoint, so stage 4 stays part human.
-- [ ] `npm run insights` (§5): queries at position 4–20 with impressions are
-      the work shortlist; position 50+ means links and authority, not a
-      better title. Match titles/headings to the query language the report
-      shows — never phrasing a keyword tool invented.
-- [ ] The /content-cadence Routine does most of this section for you when
-      scheduled (SETUP Phase 5): daily insights snapshot, the high-intent
-      rows worked first, one to three evidence-backed improvements, and an
-      emailed report with the manual request-indexing shortlist; weekly
-      anti-AI rules refresh (with a sweep of the latest posts for newly
-      landed tells), the evidence-fueled writing run, the tools sweep and
-      the map/data-sheet maintenance. Its output is PRs — the human half of
-      the cadence is merging them, pasting the shortlist into GSC, and
-      answering the two sections that ask: **What I need from you** (the
-      open questions in `marketing/DATA-SHEET.md`, ranked by what they
-      unblock — type the answer under the question, it moves to facts.json
-      or the data file with a source) and **Where to list the site next**
-      (`marketing/link-targets.md` — a directory listing needs a human with
-      an email address; tick the row and the run stops asking). `npm run
-      ask` prints both on demand and at every session start.
-
-**Monthly (automated + 10 minutes)**
-- [ ] The link-rot workflow ran on the 3rd
-      (`.github/workflows/linkrot.yml`) — read its result, don't assume it.
-      Fix, archive, or drop dead citations; never ignore-list casually.
-- [ ] Skim analytics for pages that stopped earning views (content decay);
-      refresh or consolidate rather than letting them thin out.
-
-**Quarterly (an hour)**
-- [ ] Full-crawl the live site (Screaming Frog free tier covers 500 URLs):
-      redirect chains, orphans, stray 404s.
-- [ ] Re-validate structured data on one page of each type (Rich Results
-      Test) — schema.org and Google's support lists both drift.
-- [ ] Review `robots.txt`'s AI-crawler list against new vendor bots (§7).
-
-**Annually (half a day)**
-- [ ] ⚠ `public/.well-known/security.txt` — `Expires` is ~1 year out by
-      design, so it lapses UNLESS someone renews it, and an expired file
-      reads as an unmaintained site to exactly the audience it exists for.
-      Re-date it, bump `Expires`, commit.
-- [ ] HSTS: consider raising max-age / preload submission (§6 caveats).
-- [ ] Domain + registrar: auto-renew on, lock on, contact email current.
-- [ ] Re-run the §8 verification battery top to bottom — headers and
-      dashboard settings drift silently, and dashboards have no diff.
+- ⚠ **Security & Manual Actions in Search Console has no API.** A manual
+  action found a week late is a disaster and a day late is fine; it stays a
+  weekly human check (ACTIONS A-W06) however automated the rest becomes.
+- ⚠ **`npm run aeo` names a stage; work that stage, not the lowest
+  number.** An edge that refuses an answer engine outranks every content
+  item (§5).
+- ⚠ **Stage 4 of the funnel stays part human.** No assistant sells a "were
+  we named" endpoint and the Generative AI report has no API, so the
+  monthly prompt panel and the weekly export (ACTIONS A-M01, A-W01) are the
+  only measurements; a run never estimates them.
+- ⚠ **The link-rot workflow is the one scheduled Action** (the 3rd of the
+  month). Read its result; never ignore-list a dead citation casually.
+- ⚠ **security.txt expires by design** (~1 year); `npm run actions` turns
+  the item open 30 days before, but the renewal is a commit a person makes.
+- ⚠ **Dashboards drift silently and have no diff.** The annual re-run of
+  the §8 battery exists because nothing else would notice.
 
 ## 10. Inherited trap archive (the short version)
 

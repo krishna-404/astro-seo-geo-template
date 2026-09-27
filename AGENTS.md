@@ -4,7 +4,14 @@ This file is the source of truth for anyone — human or agent — editing this
 repo. `SETUP.md` is where a NEW site starts: the ordered walkthrough of every
 per-site value, before any content work. `CHECKLIST.md` records every
 architectural decision already made and why; `PLAYBOOK.md` is the
-phase-by-phase build/operate runbook; `README.md` is the quickstart.
+phase-by-phase build/operate runbook; `README.md` is the quickstart. The
+operating layer lives in `marketing/`: `runbook.md` (the daily, weekly,
+monthly and quarterly checklists the cadence works), `launch-playbook.md`
+(what happens when a site goes live), `page-guidelines.md` (what each page
+type contains), `content-guidelines.md` (how every piece is written),
+`ACTIONS.md` (every human action, verified by `npm run actions` on every
+run) and `playbook-intake.md` (every outside playbook ingested, what was
+taken and what was refused).
 **Update the relevant document in the same commit as any change to
 structure, config, or a third-party dashboard** — a setting nobody wrote down
 is indistinguishable from a setting nobody made.
@@ -136,6 +143,42 @@ being checked is not a reason to ignore it here; the prose carries the WHY.
 
 ## Content rules
 
+- **Every prompt that writes content ends with "Remove all mannered
+  prose."** The line and its definition live in `src/data/voice.json →
+  prompt`; `marketing/content-guidelines.md § 0` explains it. A skill that
+  drafts, rewrites, retitles, summarises or answers without it is a bug.
+  `marketing/content-guidelines.md` is how every piece is written (answer
+  first, every H2 an island, extractable passages, write for objections,
+  a number with a source every 150–200 words); `marketing/page-guidelines.md`
+  is what each page type contains (the citation checklist, the About page's
+  entity spec, the programmatic patterns, the internal link plan), and
+  `npm run audit:pages` scores that checklist on every built page and
+  names the first fix. New pieces clear 70.
+- **What a human has to do is an ACTIONS item, checked every run.**
+  `marketing/ACTIONS.md` holds every human action (launch, the keys the
+  scripts need, daily, weekly, monthly, quarterly, annual); `npm run
+  actions` verifies each one that can be verified and `--update` rewrites
+  the marks; the cadence runs it first and the report carries the block.
+  Where no API exists the item says so and hands the owner the how-to;
+  where a key would unlock it the item asks for the key by name. A run
+  never ticks a manual item and never works around a missing key by
+  estimating. A human action discovered for the first time is added in
+  the same PR.
+- **Every new piece ships with its social posts** in
+  `marketing/social-queue.md` (`status: unposted`, the owner posts and
+  flips it; the actions check counts what is unposted), an inbound link
+  from an indexed page, its glossary entries and its keyword-map row.
+- **An outside playbook goes through /ingest-playbook**, never straight
+  into a file, and **nothing is adopted blindly**: every move passes the
+  evidence, policy, fit and works tests (a mechanical move proven on this
+  repo; a judgement move run as a dated trial on one page before it is a
+  rule), is sorted into adopted / trial / refused, routed to the file that
+  owns it, and recorded in `marketing/playbook-intake.md` with the verdict
+  and the reason. A trick that reportedly worked for its author is not
+  evidence; a mechanism and a measurement are. A launch is run from
+  `marketing/launch-playbook.md` (/launch) after every launch action in
+  ACTIONS.md is verified.
+
 The shape of the whole site — page-type taxonomy, keyword-research→content
 mapping, interlinking doctrine, conversion, and the AEO/GEO levers — is in
 `marketing/site-blueprint.md`; `STRATEGY.md` is this site's instance of it and
@@ -192,7 +235,7 @@ wins any conflict. The rules below are the enforced subset.
 - **Posts may arrive through the API, and the daily run owns the PR inbox.**
   `POST /api/posts` (`worker/posts.ts`, SETUP Phase 4) validates a post and
   opens a PR. The API does only what is mechanical; there is no publish
-  workflow (GitHub Actions are opt-in — CHECKLIST §3). The daily cadence run lists open PRs,
+  workflow (GitHub Actions are opt-in — CHECKLIST §2). The daily cadence run lists open PRs,
   reviews every API post (tldr, sources, proprietary claim, voice), does the
   judgement half — an in-body link from an indexed page, glossary entries,
   the keyword-map row, the snippet check — and merges where STRATEGY.md's
@@ -278,8 +321,8 @@ wins any conflict. The rules below are the enforced subset.
   content engine (skills: /new-site, /discover, /landscape,
   /onboard-marketing, /design-direction, /keyword-map, /interview,
   /write-content, /refresh-anti-ai-rules, /insights-review,
-  /content-cadence, /ship) delivers everything as PRs; a human merges,
-  nothing auto-publishes.
+  /content-cadence, /launch, /ingest-playbook, /ship) delivers everything
+  as PRs; a human merges, nothing auto-publishes.
 - `marketing/content-inventory.md` is generated (`npm run inventory`) —
   never hand-edit it; regenerate.
 - **Glossary upkeep rides every content change.** A post that introduces a
@@ -289,7 +332,8 @@ wins any conflict. The rules below are the enforced subset.
   converging demand signals and the owner's go-ahead: deterministic code
   over a sourced data file, prefill via query params, the /search JS
   pattern — a model never generates a number a reader can check.
-- Programmatic pages (glossary etc.) auto-publish but must be built from real
+- Programmatic pages (glossary etc.) publish without the blog's author and
+  `proprietary` gates but must be built from real
   data — `sources` min 1 is schema-enforced. A programmatic page with no
   unique data is what scaled-content policies penalise.
 - Every content collection needs a route (CI-enforced): entries with no
@@ -325,6 +369,9 @@ wins any conflict. The rules below are the enforced subset.
 | A page title | Re-run OG cards (`marketing/og/render-pages.mjs`); keep it ≤60 characters or put the sacrificial half after " — " (`check-source-rules` fails a title the SERP clamp would hard-cut) |
 | A URL that must keep working (page moved, folded, or visitors keep typing it) | One row in `worker/index.ts → PERMANENT_REDIRECTS` with a one-line reason, AND the exact path in `wrangler.jsonc → run_worker_first` (`check-parity` fails one without the other; `smoke-worker` asserts the 301) |
 | A blocker only the owner can resolve | Ask them in the session with `AskUserQuestion` if they are here; what they defer goes to `marketing/DATA-SHEET.md` in the documented format, same commit — `npm run ask` will surface it |
+| An action only a human can do (a key, a dashboard, an export, a listing) | One item in `marketing/ACTIONS.md` with a mechanical `Check` where one exists; `npm run actions` verifies it every run and the report carries it |
+| A new step in a run, or a new report section | The `marketing/runbook.md` row AND the content-cadence step AND the report section, same commit |
+| Any product change that alters a price, a feature or a claim | The About page's Key Facts, the pricing table, every comparison cell that mentions it, the glossary entries that define it — before the announcement (runbook § The accuracy check after a ship) |
 | Any inline `<script is:inline>` | `npm run build` regenerates the CSP hashes; commit the changed `worker/csp.generated.json` (CI diffs it). Never add an inline `onclick=`-style handler — the CSP generator fails the build on those |
 | Brand colour / favicon.svg | Edit the literal `BRAND_BG` in `marketing/favicon.mjs`, the `:root` tokens in `marketing/og/page.html` (they mirror `global.css`), and `--brand` in `marketing/og/default.html`; then `node marketing/favicon.mjs`, `node marketing/og/render.mjs`, re-run the page cards, `npm run check:contrast` |
 | Any vendor or data collection | `src/data/privacy.json` in the same commit |

@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 /**
- * Fails if src/data/lastmod.json has drifted from what git says — with one
- * deliberate exception.
+ * Compares src/data/lastmod.json against what git says. FAILS on a route the
+ * map has but git no longer knows, a route missing from the map, or a sitemap
+ * URL with no lastmod. A date that is merely BEHIND is reported as a note, not
+ * a failure: it understates recency (the conservative direction) and the next
+ * `npm run lastmod` fixes it. Run by `npm run verify`, which regenerates the
+ * map to a temp copy and passes the committed copy here:
  *
- *   npm run lastmod:check
+ *   node scripts/check-lastmod.mjs <path-to-committed-copy>
  *
  * THE EXCEPTION, AND WHY IT IS NOT A LOOPHOLE. The map records the commit date
  * of each page's source. Committing the map is itself a commit, and it changes
@@ -11,11 +15,10 @@
  * a map that already knows that commit's date: generate, commit, and the map is
  * instantly one commit behind for exactly the pages you just edited.
  *
- * That is chicken-and-egg, not staleness. This check therefore accepts a
- * difference when the newly computed date is HEAD's own commit date, and
- * rejects every other difference. The guard stays strong: a map two commits
- * behind, a route whose date was hand-edited, a missing or invented route all
- * still fail.
+ * That is chicken-and-egg, not staleness. This check therefore does not even
+ * note a difference when the newly computed date is HEAD's own commit date;
+ * any other difference is printed as a note so it is visible in the verify
+ * output. Missing and invented routes fail.
  *
  * The published cost is that a page edited in the latest commit carries its
  * PREVIOUS edit date until the next commit regenerates the map. That

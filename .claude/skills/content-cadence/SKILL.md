@@ -69,8 +69,8 @@ snapshot and is the only view that shows the funnel MOVING.
 **One SCHEDULED firing a day; a second one stands down.** When this skill was
 fired by a Routine rather than typed by a human, read `marketing/news-log.md`
 first for a run entry dated today. If one exists this is a duplicate firing:
-do not repeat the sweep, do not write a post onto a date that already carries
-one, work only what is genuinely new since that entry, and say in the report
+do not repeat the sweep, do not write a second post the first run already
+wrote, work only what is genuinely new since that entry, and say in the report
 that a run had already gone out. A duplicate Routine is fixed in the Routines
 UI, not in the repo (it usually means one was recreated while the old one
 still existed).
@@ -81,13 +81,34 @@ run; give them one. The only things that still bind are the mechanical
 quality gates in `check-source-rules.mjs` — schema, sources, voice, in-body
 links — which fail closed regardless of who fired the run.
 
+**Finish the whole task.** A scheduled run has nobody to say "continue".
+Never end a run describing what it would do next or asking permission for a
+step this skill already covers; do the step. The run ends when the PR is
+open (or its absence explained) and the report is sent.
+
+**The standing prompt line.** Every prompt this run writes to draft, rewrite,
+retitle, summarise or answer content ends with the line in
+`src/data/voice.json → prompt.standing`: Remove all mannered prose.
+`marketing/content-guidelines.md § 0` defines it. The checklists the run
+works are `marketing/runbook.md` (which step, which script, which report
+section) and `marketing/page-guidelines.md` (what a page must contain).
+
 **No post caps.** There is no per-date or per-week limit on posts; a run
 writes what its fuel supports, high-intent pieces first, and dates each piece
-with the real day it goes live. Weekend runs still lean towards glossary and
+with the real day it goes live. A site that schedules weekend runs has them lean towards glossary and
 coverage-layer pages because that is usually where the backlog is.
 
 ## Daily-lite (every run)
 
+0. **Actions first.** `npm run actions -- --update`. It re-verifies every
+   human action in `marketing/ACTIONS.md` that can be verified (keys present
+   in this environment, exports fresh, panel recent, placeholders gone) and
+   rewrites the marks; manual items are read from their **Done:** dates.
+   The result rides the PR (the file changed) and the report's **Actions**
+   section. A key that is missing is named there with what stays dark
+   without it; the run never works around a missing key by estimating.
+   A human action the run discovers for the first time is added to the
+   file in the same PR, in its format.
 1. **Measure.** Run /insights-review — it pulls the surfaces, snapshots to
    `marketing/insights/<date>.json`, diffs against history and produces the
    prioritised plan. Reuse its output; do not duplicate the pull. Read the
@@ -167,6 +188,32 @@ coverage-layer pages because that is usually where the backlog is.
         there is no export, **What I need from you** opens with the export
         ask and the four-step how-to from `marketing/insights/genai/README.md`.
         A run never estimates AI impressions; it says the export is missing.
+   - **(f) Quick wins, from `searchConsole.quickWins`.** Each row is a page
+     already shown at position ≤5 for a phrase its source does not say
+     (`scripts/lib/pageText.mjs` read the source; `status: words` means every
+     word is there but not the phrase, `missing` names the absent words). Add
+     the phrase where it is true: a heading, the description, a FAQ line in
+     the searcher's words. Work every row; this is the cheapest ranking move
+     on the board and it is mechanical. Record each in the report.
+   - **(g) Bottom of funnel, one page at a time, from `searchConsole.bofu`.**
+     The rows are the buyer's shapes (alternatives, vs, review, best X for Y,
+     software for role, export from, pricing, with MCP) at position 4–20.
+     Pick the one whose page is easiest to move: read the two or three pages
+     above it in the SERP for answer, depth, proof and freshness, run
+     `npm run audit:pages -- --page <route>` on ours, and implement what it
+     names in priority order (FAQ in the query's words, a comparison table,
+     question-shaped headings, a number with a source, the fan-out buckets).
+     Record the page, the query, the starting position and the date in
+     `marketing/keyword-map.md § High-intent`; check the row daily; do not
+     start a second page until the first has had four weeks. A `<rival>
+     alternatives` or `<rival> vs` row with no page is a comparison page for
+     the backlog (page-guidelines § 2), never built without every cell
+     verified. When `competitorsConfigured` is 0, the report asks for the
+     list once (ACTIONS A-M03).
+   - **(h) Competitor watch, from `searchConsole.competitorQueries`.** Every
+     row naming a rival: which page Google shows, whether a comparison page
+     claims it. New phrasing → the watch list. The weekly run adds the rival's
+     new pages and gained searches (step 15).
 3. **Improve — small, evidence-backed, in scope.** From the delta and
    `marketing/keyword-map.md`, make **one to three** changes chosen bottom-up
    on the funnel ladder (STRATEGY.md § Content strategy):
@@ -178,7 +225,7 @@ coverage-layer pages because that is usually where the backlog is.
      question. If not, add them — a FAQ entry in the searcher's words is the
      cheapest correct fix; retitling a money page is a Decision.
    - **Rung 2b, the snippet is the only thing a searcher sees.** A page at
-     position 4–10 with impressions and **zero clicks** is a snippet
+     position ≤10 with ≥50 impressions and **near-zero clicks** is a snippet
      problem, not a ranking problem. Pick one such page a run, rewrite its
      `title` and `description` in the searcher's own words, **and record it
      as a test**: the keyword map's Status column gets "title tested <date>,
@@ -198,10 +245,15 @@ coverage-layer pages because that is usually where the backlog is.
    `--inspect` shortlist (never-crawled first). These need the owner's hands
    — the GSC API cannot request indexing.
 5. **Ask, and hand over what only a human can do.** Run `npm run ask`
-   (`scripts/data-sheet.mjs`). It prints the open questions in
-   `marketing/DATA-SHEET.md` ranked by what they unblock, and the next
-   unclaimed rows of `marketing/link-targets.md`. Both go in the report,
-   verbatim enough to act on without opening the repo.
+   (`scripts/data-sheet.mjs` then `scripts/actions.mjs`). It prints the open
+   questions in `marketing/DATA-SHEET.md` ranked by what they unblock, the
+   next unclaimed rows of `marketing/link-targets.md`, and the open actions
+   with the keys the scripts are missing. All three go in the report,
+   verbatim enough to act on without opening the repo. Where an API does not
+   exist for something the run needs (request indexing, the Generative AI
+   export, a listing, a dashboard toggle), the report says so and hands the
+   owner the how-to; where a key would unlock it, the report asks for the
+   key by name.
    - **Never answer a data-sheet question by estimating.** That is the whole
      point of the file. If a run finds a *source* that answers one, it may
      propose the answer in Decisions with the source, and the owner confirms.
@@ -217,22 +269,24 @@ coverage-layer pages because that is usually where the backlog is.
    write pieces on a daily run; the weekly run works them. Exception: a
    candidate that is clearly time-critical for the site's readers goes in
    the report as a flagged Decision.
-7. **Release.** If a future-dated post's date has arrived, the deploy of
-   today's merged work publishes it — note it in the report.
+7. **Release.** If a future-dated post's date has arrived, today's build
+   includes it and the next `/ship` publishes it — say so in **Do this
+   today**, because nothing deploys by itself.
 8. **Housekeeping.** `npm run inventory`; then `npm run verify` — green, or
    the PR is not opened and the report's first line says why.
-9. **Deliver.** One PR: snapshot, log, inventory, the step-2/3 edits, any new
-   data-sheet question. PR body: what changed, which query or number each
-   change targets, what was dropped and why. A human merges; the deploy is
-   CI's job (or /ship when someone wants to watch it land). Re-run the OG
+9. **Deliver.** One PR: snapshot, log, inventory, the step-0 actions update,
+   the step-2/3 edits, any new data-sheet question, any social drafts for a
+   piece that went live (`marketing/social-queue.md`, content-guidelines § 6). PR body: what changed, which query or number each
+   change targets, what was dropped and why. A human merges and `/ship`
+   deploys (there is no automatic deploy — Actions are opt-in). Re-run the OG
    cards only if a title changed.
 
 ## Weekly-full (daily-lite, plus)
 
 10. **Rules refresh.** Run /refresh-anti-ai-rules (its own PR: rule diff +
    sweep of the latest posts for newly landed tells).
-11. **Writing run.** Run /write-content (its own PR: drafts with spread
-   dates, page updates, glossary upkeep, interlinks, news-log entry). The
+11. **Writing run.** Run /write-content (its own PR: drafts dated the day
+   they go live, page updates, glossary upkeep, interlinks, news-log entry). The
    step-2c high-intent supporting piece is drafted first. Its weekly ICP social sweep runs here in full — read where the
    ICP posts, harvest pain-points and the ICP's own keyword phrasing, log
    them to news-log (the daily scan only notes candidates). The fuel rule
@@ -260,6 +314,28 @@ coverage-layer pages because that is usually where the backlog is.
    already shows for never reaches the buyer who has not searched yet. If a
    layer has been blocked on data for a month, the weekly run either sources
    the data or puts the layer in Decisions with what would unblock it.
+13b. **Page audit.** `npm run audit:pages` scores every content page on the
+   citation checklist (page-guidelines § 1) and names the first fix. Pages
+   under 70 with impressions are the refresh list; the run refreshes at least
+   one a week (the fix it names, the facts re-checked, `updated` bumped only
+   if something changed) and carries the table in the report's **Page
+   audit** section. A page an AI feature already cites is strengthened,
+   never restructured (step 2e).
+13c. **Freshness sweep.** From the same table: pages dated more than 90 days
+   ago with impressions (30 for pricing, rankings or availability) get their
+   facts, examples and figures re-checked against their sources; the page
+   says what changed; the About page's Key Facts and any comparison cell
+   touched by something the product shipped are updated first (runbook § The
+   accuracy check after a ship).
+13d. **Internal link plan.** page-guidelines § 5, from the snapshot: group
+   pages by topic, confirm each cluster's pillar and money page, propose
+   contextual links between support posts and up to the pillar and the money
+   page, and boost every page at position 11–20 with an in-body link from an
+   indexed page that already discusses the task. Each proposed link carries
+   source, destination, the existing sentence, the proposed sentence, the
+   anchor and the reader's reason; applied links are recorded with the date
+   and the query's starting position, compared four weeks later. Skip links
+   already present; never the identical anchor to two targets.
 14. **Site audit (monthly, or when the weekly run has slack).** Run /keyword-map
    steps 1 and 4 to refresh `marketing/keyword-map.md` from the latest
    insights (fold in new Search Console queries with impressions), then work
@@ -278,7 +354,14 @@ coverage-layer pages because that is usually where the backlog is.
    directory that now lists the site is a backlink and a page that can
    rank** — note it in the report so the next run can link to it and watch
    for referral traffic. Backlinks are tracked in that file, never
-   improvised in a run.
+   improvised in a run. **Outreach:** propose up to five sites that write
+   about the space (from `landscape.md`'s lists and the panel's cited
+   sources), each with the page of ours it would link and the one-line
+   pitch, in Decisions; a human sends them. **Competitor pages:** for each
+   rival in `intent.json → competitors`, note new pages since last week
+   (its sitemap or feed, URL recorded in `landscape.md`) and the searches it
+   gained (the SERP shape, the panel); a page type the rival built that we
+   have not is a backlog row.
 16. **High-intent refresh.** Re-read `src/data/intent.json` against the
    week's snapshots: promote any new transactional phrasing with impressions
    to the watch list with its page; retire nothing (a term that stopped
@@ -313,7 +396,11 @@ coverage-layer pages because that is usually where the backlog is.
    stage-1 blocker — the edge refusing an answering agent with 401/403/429 —
    outranks every other item in the run, content included: it is a rule we
    wrote, it is invisible in a browser, and it removes the site from an index
-   rather than from a page.
+   rather than from a page. (g) When the Google Drive connector is attached
+   to the session and the owner has named a folder for the export (a
+   DATA-SHEET answer), look there for a `genai-*.zip` newer than the newest
+   in `marketing/insights/genai/` and copy it in before reading; otherwise
+   the ask stands.
 
 ## Changing the engine
 
@@ -359,6 +446,17 @@ words, the action first, the tables last. Compose markdown in this order:
    then → now when a previous snapshot exists. This section answers "how are
    we doing on AEO and GEO" on its own, so it goes ABOVE the detail below it.
 
+3a3. **Quick wins and bottom of funnel** — two tables, every run. Quick
+   wins: page · query · impressions · position · what was added (the phrase
+   and where), from `searchConsole.quickWins`; "none" is a valid line.
+   Bottom of funnel: the BOFU rows at 4–20 with shape, position (previous →
+   current), the page Google shows, the claiming page, and the one page
+   being worked this month with its start date. When no competitors are
+   configured, one line asks for the list (ACTIONS A-M03).
+3a4. **Competitors** — the rows naming a rival (query · rival · impressions ·
+   position · page shown), the rival's new pages and gained searches from
+   the weekly step 15, and any comparison page proposed. Omit only when no
+   competitor is configured and no row appeared.
 3b. **Generative AI** — mandatory, even when it says the export is missing.
    Four lines then a table: AI impressions in the newest export (previous
    export → now, both dated) and how many pages were shown; visitors who
@@ -374,11 +472,23 @@ words, the action first, the tables last. Compose markdown in this order:
    the fuel it came from), then one bullet per improvement: the page, what
    changed, the query or number it targets. If nothing was written, one line
    saying which source blocked it.
+4b. **Page audit** — weekly, and daily when a page was refreshed: the
+   `npm run audit:pages` table (page · score · impressions · age · first
+   fix) for pages under 70, the page refreshed this run and what changed.
 5. **Do this today** — a numbered list. First the 10 request-indexing URLs
    as bare URLs, one per list item (`scripts/report-html.mjs` turns each into
    an "Inspect in Search Console" button); then the PRs awaiting merge; then
-   anything else that needs the owner's hands.
-6. **What I need from you** — the output of `npm run ask -- --markdown`, in
+   the unposted entries in `marketing/social-queue.md`; then anything else
+   that needs the owner's hands.
+5b. **Actions** — the output of `node scripts/actions.mjs --markdown`: how many
+   done, the keys the scripts are missing (each with where it comes from and
+   what stays dark without it), and the open items by phase with the how-to.
+   Mandatory every run; when an item was ticked since the last run, say so.
+   Where no API exists for an item, this is where the owner is asked to do
+   it by hand; where a key exists, this is where it is asked for by name.
+6. **What I need from you** — the output of `node scripts/data-sheet.mjs
+   --markdown` (the `ask` npm script chains two scripts, so a flag after
+   `--` reaches only the second), in
    the owner's words: the top open questions from `marketing/DATA-SHEET.md`,
    each with the ask itself and what it unblocks, answerable from the email
    without opening the repo. **Mandatory while anything is open** — the one
@@ -407,4 +517,7 @@ script's reply, so the POST's status proves nothing: treat a 303 as sent,
 and if the token is unset or the POST fails outright, say so loudly at the
 end of the session and commit the report as
 `marketing/insights/<date>-report.md` so it is not lost — a broken report
-channel is itself reported.
+channel is itself reported. When the token is unset and the session holds a
+Gmail connector, send the same HTML to the owner's address through it
+instead and say which channel carried the report; the committed copy is
+kept either way when no channel worked.

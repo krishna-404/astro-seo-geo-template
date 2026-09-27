@@ -7,7 +7,7 @@ description: Merge the current PR to main and deploy the site to Cloudflare Work
 
 One command-shaped workflow. Every step verifies before the next; stop and
 report at the first failure rather than pushing on. This is THE deploy path:
-the template ships no automatic GitHub Actions (CHECKLIST §3 — metered
+the template ships no automatic GitHub Actions (CHECKLIST §2 — metered
 minutes), so nothing deploys a merge except this sequence run from a session
 that holds the Cloudflare token.
 
@@ -35,7 +35,8 @@ that holds the Cloudflare token.
    markdown twins, pagefind, CSP). A failure here means stop.
 4. **Deploy**: `CLOUDFLARE_API_TOKEN="$CLOUDFLARE_DEPLOY_TOKEN" npm run deploy`.
    Success prints the workers.dev URL and a version id. The token is scoped
-   Edit Workers on this account only — never a Global API Key.
+   Edit Workers + Cache Purge on this account only — never a Global API Key
+   (ACTIONS A-K06).
 5. **Purge**: `CLOUDFLARE_API_TOKEN="$CLOUDFLARE_DEPLOY_TOKEN" CLOUDFLARE_ZONE_ID=<zone id> npm run purge`
    (the zone id is in the Cloudflare dashboard's overview; record it in
    PLAYBOOK §6 the first time). If purge 401s, say so and note pages

@@ -59,6 +59,16 @@ skip to the plan). Compute and report, in this order:
   proxies: `promptShaped` queries (new ones by name) and `referrals` from AI
   assistants (which assistant, how many). Older snapshots carry no
   `generativeAi` block; report them as "not measured", never as zero.
+- **Quick wins, bottom of funnel, competitors — third**: the snapshot's
+  `searchConsole.quickWins` (pages at position ≤5 for a phrase they do not
+  say — every row is an action), `searchConsole.bofu` (buyer shapes at 4–20,
+  position then → now for any row seen before; the one page being pushed
+  this month and its movement), `searchConsole.competitorQueries` (rows
+  naming a rival; new rivals to add to `intent.json → competitors`). Older
+  snapshots carry none of the three; report them as "not measured".
+- **Page audit**: `npm run audit:pages` after the build — pages under 70
+  with impressions, then → now for pages audited before; the page refreshed
+  since the last review and whether its impressions or position moved.
 - **Indexing**: indexed count vs last time; which URLs moved in or out.
   New pages stuck at "Discovered – currently not indexed" for >3 weeks need
   links, not patience.
@@ -94,6 +104,9 @@ Work out where the site currently sits on the ladder, then propose the
    `unmapped` row is the top action; an `ok` row off page one gets the
    phrase-and-link check (content-cadence step 2a–b) and a supporting-piece
    candidate from `marketing/keyword-map.md § High-intent`.
+0b. Quick-win rows are worked before anything below: they are mechanical
+   and free. A BOFU row at 4–20 whose page can be moved is the month's one
+   page (runbook § The BOFU loop).
 1. Not-indexed pages that matter → internal links to add + the
    request-indexing list for the user.
 2. Queries at position 4–20 with impressions (`nearPageOne`) → the specific

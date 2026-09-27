@@ -68,7 +68,8 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   add routes casually.
 - ✅ **One worker (`worker/index.ts`) does all edge logic**: form proxy, sheet
   data proxy, `/hi` rewrites, markdown-twin negotiation, optional analytics
-  proxy. ~150 lines replacing the ancestor's ~510-line nginx.conf.
+  proxy, permanent redirects, and the posts API in `worker/posts.ts`.
+  Two files, no framework, no server.
 - ✅ **`html_handling: "drop-trailing-slash"`** — serves `/page.html` at
   `/page` and redirects `/page/` and `/page.html` → `/page`. Trailing-slash
   404s only ever bite links arriving from OUTSIDE, which is where backlinks
@@ -130,10 +131,9 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   rules the build would catch later (author registry, SERP clamp, description
   band, two in-body links, no second h1, no MDX imports), a branch and a PR
   through the GitHub API, a `202` with a status URL. A Worker cannot build or
-  deploy, so the workflow does: regenerate lastmod/inventory/OG card, verify,
-  squash-merge, then build the MERGED commit and deploy — deploying itself
-  because a merge made with GITHUB_TOKEN never triggers ci.yml. Both secrets
-  unset = 503 and nothing else changes. The judgement half (interlinks,
+  deploy, so the daily cadence run's PR inbox does: regenerate
+  lastmod/inventory/OG card, verify, merge under STRATEGY.md's merge model,
+  then `/ship`. Both secrets unset = 503 and nothing else changes. The judgement half (interlinks,
   glossary, keyword map, voice) is the daily cadence's PR inbox, never the API.
   Rejected: a runtime store the pages read from (breaks the static build, the
   zod gates, twins, llms.txt, cards and search) and a synchronous
@@ -333,8 +333,10 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   (`src/pages/robots.txt.ts`) so the Sitemap URL derives from `origin.mjs`
   like every other absolute URL; a domain change needs no manual edit.
 - ✅ **One `<h1>` per page (CI-enforced); MDX bodies start at `##`.**
-- ✅ **System font stack, no web fonts.** Zero requests, zero font-swap
-  layout shift, nothing to self-host or get consent for.
+- ✅ **System font stack by default; at most one self-hosted display face.**
+  Zero requests and zero font-swap shift out of the box; a site that chooses
+  a display face (§8, `--font-display`) self-hosts one woff2 family in
+  `public/fonts/` under `font-src 'self'` — never a hosted font service.
 - ✅ **Playwright and sharp are NOT dependencies** — installed in CI/at
   publish time, keeping a 300MB browser out of `npm ci`. **`pagefind` IS a
   devDependency** — the documented exception: it runs on every build (the
@@ -399,7 +401,7 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   DuckDuckGo and ChatGPT search. Two distribution channels, not one.
 - ✅ **IndexNow**: key file + script that submits only LIVE sitemap URLs
   (never the local build — can't ping a 404), race-guarded by
-  `--min-urls`, auto-run after deploy. Google doesn't participate; the
+  `--min-urls`, run by `/ship` after every deploy. Google doesn't participate; the
   sitemap covers Google.
 
 ## 8. Accessibility & CSS
@@ -506,8 +508,10 @@ disagree:
   (`core.hooksPath`).
 - **pre-push hook** → **`npm run verify`** (`scripts/verify.mjs`, ~1–3 min):
   the FULL battery below, locally, before anything leaves the machine.
-- **CI** (`.github/workflows/ci.yml`): the backstop — hooks are advisory
-  (`--no-verify` exists), CI is not.
+- **CI** (`.github/workflows/ci.yml`): opt-in, manual dispatch only (§2,
+  20 Sep 2026). Hooks are advisory (`--no-verify` exists), so an
+  organisation with Actions minutes restores the triggers to get a
+  non-advisory backstop; without them, the pre-push battery is the gate.
 
 The ladder is self-extending by AGENTS rule 18: any digression from the
 architecture that could RECUR gets fixed and then mechanized at the cheapest
@@ -515,7 +519,8 @@ rung that can see it, proven red once, and recorded here with its WHY.
 Single-page defects get fixed, not checked — a check that guards one page
 dilutes the battery.
 
-`.github/workflows/ci.yml`, in order:
+The battery (`scripts/verify.mjs` locally; `ci.yml` mirrors it when
+dispatched), in order:
 
 - ✅ Checkout with `fetch-depth: 0` (lastmod derives from `git log`; depth 1
   = every route dated HEAD).
@@ -648,9 +653,12 @@ dilutes the battery.
   Apps Script upstream (needs a live secret — stays a PLAYBOOK §8 launch
   step) and the rate limiter (asserting on the local simulator tests the
   simulator).
-- ✅ Deploy job runs only on green main (`needs: build`).
-- ✅ **Post-deploy live smoke** (`scripts/smoke-live.mjs`, runs after
-  `wrangler deploy`) — the automated subset of PLAYBOOK §8: zone redirects
+- ✅ A dispatched `ci.yml` runs the checks only; its deploy job is gated
+  on a push event and fires only for an organisation that restores the
+  push trigger. The deploy path is `/ship` after a green pre-push battery.
+- ✅ **Post-deploy live smoke** (`scripts/smoke-live.mjs`, the last step of
+  `/ship`) — the automated subset of
+  PLAYBOOK §8: zone redirects
   (www→apex, http→https, trailing slash), real 404s, single HSTS emitter,
   live CSP with hashes, `/hi` + twin negotiation at the edge, machine
   surfaces all 200. Soft-skips green while `origin.mjs` is still
@@ -695,6 +703,43 @@ dilutes the battery.
   (`check-invariants`): Astro escapes `'` to `&#39;` — five characters for
   one — and a 60-character title read as 64 while the SERP clamp had passed
   it.
+- ✅ **Page audit, informational with an opt-in gate** (`npm run
+  audit:pages`, `scripts/page-audit.mjs`, 27 Sep 2026): the AI-search page
+  checklist (`marketing/page-guidelines.md § 1` — answer first, FAQ ≥3, a
+  table or list, a figure, two linked sources, an author, question-shaped
+  headings, self-contained section openers, short paragraphs and sentences,
+  a number per 200 words, 2–8 in-body links, freshness, the fan-out
+  buckets) scored per built content page, worst first, with the first fix
+  named; `--page` prints every check; `--min N` turns it into a draft gate
+  for /write-content. WHY: a checklist in prose is worked once; the pages
+  that drift are the ones nobody re-reads, and the refresh order (lowest
+  score with impressions) is otherwise a guess. Never a build gate — the
+  invariants own the hard rules.
+- ✅ **Owner actions are a parsed ledger, verified every run** (`npm run
+  actions`, `scripts/actions.mjs`, 27 Sep 2026): `marketing/ACTIONS.md`
+  holds every human action (launch, keys, daily, weekly, monthly,
+  quarterly, annual) with a `Check` kind; the script re-verifies each
+  mechanical one (a key in the environment, an export's age, the panel's
+  age, placeholders, security.txt expiry, the IndexNow key file, open
+  questions, listings, the social queue) and `--update` rewrites the marks,
+  while manual items are read from their dated **Done:** line and never
+  ticked by the script. Runs at session start (with `npm run ask`) and as
+  step 0 of every cadence run; the report carries `--markdown`. WHY: "give
+  me the Bing key" said in one email is lost by the next; a key that
+  disappears, an export that goes stale and a panel that lapses have to flip
+  back to open by themselves, and where no API exists the ask has to name
+  the how-to every time.
+- ✅ **Playbook blocks in the Search Console pull** (`scripts/lib/intent.mjs
+  § playbookBlocks`, 27 Sep 2026): `quickWins` (page × query at position ≤5
+  whose phrase the page's SOURCE does not say — `scripts/lib/pageText.mjs`
+  reads the markdown or `.astro` so it needs no build), `bofu` (buyer shapes
+  from `intent.json → bofu` at 4–20, `<competitor>` expanding from
+  `intent.json → competitors`) and `competitorQueries`. Printed first in
+  the Search Console section, stored in the snapshot, worked in
+  content-cadence step 2f–h. WHY: the two cheapest ranking moves there are
+  (say the phrase you already rank for; push a buyer query from 7 to 3) sit
+  in the page × query dimension that a report sorted by impressions never
+  shows.
 - ✅ **Discovery scorecard, informational** (`npm run audit:discovery`,
   `scripts/discovery-audit.mjs`): the Sep 2026 outside-audit frame as code —
   twenty levers scored 0–100 with evidence, on the site from `dist/` and off
@@ -719,6 +764,18 @@ dilutes the battery.
   human runs at publish time (may install a headless browser ad hoc).
 - ✅ **Generate, commit the output, never hand-edit the output** (llms.txt,
   favicons, OG cards, lastmod.json, sheet snapshots).
+- ✅ **What a human has to do is an action, checked every run.**
+  `marketing/ACTIONS.md` (format parsed by `scripts/actions.mjs`; § 9 above)
+  is the ledger of every human action; `marketing/runbook.md` is the
+  daily/weekly/monthly/quarterly checklist the cadence works;
+  `marketing/launch-playbook.md` is the launch; `marketing/page-guidelines.md`
+  and `marketing/content-guidelines.md` are what a page contains and how it
+  is written; `marketing/social-queue.md` holds the social drafts every
+  piece ships with; `marketing/playbook-intake.md` records every outside
+  playbook `/ingest-playbook` sorted (transfers / already covered / refused)
+  so none is re-argued. The standing prompt line "Remove all mannered
+  prose." lives once in `src/data/voice.json → prompt.standing` and every
+  content-producing skill quotes it.
 - ✅ **What the engine cannot find out is a question, not an estimate.**
   `marketing/DATA-SHEET.md` holds the open questions only the owner can
   answer (format is parsed by `scripts/data-sheet.mjs`; it holds no answers
@@ -751,8 +808,8 @@ dilutes the battery.
   `prepare` script setting `core.hooksPath` on every install — no husky, no
   dependency). pre-commit = the fast source tier (~4s); pre-push =
   `npm run verify`, the full battery. `--no-verify` is the documented
-  escape hatch; CI remains the backstop precisely because hooks are
-  advisory.
+  escape hatch; with Actions opt-in (§2) the battery on push is the gate,
+  and a site that wants a non-advisory backstop restores the CI triggers.
 - ✅ Prettier (+ astro plugin) & `.editorconfig` committed.
 - ✅ **Verification tokens and analytics website IDs live in the repo**
   (public by design, next to their config so they can't drift); **API keys
@@ -762,7 +819,7 @@ dilutes the battery.
 
 - ❌ **A CMS** — drops the zod enforcement that makes content rules real.
 - ❌ **Tailwind / arbitrary hex in components** — breaks measured contrast.
-- ❌ **Web fonts** — cost with no measurable win for a marketing site.
+- ❌ **Hosted web fonts** (Google Fonts and the like) — a third-party request, a consent question and layout shift for no measurable win; a self-hosted display face is the one allowed form (§6, §8).
 - ❌ **localStorage / sessionStorage** — anywhere, for anything.
 - ❌ **fetch()-based form submission** — the no-JS POST + 303 is sturdier.
 - ❌ **GA4 as the default** — it drags a consent banner into every page for

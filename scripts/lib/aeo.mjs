@@ -205,7 +205,7 @@ export function aeoReport({
     const lastPanel = runs.at(-1) ?? null;
     stage('shown', 'Shown — the site appears inside an answer', {
       score,
-      automatic: exported ? false : false,
+      automatic: false,
       manual: exported
         ? `Search Console → Performance → Generative AI → Export, dropped into marketing/insights/genai/. UI-only: the API rejects every generative-AI type and BigQuery does not carry it. Newest export ${ai.exportDate}${ai.stale ? ' — STALE' : ''}.`
         : 'Search Console → Performance → Generative AI → Export, dropped into marketing/insights/genai/. Until one lands, this stage is a proxy, not a measurement.',

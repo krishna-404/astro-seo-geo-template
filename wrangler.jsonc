@@ -11,7 +11,7 @@
 // route here only if the worker genuinely must see it.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "astro-website-template", // ← rename per site
+  "name": "astro-website-template", // TODO ← rename per site
   "compatibility_date": "2026-08-01",
   "main": "worker/index.ts",
   "assets": {
@@ -37,12 +37,7 @@
     //   path is not listed here never reaches the worker; check-parity enforces)
     "run_worker_first": ["/api/*", "/hi", "/hi/*", "/blog/*", "/glossary/*", "/s.js"]
   },
-  // Non-secret config. Secrets are NOT set here:
-  //   npx wrangler secret put CONTACT_SCRIPT_ID   ← Google Apps Script deployment id
-  // The worker treats an unset/empty CONTACT_SCRIPT_ID as "feature off": the
-  // form still redirects to /contact/thanks and nothing crashes — a broken
-  // feature, never a broken site (the empty-default rule).
-  // Secrets are never set here:
+  // Non-secret config. Secrets are never set here:
   //   npx wrangler secret put CONTACT_SCRIPT_ID   ← Google Apps Script deployment id
   //   npx wrangler secret put POSTS_API_TOKEN     ← bearer callers of /api/posts present
   //   npx wrangler secret put GITHUB_POSTS_TOKEN  ← fine-grained PAT, Contents + Pull

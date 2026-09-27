@@ -12,7 +12,7 @@
     }
   },
   "example": {
-    "$comment": "Delete this block. It exists to show the shape: value + source + retrieved date, and verified:false when you have not independently checked it.",
+    "$comment": "TODO: delete this block. It exists to show the shape: value + source + retrieved date, and verified:false when you have not independently checked it.",
     "customersServed": {
       "value": 128,
       "source": "Internal CRM export, 2026-08-01",

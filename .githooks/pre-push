@@ -1,9 +1,10 @@
 #!/bin/sh
 # The full battery before anything leaves the machine: build, CSP freshness,
 # every invariant, worker behavioral smoke, HTML validity, contrast sweep,
-# axe scan — the same checks CI runs, via the same scripts, so a red push
-# is caught here in minutes instead of in CI plus a round trip.
+# axe scan — the full battery, via the same scripts ci.yml runs when it is
+# dispatched by hand, so a red push is caught here in minutes.
 #
-# Escape hatch: git push --no-verify (CI remains the backstop).
+# Escape hatch: git push --no-verify (there is no automatic backstop —
+# GitHub Actions are opt-in, CHECKLIST §2).
 
 exec npm run verify

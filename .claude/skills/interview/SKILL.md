@@ -19,6 +19,9 @@ editor debriefing a founder: specific, curious, slightly sceptical.
 - For each story, ask: **can this be published?** Names, figures and
   relationships that cannot are marked `[private]` inline — captured for
   context, never for print.
+- Ask for the objections by name: the five heard most often on calls this
+  month, in the prospect's words, and what was answered. Only a buyer has
+  objections; they are the next five posts (content-guidelines § 3).
 - Listen for the four kinds of fuel:
   1. a surprise (reality disagreed with the site's current claims),
   2. a repeated question (three people asked it → a page should answer it),

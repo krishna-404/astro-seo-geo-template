@@ -1,11 +1,11 @@
 #!/bin/sh
 # Fast tier only — source-level checks that need no build (~seconds).
 # The full battery (build + worker smoke + browser sweeps) runs at push time
-# via .githooks/pre-push → npm run verify, and again in CI.
+# via .githooks/pre-push → npm run verify (GitHub Actions are opt-in).
 #
 # Installed automatically: the package.json `prepare` script points
 # core.hooksPath here on every npm install. Escape hatch when you must
-# commit something known-red: git commit --no-verify (CI will still say no).
+# commit something known-red: git commit --no-verify (the pre-push battery will still say no).
 
 set -e
 

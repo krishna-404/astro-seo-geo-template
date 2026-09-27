@@ -5,6 +5,10 @@ description: Interview the site owner to fill the marketing skeletons — strate
 
 # Onboard the marketing layer
 
+Every prompt this skill writes into STRATEGY.md, VOICE-GUIDE.md or
+writer-brief.md ends with the line in `src/data/voice.json → prompt.standing`:
+Remove all mannered prose.
+
 You are conducting a working interview, not filling a form, and you conduct
 it here: every question below goes to the user in this session through
 `AskUserQuestion` — up to four related questions per call, each with two to
@@ -32,6 +36,12 @@ rules) and ask against them.
    burned them? What do they type into a search box at 11pm?
 3. **The thesis** — the one argument the whole site advances. Test it: does
    it exclude anything? A thesis every competitor could also claim is not one.
+   Fill the three blanks that make a conviction stick (content-guidelines
+   § 3): the **message** (what the site repeats until the market associates
+   it with the name, backed by real proof), the **enemy** (the dying model,
+   the wrong strategy, the channel that stopped working; never a person),
+   the **belonging** (what agreeing says about the reader). Record them in
+   STRATEGY.md § 2.
 4. **The stance** — what gives THIS site the right to speak: experience,
    data, a position. Capture credentials for author bylines (name, title,
    LinkedIn) — the blog schema requires a real `sameAs` profile.
@@ -115,9 +125,14 @@ rules) and ask against them.
   does not exist, a result the product has not produced — from STRATEGY.md
   § Honest state). `check-source-rules` fails any page that says one.
 - `src/data/intent.json` → `navigational` (the brand name and its
-  misspellings, so brand lookups are not counted as buyer queries) and
+  misspellings, so brand lookups are not counted as buyer queries),
   `claimFrom` (the money-page collections whose frontmatter declares
-  `primaryKeyword`). The `watch` list fills as the first high-intent rows
+  `primaryKeyword`) and `competitors` (the rivals from `landscape.md`, as
+  spelled in queries — the BOFU shapes and the competitor block need them).
+- `src/data/facts.json` → the About page's Key Facts rows the owner can
+  stand behind (founded, headquarters, core offering, pricing, contract
+  terms, notable clients with permission, customers served, competitors,
+  social profiles that exist), each with a source (page-guidelines § 3). The `watch` list fills as the first high-intent rows
   appear in Search Console (/keyword-map § High-intent).
 - `marketing/DATA-SHEET.md` — replace the example question with the first
   real one the interview surfaced, asked here and deferred by the user; and
@@ -131,7 +146,7 @@ rules) and ask against them.
 
 ## Finish
 
-Run `npm run check:voice` and `npm run verify`'s fast tier — the site layer
+Run `npm run check:voice` and the pre-commit tier (`.githooks/pre-commit`) — the site layer
 you just wrote must not break the existing corpus without the user agreeing
 to fix it. Summarise what was captured and what remains TODO, and point the
 user at /interview (ongoing fuel) and /content-cadence (the engine).

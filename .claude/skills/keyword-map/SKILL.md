@@ -5,6 +5,10 @@ description: Turn keyword research into a deliberate site architecture — resea
 
 # Map keywords to pages
 
+Every prompt this skill writes (a row's evidence line, a backlog item's
+brief) ends with the line in `src/data/voice.json → prompt.standing`: Remove
+all mannered prose.
+
 The difference between "write some blog posts" and a site that wins is this map.
 Every page the site will ever build should trace to a query in
 `marketing/keyword-map.md`, and every priority query should trace to a page (live
@@ -28,6 +32,17 @@ Pull queries from evidence, never invention:
   the rivals from scratch.
 - `STRATEGY.md` clusters: for each declared cluster, the head term and the
   question family around it.
+- The snapshot's `searchConsole.bofu` and `competitorQueries` blocks: every
+  buyer-shaped row (alternatives, vs, review, best X for Y, software for
+  role, export from, pricing) and every row naming a rival is a page to own,
+  and its shape names the page type (page-guidelines § 2). Keep
+  `intent.json → competitors` in step with `marketing/landscape.md`.
+- The programmatic patterns in `marketing/page-guidelines.md § 4` (best
+  roundups, head-to-head, persona, integration, tools, converters, example
+  galleries, directories, glossary, localised, benchmarks): for each pattern
+  the strategy's layers call for, list the variations real demand supports
+  and the data each page would need. A pattern with no data is a
+  DATA-SHEET question, not a template.
 
 Take the audience's own words. Never invent phrasing a keyword tool would surface
 but no human says.

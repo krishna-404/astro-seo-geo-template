@@ -68,6 +68,7 @@ one sitting once Tier 1 is done — not before, because they carry no buyer.
 | 9 | AlternativeTo | Captures "alternative to X" intent — pair with any comparison pages | Free | todo | |
 | 10 | Product Hunt | One shot; save it for a real launch moment | Free | todo | Timing decision, not a listing decision |
 | 11 | Generic SaaS directory batch | Aggregate backlink value only | Free | todo | Do in one sitting; do not let it become the strategy |
+| 12 | Chrome Web Store listing | A real extension's store page links to the site and earns traffic on its own | Free | skip | Only if the site ships a real extension; flip to `todo` then (playbook-intake 2026-09-27) |
 
 ## Not chasing, and why
 
@@ -77,6 +78,8 @@ one sitting once Tier 1 is done — not before, because they carry no buyer.
 | Review-generation services | Buying reviews is the one thing a site that trades on trust cannot survive being caught doing |
 | Google Business Profile | Only for a business with a real, visitable address — a virtual office breaches the guidelines and a map pack is not where this buyer looks |
 | Guest-post link farms | Worth less than the time to place, and a risk |
+| Google Docs / Google Sites pages built to link here | Nofollowed, thin, and the pattern scaled-content policy names |
+| Staged questions in the Search Console Help Community | Deceptive, and not a link source |
 
 ---
 

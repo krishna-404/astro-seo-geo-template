@@ -85,8 +85,10 @@ public/          _headers _redirects favicons .well-known/ (robots.txt is
                  generated — src/pages/robots.txt.ts derives it from origin.mjs)
 scripts/         CI-run: sheets, llms, twins, lastmod, csp, invariants,
                  parity, worker/live smoke, contrast, a11y, verify, indexnow ·
-                 operator-run: insights (with lib/intent.mjs), data-sheet
-                 (npm run ask), report-html (the cadence email body)
+                 operator-run: insights (with lib/intent.mjs: high-intent,
+                 quick wins, BOFU, competitors), data-sheet + actions
+                 (npm run ask), page-audit (npm run audit:pages),
+                 report-html (the cadence email body)
 marketing/       human-run: favicon gen, OG cards, apps-script source ·
                  the content engine's memory: brief (the /discover output:
                  what the site is for + the asset register), landscape (the
@@ -95,8 +97,13 @@ marketing/       human-run: favicon gen, OG cards, apps-script source ·
                  STRATEGY, keyword-map, VOICE-GUIDE, design-brief,
                  writer-brief, field-notes, news-log, generated inventory ·
                  what it is waiting on: DATA-SHEET (open questions, no answers),
-                 link-targets (listings a human claims), channel-gaps (what is
-                 deliberately not done off-site) · insights/ (dated snapshots)
+                 link-targets (listings a human claims), ACTIONS (every human
+                 action, verified by npm run actions), social-queue (posts
+                 written per piece, waiting to be posted), channel-gaps (what
+                 is deliberately not done off-site) · the operating layer:
+                 runbook (daily/weekly/monthly checklists), launch-playbook,
+                 page-guidelines, content-guidelines, playbook-intake (every
+                 outside playbook sorted) · insights/ (dated snapshots)
 .claude/skills/  the content engine: new-site (the whole setup as a
                  conversation, every decision with live examples) ·
                  discover (the brief and the asset intake, first) ·
@@ -107,11 +114,16 @@ marketing/       human-run: favicon gen, OG cards, apps-script source ·
                  writing that explains them, inside the constraints) ·
                  keyword-map · interview · write-content ·
                  refresh-anti-ai-rules · insights-review · content-cadence
-                 (see SETUP Phase 5 — schedule it as a Routine) · ship
-                 (merge + deploy in one go)
-.claude/settings.json  SessionStart hook → npm run ask (what is blocked, first)
+                 (see SETUP Phase 5 — schedule it as a Routine) · launch (the
+                 gate, then the announcement) · ingest-playbook (a link or a
+                 pasted playbook → sorted into the repo) · ship (merge +
+                 deploy in one go)
+.claude/settings.json  SessionStart hook → npm run ask (what is blocked and
+                 what is yours to do, first)
 .githooks/       pre-commit (fast tier) · pre-push (npm run verify) —
                  activated automatically by npm install
-.github/         ci.yml (checks + gated deploy + live smoke) · indexnow.yml ·
-                 linkrot.yml (monthly external-link check)
+.github/         ci.yml and indexnow.yml (manual dispatch only — the
+                 pre-push battery and /ship are the gate and the deploy) ·
+                 linkrot.yml (monthly external-link check, the one scheduled
+                 workflow)
 ```

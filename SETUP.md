@@ -67,6 +67,10 @@ Work top to bottom; later files read earlier ones.
 - [ ] `src/data/origin.mjs` — the domain. One line; every absolute URL on
       every surface (canonicals, sitemap, robots, llms.txt, schema) derives
       from it.
+- [ ] `scripts/generate-llms.mjs` — the `LLMS` block at the top (name,
+      tagline, description): a node script cannot import `site.ts`, so this
+      is the second copy, and `public/llms.txt` says `Example Co` until it is
+      edited (marketing/README § The "EDIT FOR YOUR SITE" convention).
 - [ ] `src/data/site.ts` — the brand contract: `name`, `tagline`,
       `description` (120–165 chars — CI enforces the bounds on every
       indexable page), `locale`, `themeColor`, nav, contact channels,
@@ -100,7 +104,7 @@ Work top to bottom; later files read earlier ones.
 - [ ] `public/.well-known/security.txt` — `Contact`, `Canonical` (your real
       host — RFC 9116 makes the file assert which host it belongs to, so a
       wrong value is worse than none), `Expires` ~1 year out. Put the annual
-      renewal in your calendar now (PLAYBOOK §9 — an expired file reads as
+      renewal in your calendar now (ACTIONS A-Y01 — an expired file reads as
       an unmaintained site to exactly the audience it exists for).
 - [ ] `wrangler.jsonc` — rename the worker (`"name"`).
 - [ ] Page copy: `src/pages/index.astro`, `about.astro`, `contact.astro` —
@@ -140,7 +144,7 @@ generator reads, one to pick the result up.
 **Verify:** `npm run verify` — the full local battery (build, invariants,
 worker smoke, HTML validity, contrast, axe). This is the command the pre-push
 hook runs, and it is the gate — the template ships no automatic CI
-(CHECKLIST §3: Actions minutes are metered).
+(CHECKLIST §2: Actions minutes are metered).
 Then `git status` clean after a fresh `npm run build` — if a build dirties a
 committed generated file, commit it; that is the contract.
 
@@ -150,13 +154,14 @@ committed generated file, commit it; that is the contract.
       `*.workers.dev` deploy; attach the custom domain (Workers → Domains &
       Routes).
 - [ ] Push to GitHub. Deploys run from the session (`/ship`: build, `npm run
-      deploy`, purge, live smoke, `npm run indexnow`) with `CLOUDFLARE_API_TOKEN`
-      in the session's environment (scoped: Edit Workers + Cache Purge —
-      never a Global API Key). Cloudflare's own git-connected builds stay OFF
+      deploy`, purge, live smoke, `npm run indexnow`) with
+      `CLOUDFLARE_DEPLOY_TOKEN` and `CLOUDFLARE_ZONE_ID` in the session's
+      environment (token scoped Edit Workers + Cache Purge — never a Global
+      API Key; ACTIONS A-K06). Cloudflare's own git-connected builds stay OFF
       (they would deploy in parallel and skip the invariants). If your
       organisation has Actions minutes and wants CI as well, restore the
       triggers in `.github/workflows/ci.yml` and add the token as a repo
-      secret (CHECKLIST §3).
+      secret (CHECKLIST §2).
 - [ ] Walk PLAYBOOK §6 top to bottom — SSL Full (Strict), zone HSTS (the
       one emitter), www→apex redirect, the OFF-switches (Rocket Loader,
       Email Obfuscation, Auto Minify, Hotlink Protection), **and the DNS
@@ -253,19 +258,18 @@ origin breaks it.
       regenerates lastmod, inventory and the social card (a post may carry
       `figures` — CHECKLIST §8), runs `npm run verify`, merges under
       STRATEGY.md's merge model and ships (there is no publish workflow —
-      GitHub Actions are opt-in, CHECKLIST §3). Two worker secrets:
+      GitHub Actions are opt-in, CHECKLIST §2). Two worker secrets:
       `POSTS_API_TOKEN` (the caller's bearer) and `GITHUB_POSTS_TOKEN` (a
       fine-grained PAT, Contents + Pull requests read/write on this repo
-      only); `GITHUB_REPO` in `wrangler.jsonc`; the repository variable
-      `CLOUDFLARE_ZONE_ID` for the workflow's purge. Either secret unset =
+      only); `GITHUB_REPO` in `wrangler.jsonc`. Either secret unset =
       the route answers 503 and nothing else changes. `npm run smoke:worker`
       exercises every answer short of a GitHub write. The daily cadence's PR
       inbox does the judgement half on every post that lands (interlinks,
       glossary, keyword map) — see the content-cadence skill.
 - [ ] **Search engines**: GSC (domain property via DNS TXT), Bing Webmaster
       (`VERIFICATION.bing` in site.ts), submit the sitemap in both;
-      IndexNow key file `public/<key>.txt` (the workflow submits after each
-      green deploy).
+      IndexNow key file `public/<key>.txt` (`/ship` submits after each
+      deploy; `indexnow.yml` is manual dispatch only).
 - [ ] **Live data (optional)**: two-tab Sheet pattern (CHECKLIST §3 — the
       published tab physically cannot leak contact fields), tab URL into
       `src/data/sheets.config.json`, `<LiveData />` on the page.
@@ -288,10 +292,11 @@ FAQ answers only in frontmatter, `toc: true` at 4+ headings, and at least
 are quality gates. Scheduled posts:
 future-date `published` and schedule a build for that day (PLAYBOOK §2).
 
-**The content engine.** Twelve skills in `.claude/skills/` run the whole
+**The content engine.** Fourteen skills in `.claude/skills/` run the whole
 loop (/new-site, /discover, /landscape, /onboard-marketing,
 /design-direction, /keyword-map, /interview, /write-content,
-/refresh-anti-ai-rules, /insights-review, /content-cadence, /ship), and its
+/refresh-anti-ai-rules, /insights-review, /content-cadence, /launch,
+/ingest-playbook, /ship), and its
 memory lives in `marketing/`. Read `marketing/site-blueprint.md`
 first — it is the transferable doctrine (page-type taxonomy, keyword→content
 mapping, interlinking, conversion, AEO/GEO levers, the straightforward house
@@ -329,8 +334,18 @@ voice) that everything below is an instance of.
    one firing a day: a second scheduled firing on the same date stands
    down by design, and a Routine recreated while the old one still exists
    is the usual cause.
-4. **Answer what the engine asks.** Two report sections ask rather than
-   tell, and both come from files you own. `marketing/DATA-SHEET.md` holds
+3b. **Give the run its keys, and know your half.** `npm run actions`
+   prints every human action the engine depends on — the keys the scripts
+   need (Search Console, Cloudflare, Umami, Bing, the report token, the
+   deploy token), the launch items, and the daily, weekly, monthly and
+   quarterly things a site dies without — and verifies each one that can be
+   verified on every run. `marketing/ACTIONS.md` is the ledger; tick a
+   manual item by dating it; `marketing/runbook.md` is the full list of who
+   does what each day and week. Launch itself is `marketing/launch-playbook.md`
+   (`/launch`): the gate, then the announcement.
+4. **Answer what the engine asks.** Three report sections ask rather than
+   tell, and all come from files you own (the third is **Actions**,
+   above). `marketing/DATA-SHEET.md` holds
    the open questions only you can answer (a rate, a permission, whether an
    account exists) — type under **Answer:**; "don't know" is a real answer.
    The answer then moves to `facts.json` or its data file with a source and
@@ -343,6 +358,8 @@ voice) that everything below is an instance of.
    nobody starts work blind to what is blocked. Replace the sheet's example
    question with your first real one.
 
-From here the rhythm is PLAYBOOK §9 (weekly GSC glance, monthly link-rot
-run, quarterly crawl, annual security.txt/HSTS/domain review) — put the
-annual items in a calendar now, while you still remember they exist.
+From here the rhythm is `marketing/runbook.md` (PLAYBOOK §9 keeps the traps behind it; it is the short
+version): the daily and weekly runs do the machine half; `npm run actions`
+tells you your half every run. When someone hands you a playbook, a
+thread or a checklist, `/ingest-playbook` sorts it into the repo and
+records what was refused, so it is never re-argued.

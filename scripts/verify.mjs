@@ -4,7 +4,7 @@
  * leaves the machine. Wired to the pre-push hook (.githooks/pre-push); also
  * just `npm run verify` whenever you want the answer.
  *
- * Mirrors ci.yml step for step. Where CI and this script share logic they
+ * ci.yml mirrors this when dispatched by hand (Actions are opt-in). Where CI and this script share logic they
  * call the SAME scripts (check-parity, check-source-rules, check-invariants,
  * smoke-worker, check-contrast, check-a11y) so the two cannot drift; the few
  * CI-only wrappers (lastmod temp-copy dance, tool installs) are reproduced

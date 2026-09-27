@@ -122,7 +122,7 @@ const validPost = {
   description: 'A payload the smoke test sends to prove validation passes and the write stops at the missing GitHub token, never touching GitHub.',
   tldr: 'This post exists only inside scripts/smoke-worker.mjs and is never written to the repository or the site.',
   author: { name: authors[0].name, title: authors[0].title, sameAs: authors[0].sameAs },
-  proprietary: 'proprietary-numbers',
+  proprietary: 'original-data',
   sources: [{ label: 'The smoke test itself' }],
   body: ('## A heading\n\nA paragraph that links to [a glossary entry](/glossary/core-web-vitals) and to [the blog](/blog/how-the-seo-machinery-works) so the in-body link rule passes. ').repeat(8),
 };

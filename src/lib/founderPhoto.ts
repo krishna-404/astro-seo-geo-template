@@ -7,9 +7,10 @@
  * file existed — which would mean the component using it could not be committed
  * before the photograph was.
  *
- * Shared rather than globbed twice, so the rendered avatar and the `image` on
- * the Person node in the JSON-LD can never disagree about whether a photo
- * exists. Add it with `node marketing/founder-photo.mjs <photo>`.
+ * One glob, so the `image` on the Person node in the JSON-LD can never claim a
+ * photo that is not there. To add one: put `founder.{jpg,png,webp}` in
+ * src/assets/ (no script ships for this); the author page does not render an
+ * avatar today, so the file feeds the schema only.
  */
 const photos = import.meta.glob<{ default: ImageMetadata }>(
   '../assets/founder.{jpg,jpeg,png,webp}',

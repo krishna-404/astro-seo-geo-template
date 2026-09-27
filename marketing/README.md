@@ -32,6 +32,8 @@ runs in Google's editor — so the few site-specific values these files need
 live as marked literals near the top of each file. When adopting the
 template, sweep:
 
+- `scripts/generate-llms.mjs` — the `LLMS` block (name, tagline,
+  description) that `public/llms.txt` opens with
 - `og/render-pages.mjs` — `SITE_NAME`, `TAGLINE` (under the
   `EDIT FOR YOUR SITE` banner)
 - `og/page.html` — the `:root` tokens, mirroring `global.css`
