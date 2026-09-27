@@ -20,21 +20,15 @@
  * decorative SVG art. Those are hand-checked. A pass here means "no
  * flat-colour text fails", not "the page is accessible".
  */
-import { readdirSync, statSync } from 'node:fs';
+import { walkHtml } from './lib/html.mjs';
 import { join, relative, sep } from 'node:path';
 import { chromium } from 'playwright';
 
 const DIST = 'dist';
 const PORT = 4319;
 
-function pages(dir = DIST, out = []) {
-  for (const name of readdirSync(dir)) {
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) pages(p, out);
-    else if (name.endsWith('.html')) out.push('/' + relative(DIST, p).split(sep).join('/'));
-  }
-  return out;
-}
+/** Every built page as a served path ('/blog/x.html') — the walker is shared. */
+const pages = () => walkHtml(DIST).map((p) => '/' + relative(DIST, p).split(sep).join('/'));
 
 /** Runs in the page. Returns one row per failing text element. */
 const AUDIT = () => {

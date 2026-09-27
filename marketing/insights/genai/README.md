@@ -18,9 +18,11 @@ the BigQuery bulk export does not include it. The one door is the report's
    uses, so the AI-share column joins cleanly).
 3. **Export → Download CSV.** Search Console hands back a zip.
 4. Save it here as `genai-YYYY-MM-DD.zip` (the date is read from the
-   filename; without one the file's modification time is used). Do not
-   unzip — the reader opens zips — but an unzipped folder of the CSVs works
-   too.
+   filename; without one the file's modification time is used). Either form
+   works: the reader extracts a zip with the system `unzip` into a folder of
+   the same name, and reads a folder of CSVs directly. Where `unzip` is
+   missing it says so and asks you to unzip the file into a folder of the
+   same name.
 5. Commit. Exports are small and they are the measurement history: the delta
    between two exports is the only trend this report allows.
 

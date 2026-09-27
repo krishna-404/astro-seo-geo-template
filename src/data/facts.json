@@ -6,9 +6,86 @@
   },
   "company": {
     "founder": {
-      "name": "TODO Founder Name",
-      "linkedin": "https://www.linkedin.com/in/TODO",
-      "$comment": "The author profile behind the site-wide Person schema node and every blog post byline. Must be a real person with a real, linkable profile — E-E-A-T and answer engines both key on it."
+      "$comment": "MOVED. The founder is ONE record, in src/data/authors.json — the registry an /author/<slug> page already renders and that check-source-rules already holds every byline to. It was here as well, which meant two places to change a name and two identities in the entity graph (the author page emitted #author-founder while every other page pointed at #founder). src/data/site.ts → FOUNDER reads the registry entry named by FOUNDER_SLUG; nothing reads this key."
+    },
+    "$comment": "The company's own facts — the Key Facts table on /about renders one row per key below, and OMITS any row whose value is still TODO (marketing/page-guidelines.md § 3: a row the site cannot fill honestly is omitted, never estimated). BaseLayout's Organization node reads legalName, founded, headquarters and social the same way, and leaves each out while it says TODO — an empty string in JSON-LD is worse than an absent field, and the entity-hygiene invariant fails it. Every value carries a source, like every other figure on this site. ACTIONS A-L04 checks for the TODOs, A-L13 requires the owner to approve the facts in writing before the page goes live, and A-Q03 re-confirms them quarterly.",
+    "legalName": {
+      "value": "TODO",
+      "source": "TODO",
+      "$comment": "The registered legal name, if it differs from the trading name. The Organization node’s `legalName`."
+    },
+    "type": {
+      "value": "TODO",
+      "source": "TODO",
+      "$comment": "The category phrase a buyer would use, e.g. \"freight forwarding software company\". The entity sentence’s `<category>`."
+    },
+    "founded": {
+      "value": "TODO",
+      "source": "TODO",
+      "$comment": "The founding year, four digits. Becomes the Organization node’s `foundingDate`."
+    },
+    "coreOffering": {
+      "value": "TODO",
+      "source": "TODO",
+      "$comment": "What the company sells, one line. Keep in step with the `offering` on the primary solutions page."
+    },
+    "pricing": {
+      "value": "TODO",
+      "source": "TODO",
+      "$comment": "One line on how pricing works — a published from-price, \"on request\", or the model."
+    },
+    "contractTerms": {
+      "value": "TODO",
+      "source": "TODO",
+      "$comment": "One line, e.g. \"month-to-month, 30 days’ notice\". The most-asked commercial question after price."
+    },
+    "customersServed": {
+      "value": "TODO",
+      "source": "TODO",
+      "$comment": "A confirmed count. Omitted from the table while TODO — never estimated."
+    },
+    "projectsDelivered": {
+      "value": "TODO",
+      "source": "TODO",
+      "$comment": "A confirmed count. Omitted from the table while TODO."
+    },
+    "headquarters": {
+      "$comment": "The Organization node’s PostalAddress. All three parts, or the address is left out of the schema entirely — a partial address is a worse claim than none.",
+      "city": {
+        "value": "TODO",
+        "source": "TODO"
+      },
+      "region": {
+        "value": "TODO",
+        "source": "TODO"
+      },
+      "country": {
+        "value": "TODO",
+        "source": "TODO"
+      }
+    },
+    "services": {
+      "$comment": "What the company does, one entry per service. The Key Facts \"Services\" row lists the names; /about § 2 renders each as an H3 with its two sentences from src/data/about.json → services.",
+      "value": [],
+      "source": "TODO"
+    },
+    "communication": {
+      "$comment": "Channels and response time, one line, e.g. \"email and shared Slack; replies within one business day\".",
+      "value": "TODO",
+      "source": "TODO"
+    },
+    "notableClients": {
+      "$comment": "One entry per named client, each { name, permission, source }. A client is RENDERED ONLY when permission is true — naming a customer who has not agreed is the fastest way to lose them, and a template cannot judge that for you. Entries without permission stay here as a record and never reach the page.",
+      "value": []
+    },
+    "competitors": {
+      "$comment": "The rivals a buyer compares this company with, as names. Keep in step with src/data/intent.json → competitors — check-parity rule 6 fails a commit where the two lists differ, because one is what the pages may name and the other is what the scripts watch in Search Console. Filled from marketing/landscape.md.",
+      "value": [],
+      "source": "TODO"
+    },
+    "social": {
+      "$comment": "The company's OWN profiles, as absolute URLs, and only accounts that exist and are active — these become the Organization node's `sameAs`, which is how an engine corroborates the entity. A dead profile there weakens every other claim. The founder's personal profile belongs on the Person node (company.founder.linkedin), not here.",
+      "value": []
     }
   },
   "example": {

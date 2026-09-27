@@ -11,8 +11,9 @@
  * export does not include it. So the daily runs read it through the ONE door
  * that exists: the report's Export button, which downloads a zip of CSVs. The
  * owner drops that zip (or its unzipped folder) into marketing/insights/genai/
- * and this module reads the newest one. Everything else here is a PROXY for
- * the parts the report withholds:
+ * and this module reads the newest one, extracting a zip with the system
+ * `unzip` rather than parsing the format itself. Everything else here is a
+ * PROXY for the parts the report withholds:
  *
  *   - AI-shaped queries: the Search Console web rows whose phrasing is a
  *     prompt rather than a keyword (eight-plus words, a question, a follow-up
@@ -26,49 +27,14 @@
  */
 
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { join, basename, extname } from 'node:path';
-import { inflateRawSync } from 'node:zlib';
+import { sitePath } from './html.mjs';
 
 /** Where the owner drops the export. One zip or folder per pull; the newest wins. */
 export const GENAI_DIR = 'marketing/insights/genai';
 
-/* ---------------------------------------------------------------- zip + csv */
-
-/**
- * Minimal zip reader: walks local file headers, supports stored (0) and
- * deflate (8) entries — which is all a Search Console export uses. Kept here
- * so the export can be dropped in as downloaded, without a dependency.
- */
-export function readZip(buf) {
-  const files = {};
-  let off = 0;
-  while (off + 30 <= buf.length && buf.readUInt32LE(off) === 0x04034b50) {
-    const flags = buf.readUInt16LE(off + 6);
-    const method = buf.readUInt16LE(off + 8);
-    let csize = buf.readUInt32LE(off + 18);
-    let usize = buf.readUInt32LE(off + 22);
-    const nlen = buf.readUInt16LE(off + 26);
-    const xlen = buf.readUInt16LE(off + 28);
-    const name = buf.slice(off + 30, off + 30 + nlen).toString('utf8');
-    let data = off + 30 + nlen + xlen;
-    // Data-descriptor flag: sizes follow the data. Locate the next header.
-    if (flags & 0x08 && csize === 0) {
-      let p = data;
-      while (p + 4 <= buf.length && buf.readUInt32LE(p) !== 0x08074b50) p += 1;
-      csize = buf.readUInt32LE(p + 8);
-      usize = buf.readUInt32LE(p + 12);
-      const raw = buf.slice(data, data + csize);
-      files[name] = method === 8 ? inflateRawSync(raw) : raw;
-      off = p + 16;
-      continue;
-    }
-    const raw = buf.slice(data, data + csize);
-    if (!name.endsWith('/')) files[name] = method === 8 ? inflateRawSync(raw) : raw;
-    off = data + csize;
-    void usize;
-  }
-  return files;
-}
+/* -------------------------------------------------------------------- csv */
 
 /** RFC-4180-ish CSV: quoted fields, doubled quotes, CRLF. Returns rows of strings. */
 export function parseCsv(text) {
@@ -124,13 +90,45 @@ function dateOf(path) {
   return m ? m[1] : statSync(path).mtime.toISOString().slice(0, 10);
 }
 
+/**
+ * A zip is extracted with the system `unzip` into a folder of the same name,
+ * once, and read from there.
+ *
+ * WHY NOT A ZIP READER HERE. There was one: seventy lines walking local file
+ * headers, inflating deflate entries, and scanning forward for a data
+ * descriptor when the size fields were zero. It worked on the exports it was
+ * given, and every line of it was a guess about a format the runtime already
+ * understands. `unzip` is present in the environments the cadence runs in, and
+ * when it is not, the ask ("unzip the export into a folder of the same name")
+ * is one step the owner can do in the file manager — a smaller cost than
+ * maintaining a zip parser whose failure mode is a silently empty report.
+ *
+ * @returns {Record<string, Buffer>} filename → contents, CSVs only
+ */
 function readExportFiles(path) {
+  /** @type {Record<string, Buffer>} */
   const out = {};
-  if (statSync(path).isDirectory()) {
-    for (const f of readdirSync(path)) if (extname(f).toLowerCase() === '.csv') out[f] = readFileSync(join(path, f));
-  } else if (extname(path).toLowerCase() === '.zip') {
-    Object.assign(out, readZip(readFileSync(path)));
+  let dir = path;
+  if (!statSync(path).isDirectory()) {
+    if (extname(path).toLowerCase() !== '.zip') return out;
+    dir = path.replace(/\.zip$/i, '');
+    if (!existsSync(dir)) {
+      try {
+        execFileSync('unzip', ['-o', '-q', path, '-d', dir], { stdio: ['ignore', 'ignore', 'pipe'] });
+      } catch {
+        console.log(`   genai: cannot read ${basename(path)} — unzip is not available here. Unzip the export into a folder of the same name (${basename(dir)}/) and re-run.`);
+        return out;
+      }
+    }
   }
+  // One level of nesting: an export unzips either flat or into a single folder.
+  const walk = (d) => {
+    for (const f of readdirSync(d, { withFileTypes: true })) {
+      if (f.isDirectory()) walk(join(d, f.name));
+      else if (extname(f.name).toLowerCase() === '.csv') out[f.name] = readFileSync(join(d, f.name));
+    }
+  };
+  walk(dir);
   return out;
 }
 
@@ -212,7 +210,9 @@ export function aiReferrals(referrers = []) {
 
 /* ---------------------------------------------------------------- the block */
 
-const strip = (site, url) => String(url).replace(`https://${site}`, '').replace(/\/$/, '') || '/';
+// One implementation, in lib/html.mjs — this file's copy and intent.mjs's
+// disagreed about the trailing slash.
+const strip = sitePath;
 
 /**
  * Join the newest export with the ordinary Search Console page rows so each

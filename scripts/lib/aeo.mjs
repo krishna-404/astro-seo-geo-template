@@ -39,8 +39,20 @@
  * rather than quietly passing a guess off as a measurement. A proxy score is
  * capped at 60: a proxy may not read as STRONG.
  *
- * SCORING. 0–100, banded the same way as discovery-audit.mjs (≥75 STRONG,
- * ≥40 WEAK, below CRITICAL), and `null` for "no data reached this stage",
+ * LEVERS, BESIDE THE STAGES AND NEVER INSIDE THE MEAN. Six things decide
+ * whether the funnel can move at all and none of them is a stage: the
+ * third-party listings that own the transactional SERPs, the monthly prompt
+ * panel, the owner's open questions, Bing verification, the completeness of the
+ * Organization node an engine resolves the brand from, and whether the
+ * commercial queries have pages at all. They used to live in a second script
+ * (`discovery-audit.mjs`) that scored twenty levers, six of which were the
+ * funnel stages computed a different way — so one question had two numbers and
+ * a reader had to guess which. That script is gone; what it measured and the
+ * invariant battery does not is here, marked `lever`, informational, and
+ * excluded from the stage mean by construction.
+ *
+ * SCORING. 0–100, banded ≥75 STRONG, ≥40 WEAK, below CRITICAL, and `null` for
+ * "no data reached this stage",
  * which is never the same as zero and never enters the mean. Counts are
  * scored on a log curve, not linearly: for a site this size the difference
  * between 0 and 4 AI referrals is the whole story and the difference between
@@ -50,7 +62,12 @@
  * AGENTS rule 1 applies here exactly as it does to insights.mjs.
  */
 
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { ANSWERING_ROLES } from './crawlers.mjs';
+import { readPages, ldNodes } from './html.mjs';
+import { linkTargets, panelRuns, dataSheet } from './snapshots.mjs';
+import { collections, routeOfCollection } from './routes.mjs';
 
 /** The five engines whose index decides whether a buyer's assistant can cite us. */
 const INDEX_ENGINES = ['Google', 'Microsoft', 'OpenAI', 'Anthropic', 'Perplexity'];
@@ -72,11 +89,12 @@ const pct = (n, d) => (d > 0 ? Math.round((100 * n) / d) : null);
  * @param {object} [o.indexing]          insights `indexing` block (--inspect only)
  * @param {number} [o.sitemapCount]      URLs in the live sitemap — the denominator
  * @param {string} [o.panel]             marketing/ai-panel.md, raw
+ * @param {Array}  [o.levers]            aeoLevers() output; informational, never in the mean
  * @param {number} [o.now]
  */
 export function aeoReport({
   site, windowDays = 28, cloudflare, bing, searchConsole, generativeAi, indexing,
-  sitemapCount = null, panel = '', now = Date.now(),
+  sitemapCount = null, panel = '', levers = [], now = Date.now(),
 }) {
   const stages = [];
   const stage = (key, name, s) => stages.push({ key, name, band: band(s.score), ...s });
@@ -254,6 +272,9 @@ export function aeoReport({
     site, windowDays, generated: new Date(now).toISOString(),
     overall, band: band(overall),
     stages,
+    // Informational, and deliberately NOT in `overall`: a lever is a thing to
+    // go and do, not a measurement of the funnel.
+    levers,
     automatic: { full: auto, of: stages.length },
     focus: weak
       ? { stage: weak.key, name: weak.name, score: weak.score, why: `The funnel reads top-down: ${weak.name.split(' — ')[0]} is at ${weak.score} against a bar of ${BAR[weak.key]}, so every stage under it is capped by it.` }
@@ -261,6 +282,120 @@ export function aeoReport({
     blockers: stages.flatMap((s) => s.blockers ?? []),
     manualSteps: stages.filter((s) => s.automatic !== true).map((s) => ({ stage: s.key, need: s.manual })),
   };
+}
+
+/* ------------------------------------------------------------------ levers */
+
+/**
+ * The six off-funnel levers, read from the repo and the built site.
+ *
+ * Kept OUT of aeoReport so that function stays a pure function of the numbers
+ * it is handed (the tests rely on that) and every filesystem read this module
+ * does is in one place. Each lever declares `score` 0–100 or `null` for
+ * "nothing measured this" — never zero, which would mean "measured, and bad".
+ *
+ * WHAT IS DELIBERATELY NOT HERE. Crawler access, extractable schema, author
+ * E-E-A-T, content shape, citation density, ItemList, image alt, the machine
+ * brief and social cards were levers in the script this replaced. Every one of
+ * them is now a hard check in scripts/check-invariants.mjs, which FAILS the
+ * build rather than scoring it — a rule that is enforced does not also need a
+ * grade, and scoring it invited "the lever says 92" as an argument against a
+ * red check.
+ *
+ * @param {{dist?: string, now?: number}} [o]
+ */
+export function aeoLevers({ dist = 'dist', now = Date.now() } = {}) {
+  const out = [];
+  const lever = (name, score, evidence) => out.push({ name, score, evidence, band: band(score) });
+  const readIf = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : '');
+
+  // 1. Third-party listings and entity anchors. The listicles that own the
+  //    transactional SERPs are built from directory profiles, and no script can
+  //    claim one.
+  {
+    const { todo, live, rows } = linkTargets();
+    const open = rows.filter((r) => r.status === 'todo' || r.status === 'doing').length;
+    lever('Third-party listings and entity anchors', rows.length ? pct(live.length, live.length + open) ?? 0 : null,
+      rows.length
+        ? `${live.length} live, ${open} open in marketing/link-targets.md (${todo.length} not started) — the listicles that own the transactional SERPs are built from these`
+        : 'marketing/link-targets.md names no targets yet');
+  }
+
+  // 2. The prompt panel. Stage 4 has no API; asking the assistants directly,
+  //    once a month, is the only first-hand reading of whether we get named.
+  {
+    const runs = panelRuns();
+    const last = runs.at(-1) ?? null;
+    const age = last ? Math.round((now - new Date(last).getTime()) / 864e5) : null;
+    lever('AI answer share-of-voice (prompt panel)', last ? (age <= 35 ? 100 : age <= 70 ? 60 : 30) : 0,
+      last ? `last panel ${last} (${age} days ago), ${runs.length} run(s) logged in marketing/ai-panel.md`
+           : 'never run — marketing/ai-panel.md holds the prompt set; the monthly run asks the owner for it');
+  }
+
+  // 3. The owner's open questions. An unanswered question is a page that cannot
+  //    be written honestly, so this lever gates content, not ranking.
+  {
+    const { questions, open, answered } = dataSheet();
+    lever('Owner-supplied facts (data sheet)', questions.length ? pct(answered.length, questions.length) ?? 0 : null,
+      questions.length ? `${answered.length} answered, ${open.length} open — \`npm run ask\` prints them`
+                       : 'marketing/DATA-SHEET.md has no questions');
+  }
+
+  // 4. Bing verification. Bing's index is what Copilot answers from and what
+  //    ChatGPT's web results lean on, and verification is also what unlocks the
+  //    URL submission `npm run indexnow` does after every deploy.
+  {
+    const verified = /bing:\s*'[0-9A-Fa-f]{16,}'/.test(readIf('src/data/site.ts'));
+    lever('Bing verified (Copilot, ChatGPT search)', verified ? 100 : 0,
+      verified ? 'a verification token is set in src/data/site.ts'
+               : 'NOT verified — src/data/site.ts carries no Bing token; Bing Webmaster Tools → Add site (ACTIONS A-L05)');
+  }
+
+  // 5. Machine identity. An engine resolves the brand to an entity from the
+  //    strings in the homepage Organization node. check-invariants forbids a
+  //    BROKEN one (an HTML entity in a name, an empty sameAs); nothing requires
+  //    it to be COMPLETE, because the missing fields are the owner's to supply.
+  {
+    const home = readPages(dist).find((p) => p.route === '/');
+    if (!home) {
+      lever('Machine identity (Organization completeness)', null, `n/a — no built homepage under ${dist}/; run npm run build first`);
+    } else {
+      const org = ldNodes(home.html).find((n) => n['@type'] === 'Organization');
+      const want = ['name', 'url', 'logo', 'description', 'contactPoint', 'founder', 'sameAs', 'legalName', 'address', 'foundingDate'];
+      const have = org ? want.filter((k) => org[k] && (!Array.isArray(org[k]) || org[k].length)) : [];
+      const missing = want.filter((k) => !have.includes(k));
+      lever('Machine identity (Organization completeness)', pct(have.length, want.length) ?? 0,
+        `${have.length}/${want.length} fields on the homepage Organization node — missing ${missing.join(', ') || 'none'}${missing.length ? ' (owner-supplied: facts.json → company, a DATA-SHEET question)' : ''}`);
+    }
+  }
+
+  // 6. Commercial coverage. The high-intent queries are where the money is, and
+  //    a query with no page that claims it cannot be won at any score.
+  {
+    const pages = readPages(dist).filter((p) => !/name="robots" content="noindex/.test(p.html));
+    const intent = JSON.parse(readIf('src/data/intent.json') || '{}');
+    const watch = intent.watch ?? [];
+    // A money page is one served under a collection the site claims commercial
+    // queries from (intent.json → claimFrom), or a calculator.
+    const moneyRoutes = (intent.claimFrom ?? [])
+      .map((c) => c.route ?? routeOfCollection(c.collection))
+      .filter(Boolean);
+    const isMoney = (route) => moneyRoutes.some((r) => route.startsWith(`${r}/`)) || /-calculator$/.test(route);
+    const money = pages.filter((p) => isMoney(p.route));
+    const claimed = new Set(watch.map((w) => w.page).filter(Boolean));
+    const covered = [...claimed].filter((pg) => pages.some((p) => p.route === pg));
+    if (!pages.length) {
+      lever('Commercial coverage', null, `n/a — no built pages under ${dist}/; run npm run build first`);
+    } else {
+      lever('Commercial coverage', claimed.size ? pct(covered.length, claimed.size) : (money.length ? 80 : 0),
+        `${money.length} money page(s) under ${moneyRoutes.join(', ') || '(no claimFrom collections)'}; ` +
+        (claimed.size
+          ? `${covered.length}/${claimed.size} watch-list queries have their claiming page live`
+          : 'the intent.json watch list is empty, so there is nothing to cover yet (ACTIONS A-M03)'));
+    }
+  }
+
+  return out;
 }
 
 /** Markdown for the report. Kept beside the scoring so the two cannot drift. */
@@ -279,6 +414,12 @@ export function aeoMarkdown(r) {
     out.push('| Engine | Agents | Requests | Role |');
     out.push('|---|---|---|---|');
     for (const e of eng) out.push(`| ${e.engine} | ${e.agents.join(', ')} | ${e.requests.toLocaleString()} | ${e.roles.join(' + ')} |`);
+  }
+  if (r.levers?.length) {
+    out.push('\n**Levers — off the funnel, never in its mean.** Each is a thing to go and do; the invariant battery owns the rules that are enforced rather than scored.\n');
+    out.push('| Lever | Score | | Evidence |');
+    out.push('|---|---|---|---|');
+    for (const l of r.levers) out.push(`| ${l.name} | ${l.score ?? '—'} | ${l.band} | ${l.evidence} |`);
   }
   if (r.focus) out.push(`\n**Work this next: ${r.focus.name}.** ${r.focus.why}`);
   if (r.blockers.length) out.push('\n**Blockers**\n' + r.blockers.map((b) => `- ${b}`).join('\n'));

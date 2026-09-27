@@ -1,0 +1,4 @@
+{
+  "$comment": "Permanent (301) redirects the worker serves. Each key must also be in wrangler.jsonc → run_worker_first, or the request never reaches the worker (check-parity rule 5 fails one without the other; smoke-worker asserts the 301). One-line reason per row, so a future editor knows whether the row is still earning its keep. Shape: \"/old-path\": { \"to\": \"/new-path\", \"reason\": \"folded into the guide, 2026-10-01\" }. Empty until a site needs one.",
+  "redirects": {}
+}

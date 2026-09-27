@@ -18,56 +18,51 @@
  *     table, the map llms.txt gives site visitors, but for the repository.
  */
 
-import { readdirSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { SITE_URL } from '../src/data/origin.mjs';
+import { readCollection } from './lib/content.mjs';
+import { collections, staticRoutes as pageRoutes } from './lib/routes.mjs';
 
-const ROUTE_DIR = {}; // collection name → route dir, where they differ
 const today = new Date().toISOString().slice(0, 10);
 
-const fmField = (fm, key) => {
-  const m = fm.match(new RegExp(`^${key}:\\s*(['"]?)([\\s\\S]*?)\\1\\s*$`, 'm'));
-  if (!m) return '';
-  // YAML escapes a quote inside a single-quoted scalar by doubling it.
-  return m[1] === "'" ? m[2].replace(/''/g, "'") : m[2];
+/** A YAML date or string as YYYY-MM-DD, or ''. */
+const day = (v) => {
+  if (!v) return '';
+  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  return String(v).slice(0, 10);
 };
 
-const collections = [];
-for (const dir of readdirSync('src/content', { withFileTypes: true })) {
-  if (!dir.isDirectory()) continue;
-  const coll = dir.name;
-  const rows = [];
-  for (const f of readdirSync(join('src/content', coll)).filter((n) => /\.mdx?$/.test(n))) {
-    const p = join('src/content', coll, f);
-    const raw = readFileSync(p, 'utf8');
-    const fm = raw.match(/^---\n([\s\S]*?)\n---\n/)?.[1] ?? '';
-    const body = raw.replace(/^---\n[\s\S]*?\n---\n/, '');
-    rows.push({
-      slug: f.replace(/\.mdx?$/, ''),
-      path: p,
-      route: `/${ROUTE_DIR[coll] ?? coll}/${f.replace(/\.mdx?$/, '')}`,
-      title: fmField(fm, 'title'),
-      published: fmField(fm, 'published'),
-      updated: fmField(fm, 'updated'),
-      draft: /^draft:\s*true$/m.test(raw),
-      words: (body.match(/[A-Za-z’']+/g) ?? []).length,
-      outLinks: (body.match(/\]\(\/[a-z]/g) ?? []).length,
-    });
-  }
+// All three statuses, with the status named: an inventory that hides a
+// scheduled post answers "does this exist?" wrong on the one day it matters
+// (scripts/lib/content.mjs § who wants what).
+const inventory = [];
+for (const coll of Object.keys(collections())) {
+  const rows = readCollection(coll, { include: 'all' }).map((e) => ({
+    slug: e.slug,
+    path: e.file,
+    route: e.route,
+    title: typeof e.data.title === 'string' ? e.data.title : '',
+    published: day(e.data.published),
+    updated: day(e.data.updated),
+    status: e.status,
+    draft: e.status === 'draft',
+    words: (e.body.match(/[A-Za-z’']+/g) ?? []).length,
+    outLinks: (e.body.match(/\]\(\/[a-z]/g) ?? []).length,
+  }));
   rows.sort((a, b) => (b.published || '').localeCompare(a.published || ''));
-  collections.push({ coll, rows });
+  inventory.push({ coll, rows });
 }
 
-const staticPages = [];
-(function walk(dir, prefix) {
-  for (const e of readdirSync(dir, { withFileTypes: true })) {
-    if (e.isDirectory()) walk(join(dir, e.name), `${prefix}/${e.name}`);
-    else if (e.name.endsWith('.astro') && !e.name.includes('[')) {
-      const base = e.name.replace(/\.astro$/, '');
-      staticPages.push({ route: base === 'index' ? prefix || '/' : `${prefix}/${base}`, path: join(dir, e.name) });
-    }
+const staticPages = Object.entries(pageRoutes()).map(([route, path]) => ({ route, path }));
+// Author pages are real indexable pages with a real permalink, rendered from a
+// dynamic route: the walk above cannot see them, so /author/<slug> was missing
+// from the one document that answers "what does this site have".
+{
+  const { authors } = JSON.parse(readFileSync('src/data/authors.json', 'utf8'));
+  for (const a of authors ?? []) {
+    staticPages.push({ route: `/author/${a.slug}`, path: 'src/pages/author/[...slug].astro' });
   }
-})('src/pages', '');
+}
 staticPages.sort((a, b) => a.route.localeCompare(b.route));
 
 const out = [];
@@ -75,28 +70,32 @@ out.push('# Content inventory');
 out.push('');
 out.push(`Generated ${today} by \`npm run inventory\` — do not hand-edit; regenerate instead.`);
 out.push('Check this before pitching anything new: new pieces extend clusters, they do not');
-out.push('duplicate them. Live URLs are permalinks; drafts render nowhere yet.');
+out.push('duplicate them. Live URLs are permalinks; a scheduled piece goes live on the first');
+out.push('build after its date, and a draft renders nowhere until it flips.');
 out.push('');
-const totalWords = collections.flatMap((c) => c.rows).reduce((s, r) => s + r.words, 0);
-const totalLive = collections.flatMap((c) => c.rows).filter((r) => !r.draft).length;
+const totalWords = inventory.flatMap((c) => c.rows).reduce((s, r) => s + r.words, 0);
+const totalLive = inventory.flatMap((c) => c.rows).filter((r) => r.status === 'published').length;
 out.push('| Surface | Pieces | Words (approx) |');
 out.push('|---|---|---|');
-for (const { coll, rows } of collections) {
-  const live = rows.filter((r) => !r.draft);
-  out.push(`| ${coll} | ${live.length}${rows.length > live.length ? ` (+${rows.length - live.length} draft)` : ''} | ${live.reduce((s, r) => s + r.words, 0).toLocaleString('en-US')} |`);
+for (const { coll, rows } of inventory) {
+  const live = rows.filter((r) => r.status === 'published');
+  const queued = rows.filter((r) => r.status === 'scheduled').length;
+  const drafts = rows.filter((r) => r.status === 'draft').length;
+  const extra = [queued ? `+${queued} scheduled` : '', drafts ? `+${drafts} draft` : ''].filter(Boolean).join(', ');
+  out.push(`| ${coll} | ${live.length}${extra ? ` (${extra})` : ''} | ${live.reduce((s, r) => s + r.words, 0).toLocaleString('en-US')} |`);
 }
 out.push(`| static pages | ${staticPages.length} | — |`);
 out.push(`| **total** | **${totalLive + staticPages.length}** | **${totalWords.toLocaleString('en-US')}** |`);
 
-for (const { coll, rows } of collections) {
+for (const { coll, rows } of inventory) {
   out.push('');
   out.push(`## ${coll}`);
   out.push('');
-  out.push('| Title | Permalink | Source | Published | Updated | Words | Out-links |');
-  out.push('|---|---|---|---|---|---|---|');
+  out.push('| Title | Permalink | Source | Status | Published | Updated | Words | Out-links |');
+  out.push('|---|---|---|---|---|---|---|---|');
   for (const r of rows) {
-    const link = r.draft ? `_(draft)_ \`${r.route}\`` : `${SITE_URL}${r.route}`;
-    out.push(`| ${r.title.replace(/\|/g, '\\|')} | ${link} | \`${r.path}\` | ${r.published || '—'} | ${r.updated || '—'} | ${r.words} | ${r.outLinks} |`);
+    const link = r.status === 'published' ? `${SITE_URL}${r.route}` : `_(${r.status})_ \`${r.route}\``;
+    out.push(`| ${r.title.replace(/\|/g, '\\|')} | ${link} | \`${r.path}\` | ${r.status} | ${r.published || '—'} | ${r.updated || '—'} | ${r.words} | ${r.outLinks} |`);
   }
 }
 

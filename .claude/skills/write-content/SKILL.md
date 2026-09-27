@@ -81,10 +81,29 @@ prompt.standing`: Remove all mannered prose (`marketing/content-guidelines.md
 
 ## 2. Decide — page type, then the funnel ladder
 
-First match each target to its page type by intent (site-blueprint § 1–2): a
-"what is X" query is a glossary/guide entry, an "X vs Y" query a comparison page,
-an "X software/pricing" query a money page. One page = one primary query = one
-intent; never build two pages competing for the same query.
+First match each target to its page type by intent (site-blueprint § 1–2), and
+each page type is a COLLECTION with a schema that will refuse a thin page:
+
+| The query reads like | Page type | Where it goes |
+|---|---|---|
+| "what is X" | glossary entry or guide | `src/content/glossary/` |
+| "X vs Y", "X alternatives" | comparison | `src/content/comparison/` → `/vs/<slug>` |
+| "X software", "X pricing", "X for <role>" | money page | `src/content/solutions/` → `/solutions/<slug>` |
+| a story, a finding, a news hook | blog post | `src/content/blog/` |
+
+The two commercial collections carry required fields the informational ones do
+not, so read the schema before drafting (`src/content.config.ts`, and the
+`solution` / `comparison` snippets in `.vscode/frontmatter.code-snippets`):
+a money page must declare `primaryKeyword`, `offering`, `schemaType`, `pricing`,
+a `cta`, and `sources` if it states any number; a comparison page must carry at
+least three rows, EACH with the URL it was read from and the date it was read,
+at least two `bestFor` entries so the rival wins somewhere, and a written
+`verdict`. `check-source-rules` fails a comparison row read more than 90 days
+ago, and `npm run audit:pages` holds both types to a 30-day freshness clock
+rather than 90.
+
+One page = one primary query = one intent; never build two pages competing for
+the same query.
 
 Then order the cycle's work by the funnel ladder (STRATEGY.md § Content strategy)
 bottom-up; impressions alone are worth nothing:

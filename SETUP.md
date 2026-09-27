@@ -107,9 +107,25 @@ Work top to bottom; later files read earlier ones.
       renewal in your calendar now (ACTIONS A-Y01 — an expired file reads as
       an unmaintained site to exactly the audience it exists for).
 - [ ] `wrangler.jsonc` — rename the worker (`"name"`).
-- [ ] Page copy: `src/pages/index.astro`, `about.astro`, `contact.astro` —
-      rewrite the template's self-describing copy (including the homepage
-      FAQ array, which feeds both the accordion and the FAQPage schema).
+- [ ] Page copy: `src/pages/index.astro`, `contact.astro` — rewrite the
+      template's self-describing copy (including the homepage FAQ array,
+      which feeds both the accordion and the FAQPage schema).
+- [ ] The About page is DATA, not markup: `src/pages/about.astro` renders the
+      eight sections of `marketing/page-guidelines.md § 3` from two files and
+      needs no editing. Fill `src/data/facts.json → company` (the Key Facts
+      rows and the Organization node: `legalName`, `type`, `founded`,
+      `headquarters`, `coreOffering`, `pricing`, `contractTerms`, `services`,
+      `communication`, `notableClients`, `customersServed`,
+      `projectsDelivered`, `competitors`, `social` — each with its source) and
+      `src/data/about.json` (the prose: the ICP, the services' sentences, the
+      five differentiators with rivals named, the ICP segments, the founder
+      and origin story, how it works, and the six FAQs). **A value still
+      reading TODO is OMITTED from the page and from the schema, never
+      rendered** — so the page is honest from the first build and gets fuller
+      as you fill it. Keep `company.competitors` in step with
+      `intent.json → competitors` (check-parity rule 6). The founder is ONE
+      record, in `src/data/authors.json`. ACTIONS A-L13 wants the facts
+      approved in writing before launch; A-Q03 re-confirms them quarterly.
 - [ ] Sample content: the entries in `src/content/blog/` and
       `src/content/glossary/` carry `TODO Founder Name` authors. Replace
       them with your first real entries — or fix their frontmatter if you
@@ -245,9 +261,10 @@ origin breaks it.
       export lands. The report says per stage which of those it is, so the
       blind spots are never silent. `npm run aeo -- --trend` scores every
       committed snapshot to show the funnel moving.
-      `npm run audit:discovery` scores twenty discovery levers from the
-      build and the newest snapshot — run it after the first pull to see
-      where the site stands.
+      `npm run aeo` also prints the six off-funnel levers (listings, the
+      prompt panel, the data sheet, Bing verification, Organization
+      completeness, commercial coverage) read from the repo and the build —
+      run it after the first pull to see where the site stands.
 - [ ] **Privacy page**: clear the `privacy.json` TODOs, then flip
       `status.draft` to `false` — one flag publishes it and its
       indexability together.
@@ -268,8 +285,11 @@ origin breaks it.
       glossary, keyword map) — see the content-cadence skill.
 - [ ] **Search engines**: GSC (domain property via DNS TXT), Bing Webmaster
       (`VERIFICATION.bing` in site.ts), submit the sitemap in both;
-      IndexNow key file `public/<key>.txt` (`/ship` submits after each
-      deploy; `indexnow.yml` is manual dispatch only).
+      IndexNow key file `public/<key>.txt` (`/ship` and the daily run submit
+      after each deploy; `indexnow.yml` is manual dispatch only). With
+      `BING_WEBMASTER_API_KEY` set the same run also submits the last two
+      days' changed URLs to Bing URL Submission — the key does two jobs, the
+      insights read-back and the submission.
 - [ ] **Live data (optional)**: two-tab Sheet pattern (CHECKLIST §3 — the
       published tab physically cannot leak contact fields), tab URL into
       `src/data/sheets.config.json`, `<LiveData />` on the page.

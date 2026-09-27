@@ -9,23 +9,21 @@
  * (finding all of them beats finding one), and exits 1 if any fired.
  */
 
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
 import { ROBOTS_AGENTS } from './lib/crawlers.mjs';
+import { walkHtml, routeOf, decode, strip, ldNodes } from './lib/html.mjs';
+import { collections, twinCollections, routeOfCollection } from './lib/routes.mjs';
 
 const DIST = 'dist';
 let fail = 0;
 
-function walk(dir, out = []) {
-  for (const name of readdirSync(dir)) {
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) walk(p, out);
-    else if (name.endsWith('.html')) out.push(p);
-  }
-  return out;
-}
-const FILES = walk(DIST).sort();
+const FILES = walkHtml(DIST).sort();
 const html = new Map(FILES.map((f) => [f, readFileSync(f, 'utf8')]));
+
+/** Collection route directories, from the one config: ['blog', 'glossary', …]. */
+const CONTENT_DIRS = Object.keys(collections()).map((c) => routeOfCollection(c).slice(1));
+const TWIN_DIRS = twinCollections().map((c) => routeOfCollection(c).slice(1));
 
 function check(title, fn) {
   console.log(`→ ${title}`);
@@ -57,10 +55,10 @@ check('every table wrapped in .table-scroll', (bad) => {
 });
 
 // BaseLayout clamps via clampTitle(); a failure means the clamp was bypassed.
-// Measured on the DECODED string: Astro escapes an apostrophe to &#39;, five
-// characters for one, and a 60-character title read as 64 (found 20 Sep 2026).
-const decode = (t) => t.replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(n)).replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
-  .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+// Measured on the DECODED string (lib/html.mjs): Astro escapes an apostrophe
+// to &#39;, five characters for one, and a 60-character title read as 64
+// (found 20 Sep 2026). One decoder, shared, so the next such bug cannot hide
+// in a second copy of the table.
 check('<title> at most 60 characters', (bad) => {
   for (const [f, h] of html) {
     const m = h.match(/<title>([^<]*)<\/title>/);
@@ -182,13 +180,15 @@ check('pagefind index covers exactly the data-pagefind-body pages', (bad) => {
 // Internal linking by construction — only enforced once a collection has ≥2
 // published entries (one post cannot link to a sibling).
 check('no orphan content pages (related links present)', (bad) => {
-  for (const dir of ['blog', 'glossary']) {
+  const linksToContent = new RegExp(`href="/(${CONTENT_DIRS.join('|')})/`);
+  for (const dir of CONTENT_DIRS) {
+    if (!existsSync(join(DIST, dir))) continue;
     const pages = readdirSync(join(DIST, dir)).filter((f) => f.endsWith('.html'));
     if (pages.length < 2) continue;
     for (const p of pages) {
       const h = readFileSync(join(DIST, dir, p), 'utf8');
       const rel = h.match(/<section class="related"[\s\S]*?<\/section>/);
-      if (!rel || !/href="\/(blog|glossary)\//.test(rel[0])) bad(`${dir}/${p} has no related-content links — an orphan page`);
+      if (!rel || !linksToContent.test(rel[0])) bad(`${dir}/${p} has no related-content links — an orphan page`);
     }
   }
 });
@@ -243,20 +243,6 @@ check('every JSON-LD block parses', (bad) => {
   }
 });
 
-// The worker falls back to HTML when a twin is missing, so a broken generator
-// degrades silently — same rationale as the pagefind coverage check.
-// Helper: every JSON-LD node on a page, @graph flattened.
-function ldNodes(h) {
-  const nodes = [];
-  for (const m of h.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) {
-    try {
-      const j = JSON.parse(m[1]);
-      for (const n of Array.isArray(j['@graph']) ? j['@graph'] : [j]) if (n && typeof n === 'object') nodes.push(n);
-    } catch { /* the parse check above reports it */ }
-  }
-  return nodes;
-}
-
 // ENTITY HYGIENE. An engine resolves the brand to an entity from the strings
 // in Organization/Person/WebSite nodes, verbatim. The Sep 2026 audit of another
 // site found its brand name shipped as "B&#39;spoke" in its own JSON-LD (an
@@ -288,7 +274,7 @@ check('JSON-LD entity hygiene: no HTML entities in names, every sameAs/url a rea
 });
 
 // The Organization node is the spine: name, url, logo, description and a
-// contact point are what make it resolvable (the Sep 2026 discovery-audit frame, ENT-04). It is
+// contact point are what make it resolvable (the Sep 2026 outside discovery audit, ENT-04). It is
 // emitted once from BaseLayout, so this guards a refactor that drops a field.
 check('Organization node carries name, url, logo, description, contactPoint on every page', (bad) => {
   for (const [f, h] of html) {
@@ -299,15 +285,15 @@ check('Organization node carries name, url, logo, description, contactPoint on e
 });
 
 // A collection index that links to its members but describes itself only as
-// a page is, to an engine, a page — not a list (discovery-audit frame SD-04). Rule:
+// a page is, to an engine, a page — not a list (the AEO report's schema lever). Rule:
 // any page that links to three or more pages under its own path prefix is an
 // index and must emit an ItemList (itemListElement). Generic on purpose: the
 // next collection index gets the rule without anyone listing it here.
 check('every collection index page emits an ItemList', (bad) => {
   for (const [f, h] of html) {
-    const route = '/' + f.slice(DIST.length + 1).replace(/\.html$/, '').split(sep).join('/');
+    const route = routeOf(f, DIST);
     // Only top-level pages can be a collection index: /blog, /glossary, /vs …
-    if (route === '/index' || route.split('/').length !== 2) continue;
+    if (route === '/' || route.split('/').length !== 2) continue;
     const prefix = `${route}/`;
     const children = new Set([...h.matchAll(/href="([^"#?]+)"/g)].map((m) => m[1]).filter((u) => u.startsWith(prefix)));
     if (children.size < 3) continue;
@@ -337,8 +323,12 @@ check('robots.txt does not Disallow an answer-engine crawler', (bad) => {
   }
 });
 
+// The worker falls back to HTML when a twin is missing, so a broken generator
+// degrades silently — same rationale as the pagefind coverage check. Only the
+// collections marked `twins: true` in src/data/collections.json are negotiated.
 check('every content page has its markdown twin', (bad) => {
-  for (const dir of ['blog', 'glossary']) {
+  for (const dir of TWIN_DIRS) {
+    if (!existsSync(join(DIST, dir))) continue;
     for (const p of readdirSync(join(DIST, dir)).filter((f) => f.endsWith('.html'))) {
       if (!existsSync(join(DIST, dir, p.replace(/\.html$/, '.md')))) {
         bad(`${dir}/${p} has no markdown twin — did markdown-twins.mjs run?`);
@@ -438,11 +428,31 @@ check('every indexable page has its own social card, and no two pages share one'
 // data-og-figure, which is what the social card lifts. A page without one
 // reads as text-only and previews as a title alone (AGENTS § Figures).
 check('every content page carries a lead figure (data-og-figure)', (bad) => {
-  const content = /^dist\/(blog|glossary)\/(?!index\.html$).+\.html$/;
+  const content = new RegExp(`^dist/(${CONTENT_DIRS.join('|')})/(?!index\\.html$).+\\.html$`);
   for (const [f, h] of html) {
     if (!content.test(f)) continue;
     const leads = (h.match(/data-og-figure/g) ?? []).length;
     if (leads !== 1) bad(`${f} has ${leads} lead figures (expected exactly one — declare \`figures:\` in frontmatter or let the collection's auto figure render)`);
+  }
+});
+
+// THE ABOUT PAGE CARRIES NO EM DASH (marketing/page-guidelines.md § 3). It is
+// the entity source document an engine resolves the brand from, read in the
+// third person by a machine as often as by a person, and the em dash is the
+// loudest machine tell in the voice standard (src/data/voice.json). Measured on
+// the BUILT page's visible text, not the source: the text arrives from three
+// places at once (about.json's prose, facts.json's values, the template's own
+// markup), a code comment is not the page saying anything, and `&mdash;` in the
+// source would pass a grep and fail a reader. The voice check caps em-dash
+// DENSITY in content; this one page is zero.
+check('the About page carries no em dash (entity source document)', (bad) => {
+  const about = [...html.entries()].find(([f]) => routeOf(f, DIST) === '/about');
+  if (!about) return;
+  const text = strip(about[1]);
+  const n = (text.match(/—/g) ?? []).length;
+  if (n) {
+    const where = text.split('—').slice(0, 2).map((p, i) => (i === 0 ? p.slice(-40) : p.slice(0, 40)));
+    bad(`dist/about.html says "${where.join('—')}" — ${n} em dash(es) on the About page; use a full stop or a comma (marketing/page-guidelines.md § 3)`);
   }
 });
 

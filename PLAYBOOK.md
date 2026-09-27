@@ -210,9 +210,9 @@ Umami). `BING_WEBMASTER_API_KEY` adds Bing's read-back — the index behind
 Copilot and ChatGPT search, and the only one of the two big non-Google
 answer indexes that will tell you what it holds. `marketing/ai-panel.md` is
 the monthly manual share-of-voice panel across the assistants;
-`npm run audit:discovery` scores the whole picture on twenty levers. The
-cadence works all of it (`.claude/skills/content-cadence/SKILL.md` step 2e,
-weekly step 17).
+`npm run aeo` scores the whole picture: the five funnel stages, and beside
+them the six off-funnel levers nothing else measures. The cadence works all of
+it (`.claude/skills/content-cadence/SKILL.md` step 2e, weekly step 17).
 
 **And the one-screen answer: `npm run aeo`.** The numbers above are five
 tables that a person has to reconcile before they mean anything, which is the
@@ -312,8 +312,11 @@ serving pages, which is exactly why they get forgotten)
       Copilot/DuckDuckGo/ChatGPT search): verify via `VERIFICATION.bing`
       meta, submit sitemap.
 - [ ] IndexNow: key file at `public/<key>.txt` containing exactly the key;
-      `/ship` runs `npm run indexnow` after every deploy (the full live
-      sitemap; `indexnow.yml` exists for manual dispatch). Google does not participate
+      `/ship` and the daily cadence run call `npm run indexnow` after every
+      deploy (the full live sitemap, following the sitemap index;
+      `indexnow.yml` exists for manual dispatch). With
+      `BING_WEBMASTER_API_KEY` set, the same command also submits the last two
+      days' changed URLs to Bing URL Submission. Google does not participate
       — the sitemap covers Google.
 - [ ] robots.txt is a generated route — the AI-crawler list (with intent
       comments) lives in `src/pages/robots.txt.ts` and the Sitemap URL

@@ -100,6 +100,51 @@ export function outlineFigure(title: string, headings: { depth: number; text: st
   };
 }
 
+/**
+ * A money page's delivery process as a numbered path — the fallback when a
+ * solutions entry declares no figure. `process` is the one structured list a
+ * money page always has, and it is the thing a buyer most wants to see.
+ */
+export function processStepsFigure(
+  title: string,
+  process: { step: string; detail: string }[]
+): Figure | null {
+  if (process.length < 2) return null;
+  return {
+    kind: 'steps',
+    place: 'lead',
+    title: `How ${title} is delivered`,
+    steps: process.slice(0, 8).map((p) => ({ label: p.step, note: p.detail.slice(0, 90) })),
+  };
+}
+
+/**
+ * A comparison page's table as a two-column compare figure — the fallback when
+ * a comparison entry declares no figure. Only the FIRST rival's column is
+ * drawn: a compare figure has two columns by design (figureSchema.ts), and a
+ * three-way table redrawn as two would misstate the page.
+ */
+export function compareRowsFigure(
+  us: string,
+  firstRival: string,
+  rows: { criterion: string; us: string; them: string[] }[]
+): Figure | null {
+  if (rows.length < 2) return null;
+  const clamp = (t: string, n: number) => (t.length > n ? `${t.slice(0, n - 1).replace(/\s+\S*$/, '')}…` : t);
+  return {
+    kind: 'compare',
+    place: 'lead',
+    title: `${us} compared with ${firstRival}`,
+    aLabel: clamp(us, 64),
+    bLabel: clamp(firstRival, 64),
+    rows: rows.slice(0, 6).map((r) => ({
+      label: clamp(r.criterion, 64),
+      a: clamp(r.us, 90),
+      b: clamp(r.them[0] ?? '—', 90),
+    })),
+  };
+}
+
 /** The lead figure for a page: the declared one, else the collection's auto figure. */
 export function leadFigure(declared: Figure[], fallback: () => Figure | null): Figure | null {
   return declared.find((f) => f.place === 'lead') ?? fallback();

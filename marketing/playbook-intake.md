@@ -83,7 +83,7 @@ Evidence: a vendor's checklist; each item is a mechanism (extractability, freshn
 Transfers → `page-guidelines.md` § 1 (the six groups and the fan-out table) and `scripts/page-audit.mjs` (`npm run audit:pages`, twenty checks, first fix named, `--min` as a draft gate).
 Transfers → `content-guidelines.md` § 1 (BLUF, islands, extractable passages, semantic triples, entity-rich, short sentences).
 Already covered: `tldr`, FAQ from one array, sources, author `sameAs`, lead figure → the schemas and invariants.
-Refused: "an embedded YouTube video is present" as a per-page requirement — video only where one exists (discovery-audit prints it n/a); "updated within the last 30 days" as a universal bar — 30 for pages whose facts move, 90 elsewhere, and never a date bump without a change.
+Refused: "an embedded YouTube video is present" as a per-page requirement — video only where one exists (no video, no VideoObject — there is nothing to score); "updated within the last 30 days" as a universal bar — 30 for pages whose facts move, 90 elsewhere, and never a date bump without a change.
 
 ### About Us page, the 8-point post and the Contact.so SOP (pasted)
 Kind: SOP.
@@ -116,7 +116,7 @@ Refused: the revenue and citation claims as evidence — self-reported; the "5-p
 
 ### AEO research list (pasted, eight arrows: reading GSC + product analytics, what ChatGPT searches on Bing, modelling Gemini/Claude questions, who is cited, the sources behind citations, the gap, fixing pages, which page types get picked)
 Transfers → `runbook.md` W10 and `ai-panel.md` (the panel records who is cited and the sources behind the citation; a cited listicle or thread becomes a link-target row); the Bing block in `npm run insights` covers "what ChatGPT searches on Bing".
-Already covered: the funnel (`npm run aeo`), the Generative AI export, the discovery scorecard.
+Already covered: the funnel and its levers (`npm run aeo`), the Generative AI export.
 
 ### Seven AI agents for AEO (pasted: competitor page scoring, keep/change per element, question-to-page match, citation chance per URL, buyer-sort of search terms, internal link map, 20 yes/no checks on drafts)
 Transfers → `scripts/page-audit.mjs` (citation chance per URL with the first fix; twenty checks; `--min` as the draft gate); `intent.json → bofu` (the buyer-sort); `page-guidelines.md` § 5 (the link map with an honest reason per link); `runbook.md` § The BOFU loop (score the competitor pages above ours on answer, depth, proof, freshness before touching ours).

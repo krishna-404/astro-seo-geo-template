@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import committed from '../data/lastmod.json';
+import collectionsConfig from '../data/collections.json';
 
 /**
  * `<lastmod>` for the sitemap, taken from git rather than the clock.
@@ -33,15 +34,21 @@ function sourceCandidates(pathname: string): string[] {
 
   if (clean === '/') return ['src/pages/index.astro'];
 
-  // Collection entries: /blog/<slug>, /glossary/<slug>. The content file is
-  // the thing that actually changed; the [slug] template is a fallback for
-  // when only the template moved.
-  const m = clean.match(/^\/(blog|glossary)\/(.+)$/);
-  if (m) {
-    const [, section, slug] = m;
+  // Collection entries: /<route>/<slug> for every collection in
+  // src/data/collections.json. The content file is the thing that actually
+  // changed; the [slug] template is a fallback for when only the template
+  // moved. The route directory and the folder name can differ (a `comparison`
+  // collection renders under /vs), so both come from the config rather than
+  // from the URL.
+  for (const [folder, cfg] of Object.entries(collectionsConfig.collections)) {
+    const prefix = `${cfg.route}/`;
+    if (!clean.startsWith(prefix)) continue;
+    const slug = clean.slice(prefix.length);
+    if (!slug || slug.includes('/')) continue;
+    const section = cfg.route.slice(1);
     return [
-      `src/content/${section}/${slug}.mdx`,
-      `src/content/${section}/${slug}.md`,
+      `src/content/${folder}/${slug}.mdx`,
+      `src/content/${folder}/${slug}.md`,
       `src/pages/${section}/[...slug].astro`,
       `src/pages/${section}/[slug].astro`,
     ];

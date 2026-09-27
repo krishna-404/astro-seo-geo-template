@@ -8,7 +8,8 @@
  * Runs AFTER `astro build` — it needs dist/ to exist, if only so a missing
  * dist/ fails loudly instead of writing markdown nobody serves.
  *
- * SCOPE: the two content collections (blog, glossary) only. Their MDX source
+ * SCOPE: the collections marked `twins: true` in src/data/collections.json
+ * (blog and glossary today) only. Their MDX source
  * IS the page body — plain markdown, no JSX, checked in readContent.mjs — so
  * the twin is exact rather than reconstructed. The hand-authored pages
  * (/, /about, /contact) have no equivalent markdown source; a faithful twin
@@ -33,7 +34,8 @@
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readCollection, bodyAsText, leadFigureLine } from './lib/readContent.mjs';
+import { readCollection, bodyAsText, leadFigureLine } from './lib/content.mjs';
+import { twinCollections, routeOfCollection } from './lib/routes.mjs';
 import { SITE_URL } from '../src/data/origin.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -44,10 +46,10 @@ if (!existsSync(dist)) {
   process.exit(1);
 }
 
-const COLLECTIONS = {
-  blog: '/blog',
-  glossary: '/glossary',
-};
+// The collections served with a twin, from src/data/collections.json — the
+// one config. A `twins: true` entry there and `<route>/*` in wrangler's
+// run_worker_first are one decision; check-parity rule 2 holds them together.
+const COLLECTIONS = Object.fromEntries(twinCollections().map((c) => [c, routeOfCollection(c)]));
 
 const sourcesSection = (sources) => {
   if (!sources || sources.length === 0) return '';
@@ -108,4 +110,4 @@ for (const [collection, routePrefix] of Object.entries(COLLECTIONS)) {
   }
 }
 
-console.log(`markdown-twins: ${written} .md twins written to dist/ (blog and glossary only — see file header for scope)`);
+console.log(`markdown-twins: ${written} .md twins written to dist/ (${Object.keys(COLLECTIONS).join(', ')} only — see file header for scope)`);

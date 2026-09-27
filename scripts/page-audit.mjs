@@ -25,8 +25,9 @@
  * prints its reason and never counts. Nothing here is site copy.
  */
 
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
-import { join, sep } from 'node:path';
+import { existsSync } from 'node:fs';
+import { readPages, decode, strip, norm } from './lib/html.mjs';
+import { newestSnapshot } from './lib/snapshots.mjs';
 
 const DIST = 'dist';
 const args = process.argv.slice(2);
@@ -38,18 +39,6 @@ if (!existsSync(DIST)) {
   process.exit(2);
 }
 
-function walk(dir, out = []) {
-  for (const name of readdirSync(dir)) {
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) walk(p, out);
-    else if (name.endsWith('.html')) out.push(p);
-  }
-  return out;
-}
-const route = (f) => '/' + f.slice(DIST.length + 1).replace(/\.html$/, '').split(sep).join('/').replace(/^index$/, '');
-const decode = (t) => t.replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(n)).replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
-  .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ');
-const strip = (h) => decode(h.replace(/<script[\s\S]*?<\/script>/g, ' ').replace(/<style[\s\S]*?<\/style>/g, ' ').replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
 const DAY = 864e5;
 
 function ldTypes(h) {
@@ -65,15 +54,15 @@ function ldTypes(h) {
 
 /** Impressions per page from the newest snapshot, to rank the refresh list. */
 function impressions() {
-  const dir = 'marketing/insights';
-  const snaps = existsSync(dir) ? readdirSync(dir).filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f)).sort() : [];
-  if (!snaps.length) return {};
-  try {
-    const s = JSON.parse(readFileSync(join(dir, snaps.at(-1)), 'utf8'));
-    const out = {};
-    for (const r of s.searchConsole?.pages ?? []) out[new URL(r.keys[0]).pathname.replace(/\/$/, '') || '/'] = r.impressions;
-    return out;
-  } catch { return {}; }
+  const snap = newestSnapshot();
+  if (!snap) return {};
+  const out = {};
+  for (const r of snap.data.searchConsole?.pages ?? []) {
+    try {
+      out[new URL(r.keys[0]).pathname.replace(/\/$/, '') || '/'] = r.impressions;
+    } catch { /* a malformed row in a snapshot is not this script's to fail on */ }
+  }
+  return out;
 }
 
 const BUCKETS = [
@@ -86,11 +75,20 @@ const BUCKETS = [
   ['define', 'B · what it is, how it works', /\b(what is|what are|how (?:does|do) .{0,40} work|how it works|means|definition|defined as)\b/i],
 ];
 
-function audit(f, h) {
-  const r = route(f);
+function audit(r, h) {
   const art = h.match(/<article\b[^>]*data-pagefind-body[^>]*>([\s\S]*?)<\/article>/)?.[1];
   if (!art) return null;
-  const kind = /class="post\b/.test(h) ? 'post' : /class="term\b/.test(h) ? 'term' : 'page';
+  // The page type, read from the template's own root class. It decides two
+  // things: the freshness bar, and whether the fan-out buckets apply.
+  const kind = /class="post\b/.test(h)
+    ? 'post'
+    : /class="term\b/.test(h)
+      ? 'term'
+      : /class="compare\b/.test(h)
+        ? 'comparison'
+        : /class="solution\b/.test(h)
+          ? 'solution'
+          : 'page';
   // The prose body only: strip the chrome (breadcrumbs, related, pager, CTA, sources).
   // Astro appends data-astro-cid-* to every scoped element, so match on the
   // class attribute and let the rest of the tag be anything.
@@ -148,7 +146,15 @@ function audit(f, h) {
   add('in-body links 2–8', inLinks >= 2 && inLinks <= 8, `${inLinks} in-body link(s); 2–8, anchored on the phrase a searcher types`);
   add('word count ≥300', words >= 300, `${words} words; a page this thin is not cited`);
   // 05 Freshness
-  add('updated within 90 days', ageDays != null && ageDays <= 90, ageDays == null ? 'no modified/published meta' : `last dated ${ageDays} days ago; refresh the facts, examples and data, bump \`updated\``);
+  // TWO FRESHNESS BARS, because the pages age at different speeds. A
+  // comparison page states a rival's prices and features, which move without
+  // telling us: 30 days. A money page states our own price and terms, which we
+  // change deliberately: 30 days too, since a wrong price is the most expensive
+  // error on the site. Everything else: 90. (marketing/playbook-intake.md
+  // refused "updated within 30 days" as a UNIVERSAL bar for exactly this
+  // reason — a date bump without a change is worse than an old date.)
+  const freshDays = kind === 'comparison' || kind === 'solution' ? 30 : 90;
+  add(`updated within ${freshDays} days`, ageDays != null && ageDays <= freshDays, ageDays == null ? 'no modified/published meta' : `last dated ${ageDays} days ago; re-read the sources, refresh the figures, bump \`updated\``);
   add('visible last-updated date', visibleDate, 'no visible date on the page');
   add('names the current year where a date matters', new RegExp(`\\b${year}\\b`).test(text) || ageDays <= 30, `no "${year}" on the page; state when the figures were checked`);
   // 06 Fan-out buckets
@@ -162,14 +168,11 @@ function audit(f, h) {
   const firstFix = checks.find((c) => c.ok === false)?.fix ?? '—';
   return { route: r, kind, score, pass, of: scored.length, words, ageDays, firstFix, checks, buckets: hit };
 }
-const norm = (s) => s.toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
-
 const impr = impressions();
-const pages = walk(DIST)
-  .map((f) => ({ f, h: readFileSync(f, 'utf8') }))
-  .filter((p) => !/name="robots" content="noindex/.test(p.h))
-  .filter((p) => !ONE || route(p.f) === ONE)
-  .map((p) => audit(p.f, p.h))
+const pages = readPages(DIST)
+  .filter((p) => !/name="robots" content="noindex/.test(p.html))
+  .filter((p) => !ONE || p.route === ONE)
+  .map((p) => audit(p.route, p.html))
   .filter(Boolean)
   .map((p) => ({ ...p, impressions: impr[p.route] ?? 0 }))
   .sort((a, b) => a.score - b.score || b.impressions - a.impressions);

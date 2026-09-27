@@ -55,8 +55,11 @@
   "quickWins": { "maxPosition": 5, "minImpressions": 1 },
   "$navigationalComment": "TODO — your own brand name and its common misspellings, plus other products' names that land on your pages by accident (a query that is somebody else's brand is noise, not a buyer). Filled by /onboard-marketing or by hand; the weekly cadence run adds what the snapshots turn up.",
   "navigational": [],
-  "$claimFromComment": "TODO — the collections whose entries carry `primaryKeyword` (+ `secondaryKeywords`) frontmatter, with the route each is served under. Example: [{ \"collection\": \"solution\", \"route\": \"/solutions\" }]. Empty = every high-intent row reads `unmapped` until a page claims it (or the watch list names one).",
-  "claimFrom": [],
+  "$claimFromComment": "The collections whose entries carry `primaryKeyword` (+ `secondaryKeywords`) frontmatter — the money pages. The report cross-checks the page Google shows a query on against the page that claims it. Both collections below require `primaryKeyword` in their schema, so every entry in them claims exactly one query. Add a row for any further collection a site gives that field to; a collection listed here with no entries simply contributes none, which is the state this template ships in.",
+  "claimFrom": [
+    { "collection": "solutions", "route": "/solutions" },
+    { "collection": "comparison", "route": "/vs" }
+  ],
   "$watchComment": "TODO — one object per transactional phrasing the site means to win: { \"query\": \"<exact words a buyer types>\", \"page\": \"/<route that claims it>\", \"since\": \"YYYY-MM-DD\", \"note\": \"<why it is here, what was done>\" }. Add a term the day it first earns an impression (or the day a competitor sweep shows a rival owns it); never retire one — a term that stopped showing is a finding, not noise. Keep `page` in step with that page's frontmatter keywords and with marketing/keyword-map.md § High-intent, in the same commit.",
   "watch": []
 }

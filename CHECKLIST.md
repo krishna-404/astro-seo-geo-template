@@ -23,6 +23,35 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
 - ✅ **Content is files in git (MDX content collections), not a CMS.** Zod
   schemas make content rules enforceable rather than aspirational; an agent or
   colleague writes a file and opens a PR — review, diff, rollback for free.
+- ✅ **Four collections, two informational and two commercial** (27 Sep 2026),
+  declared in `src/data/collections.json` and schema'd in
+  `src/content.config.ts`:
+  - `blog` → `/blog/<slug>` and `glossary` → `/glossary/<slug>`, as before.
+  - `solutions` → `/solutions/<slug>`: MONEY PAGES. `primaryKeyword` is
+    REQUIRED here rather than optional, so every money page claims exactly one
+    query and `npm run insights` can hold it to that one
+    (`intent.json → claimFrom` names both commercial collections). The six
+    things a buyer needs each render from a schema field — `offering`,
+    `outcomes`, `process`, `pricing`, optional `compare`, one `cta` — so a page
+    cannot ship without its price or its process. `offers` appears in the
+    JSON-LD only when the price is `published` AND shown on the page.
+  - `comparison` → `/vs/<slug>`: the one page class that generates a letter
+    when it is wrong, so honesty is STRUCTURAL. Every row carries the URL it
+    was read from and the date it was read, and renders that date beside the
+    cell (a table with one date at the top claims every cell was read that day,
+    and none ever was); at least three rows; at least two `bestFor` entries, so
+    the page names a case where the rival wins; a written `verdict`.
+    `check-source-rules` fails a row read more than 90 days ago.
+  - **Both ship EMPTY, on purpose.** A money page and a /vs page are claims
+    about this company and its named rivals; a template that shipped examples
+    would ship fabrications (AGENTS rule 1). The route files ship with them, so
+    `getStaticPaths` over an empty collection simply builds nothing, and
+    `smoke-worker` asserts that `/solutions/<missing>` and `/vs/<missing>`
+    answer the styled 404 rather than a worker error.
+  - **Neither has an index page**, deliberately: they are linked from the nav,
+    the homepage and the About page's services section, each on the anchor a
+    searcher types. An index of links that exist elsewhere is thin by
+    construction, and `check-invariants` would then require an ItemList on it.
 - ✅ **`trailingSlash: 'never'` + `build.format: 'file'`** → URLs like
   `/about`, files like `about.html`. Must stay in agreement with
   `wrangler.jsonc → html_handling: "drop-trailing-slash"`. Changing one
@@ -250,6 +279,45 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
 
 ## 6. SEO (classic)
 
+- ✅ **The About page is the entity source document, and it is DATA** (27 Sep
+  2026, `src/pages/about.astro`, `marketing/page-guidelines.md § 3`). Eight
+  sections in order: the entity sentence built from `facts.json → company.type`
+  and `coreOffering` plus `about.json → icp` (so it cannot drift from the Key
+  Facts table), what the company does, what makes it different with rivals
+  NAMED, who uses it, the team, how it works, Key Facts as a real HTML table in
+  a labelled scroll region, and six FAQs from the one `faq` array that also
+  feeds the FAQPage node. Values live in `src/data/facts.json → company` (each
+  with its source); prose lives in `src/data/about.json` (no source, because it
+  is the company describing itself). THE DECISION, since the handoff left it
+  open: **two files, split on whether the thing needs a source.** A number can
+  never be edited without its source, and a sentence never needs one.
+  - **A value still reading TODO is OMITTED**, from the table and from the
+    schema (`src/lib/companyFacts.ts` → `filled()`). WHY: a row reading "TODO"
+    is a claim that the company's legal name is TODO, and an engine reads it as
+    one; `legalName: "TODO"` or an empty string in `sameAs` is worse than an
+    absent key, which the entity-hygiene invariant already fails. The address is
+    all-or-nothing: a PostalAddress with a country and no city can place the
+    company wrongly, which is worse than not placing it. A named client renders
+    only when its `permission` flag is true.
+  - `BaseLayout`'s site-wide `Organization` node gains `legalName`,
+    `foundingDate`, `address` and `sameAs` from the same facts, on the same
+    rule. Those four were the Organization-completeness lever's missing fields.
+  - **No em dash anywhere on the page**, checked on the BUILT page's visible
+    text by `check-invariants` — not the source, because the text arrives from
+    three places at once and a code comment is not the page saying anything.
+  - ✅ **One founder record** (27 Sep 2026): `src/data/authors.json`.
+    `site.ts → FOUNDER` reads the entry named by `FOUNDER_SLUG`, and
+    `facts.json → company.founder` is now a pointer. WHY: the name and LinkedIn
+    were in both files, and the graph carried two identities for one human —
+    the author page emitted `#author-founder` while every other page pointed at
+    `#founder`. `jobTitle` comes from the registry too, so a founder who is also
+    the CTO is no longer published as "Founder".
+- ✅ **The homepage FAQ renders from the shared component** (27 Sep 2026):
+  `<Faq groupName="home" />` plus `faqPageNode()`, where it previously
+  hand-built both the `<details>` list and the FAQPage node. The
+  visible-answers-match-the-schema invariant and the measured FAQ toggle
+  (AGENTS rule 3) now hold on the homepage too.
+
 - ✅ **Canonical, full OG set (+ `og:image` 1200×630 with declared
   dimensions and `og:image:alt`), Twitter card, JSON-LD — all from
   `BaseLayout`,** so no page can forget them. Canonical strips `.html` (never
@@ -337,13 +405,22 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   Zero requests and zero font-swap shift out of the box; a site that chooses
   a display face (§8, `--font-display`) self-hosts one woff2 family in
   `public/fonts/` under `font-src 'self'` — never a hosted font service.
-- ✅ **Playwright and sharp are NOT dependencies** — installed in CI/at
-  publish time, keeping a 300MB browser out of `npm ci`. **`pagefind` IS a
-  devDependency** — the documented exception: it runs on every build (the
-  search index must exist wherever dist/ does), it's a ~4MB native binary
-  not a browser, and every `npm ci` needs it. Policy:
-  devDependencies are acceptable; the live site ships no new runtime
-  dependency without a CHECKLIST entry.
+- ✅ **THE DEPENDENCY POLICY, stated once.** Dev-time dependencies are
+  acceptable; the LIVE SITE ships no new runtime dependency without a
+  CHECKLIST entry. Within dev-time there are two classes:
+  - **Declared devDependencies** — anything a plain `npm ci` then a command
+    must resolve. `pagefind` (the search index must exist wherever dist/ does;
+    a ~4MB native binary, not a browser), `eslint-plugin-astro`, `yaml`, and
+    the five `unified`/`remark`/`rehype` packages `report-html.mjs` imports.
+    Those five were UNDECLARED until 27 Sep 2026 and resolved transitively
+    through Astro's own tree, which works until Astro reorganises its
+    dependencies and the cadence report breaks for a reason nothing in the
+    repo explains. They are pinned at the versions that tree already carries.
+  - **Installed ad hoc with `--no-save`** — Playwright, sharp, html-validate,
+    axe-core: publish-time or sweep-time tools that keep a 300MB browser out
+    of `npm ci`. `scripts/verify.mjs → ensureAll()` installs them in ONE call,
+    because sequential `--no-save` installs prune each other (this took down
+    the first real CI run).
 - ⬜ **Structured-data types beyond the defaults** (Product/Offer, Service,
   LocalBusiness…) — per site. Pattern to follow: one shared node module so
   two pages can never disagree; never add `review`/`aggregateRating` you
@@ -399,10 +476,19 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   (schema-enforced `sameAs`). Non-negotiable.
 - ✅ **Bing Webmaster verification slot** — Bing's index feeds Copilot,
   DuckDuckGo and ChatGPT search. Two distribution channels, not one.
-- ✅ **IndexNow**: key file + script that submits only LIVE sitemap URLs
-  (never the local build — can't ping a 404), race-guarded by
-  `--min-urls`, run by `/ship` after every deploy. Google doesn't participate; the
-  sitemap covers Google.
+- ✅ **IndexNow, plus Bing URL Submission**: key file + a script that submits
+  only LIVE sitemap URLs (never the local build — it cannot ping a 404),
+  following the sitemap index to its children, with `--min-urls` as a sanity
+  floor. Run by `/ship` and by the daily cadence run after every deploy.
+  Where `BING_WEBMASTER_API_KEY` is set it also posts the last two days'
+  changed URLs (newest first, capped at 100) to Bing's own URL Submission
+  API — belt and braces on the one index Copilot and ChatGPT search answer
+  from; a quota refusal there is logged, never fatal. Google does not
+  participate in IndexNow; the sitemap covers Google. WHY THE WAIT LOOPS WENT
+  (27 Sep 2026): they existed for a pipeline where CI fired on a push and
+  raced the deploy. The deploy calls this script itself now, so production is
+  already the new production — a hundred lines of race handling for a race
+  that cannot happen is a hundred lines that can be wrong.
 
 ## 8. Accessibility & CSS
 
@@ -423,8 +509,7 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
 - ✅ **Source-level a11y lint**: `eslint-plugin-astro` `flat/jsx-a11y-strict`
   (`eslint.config.js`, `npm run lint`, CI step) — catches malformed ARIA in
   templates, which the built-HTML checks structurally cannot. devDependency
-  only. Policy: dev-time dependencies are acceptable; the LIVE SITE ships no
-  new dependency without a CHECKLIST entry.
+  only — see § 6's dependency policy, stated once there.
 - ✅ **Motion is opt-in via media query** (AGENTS rule 14): disclosure/entry
   animation uses `@starting-style` / `allow-discrete` / `interpolate-size` /
   `::details-content`, always inside `prefers-reduced-motion:
@@ -740,12 +825,80 @@ dispatched), in order:
   (say the phrase you already rank for; push a buyer query from 7 to 3) sit
   in the page × query dimension that a report sorted by impressions never
   shows.
-- ✅ **Discovery scorecard, informational** (`npm run audit:discovery`,
-  `scripts/discovery-audit.mjs`): the Sep 2026 outside-audit frame as code —
-  twenty levers scored 0–100 with evidence, on the site from `dist/` and off
-  it from the newest snapshot, `link-targets.md`, `DATA-SHEET.md` and
-  `ai-panel.md`. Never a gate; n/a levers print their reason so nobody
-  invents a thing to lift a number. The weekly cadence run prints it.
+- ✅ **One scorer per question: the discovery levers live inside the AEO
+  report** (`aeoLevers()` in `scripts/lib/aeo.mjs`, printed by `npm run aeo`
+  and by `npm run insights`). There was a second script, `audit:discovery`,
+  scoring twenty levers; six of them were the funnel's own stages computed a
+  different way, so one question had two numbers and a reader had to guess
+  which. WHY THE FOLD: the nine levers the invariant battery already FAILS on
+  (crawler access, extractable schema, author E-E-A-T, content shape, citation
+  density, ItemList, image alt, the machine brief, social cards) do not also
+  need a grade — scoring an enforced rule invites "the lever says 92" as an
+  argument against a red check. What survives is the six things nothing else
+  measures: listings, the prompt panel, the data sheet, Bing verification,
+  Organization completeness, commercial coverage. Informational, excluded from
+  the funnel's mean by construction, and a lever with no data scores `null`
+  with its reason so nobody invents a thing to lift a number.
+- ✅ **One list of collections** (`src/data/collections.json`, 27 Sep 2026):
+  folder name → route, `twins`, social-card eyebrow, schema type. Eleven
+  scripts, the worker and the OG renderer read it; `check-collection-routes`
+  fails a content folder that is not declared there, and a route file that is
+  missing for one that is. WHY: the same list was hand-kept in eleven places in
+  five different shapes, and they had drifted — the twin-presence check, the
+  orphan check and the lead-figure check each carried their own
+  `['blog','glossary']`. Only `wrangler.jsonc → run_worker_first` stays
+  hand-kept, because JSONC config cannot import anything, so exactly ONE parity
+  rule survives (`check-parity` rule 2) where there were three.
+- ✅ **One publish status, chosen explicitly per check**
+  (`scripts/lib/content.mjs`, 27 Sep 2026): `statusOf()` returns
+  `draft | scheduled | published`, and every reader states which it wants. WHY:
+  three answers to "is this live" coexisted — `isPublished()`, a bare
+  `/^draft:\s*true$/m` regex, and `!data.draft` — so a SCHEDULED post counted as
+  live in four checks and not in three. A link to one read as dead in the link
+  graph while the voice check skipped it, which means a post could go live
+  unattended having never been checked. Now: link graph, voice and source rules
+  take published + scheduled; the inventory lists all three with a status
+  column; twins, llms.txt, lastmod, the sitemap and RSS stay published-only.
+- ✅ **Permanent redirects are data, not code** (`src/data/redirects.json`,
+  27 Sep 2026): each row carries `to` and a one-line `reason`. `check-parity`
+  rule 5 fails a row that is missing from `run_worker_first` or that has no
+  reason. WHY: three scripts regex-parsed a TypeScript map out of
+  `worker/index.ts` to check it, and a regex over source is a parser nobody
+  maintains.
+- ✅ **Unit tests, zero dependencies, at the fast tier** (`npm test` →
+  `node --test`, 27 Sep 2026): the pure functions behind the judgement calls —
+  the SERP clamp (one implementation in `src/lib/clamp.mjs`, shared by
+  BaseLayout, the posts API and `check-source-rules`), the posts API's shape
+  rules, the BOFU and high-intent classifiers, the AEO funnel's scoring, the
+  crawler registry, the CSV reader, the ACTIONS check kinds, the content reader
+  and the marketing-file parsers. Wired into `.githooks/pre-commit` and
+  `npm run verify`. WHY: the enum drift that broke every API post (§ 1) would
+  have been a ten-line test — and writing these found two more defects the same
+  day: `classify()` reported the robots OPT-OUT token `Applebot-Extended` as an
+  Apple crawler visit (traffic that cannot exist), and the data-sheet field
+  reader treated an EMPTY `**Answer:**` as answered, so every open question read
+  as closed in the JSON output. Neither was visible in any report.
+- ✅ **One brand record for the node scripts** (`src/data/brand.json`,
+  27 Sep 2026): name, tagline, meta description and the quotable `brief`.
+  `site.ts` spreads it; `generate-llms.mjs` and `og/render-pages.mjs` read the
+  same file. WHY: the name and tagline were typed into all three, and
+  `marketing/README` had to tell a new site to edit each one — two of the three
+  "EDIT FOR YOUR SITE" knobs are gone.
+- ✅ **IndexNow submits, and does not wait** (`scripts/indexnow.mjs`,
+  27 Sep 2026): reads the live sitemap through its index, submits once to the
+  shared IndexNow endpoint, and — where `BING_WEBMASTER_API_KEY` is set — posts
+  the last two days' changed URLs (newest first, capped at 100) to Bing's own
+  URL Submission API, never fatally. `--changed`, `--expect` and two polling
+  loops are gone. WHY: they guarded a race between a push-triggered CI run and
+  a deploy. The deploy calls this script itself now, so the race cannot happen,
+  and the sitemap read follows the index rather than stopping at
+  `sitemap-0.xml` — which silently capped submissions at the first file.
+- ✅ **The GenAI export is unzipped by `unzip`, not by a hand-rolled reader**
+  (`scripts/lib/genai.mjs`, 27 Sep 2026). WHY: seventy lines walked local file
+  headers, inflated deflate entries and scanned forward for a data descriptor —
+  every line a guess about a format the runtime already understands, whose
+  failure mode is a silently empty report. Where `unzip` is missing the script
+  prints the one-line ask instead.
 - ✅ **External link rot is checked monthly, never in CI**
   (`.github/workflows/linkrot.yml`, lychee over built HTML, external URLs
   only). Citations rot on someone else's schedule and a flaky third-party

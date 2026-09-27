@@ -22,7 +22,8 @@
  * (installed in CI ad hoc, never a devDependency — see CHECKLIST §6), with
  * every <details> forced open so collapsed content is scanned too.
  */
-import { readdirSync, statSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
+import { walkHtml } from './lib/html.mjs';
 import { join, relative, sep, dirname } from 'node:path';
 import { createRequire } from 'node:module';
 import { chromium } from 'playwright';
@@ -30,14 +31,8 @@ import { chromium } from 'playwright';
 const DIST = 'dist';
 const PORT = 4323; // 4319 is check-contrast's; 4321 is astro dev's
 
-function pages(dir = DIST, out = []) {
-  for (const name of readdirSync(dir)) {
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) pages(p, out);
-    else if (name.endsWith('.html')) out.push('/' + relative(DIST, p).split(sep).join('/'));
-  }
-  return out;
-}
+/** Every built page as a served path ('/blog/x.html') — the walker is shared. */
+const pages = () => walkHtml(DIST).map((p) => '/' + relative(DIST, p).split(sep).join('/'));
 
 const require = createRequire(import.meta.url);
 const axeSource = readFileSync(

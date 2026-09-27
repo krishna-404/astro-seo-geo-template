@@ -32,7 +32,9 @@
  */
 
 import { spawn } from 'node:child_process';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { twinCollections, routeOfCollection } from './lib/routes.mjs';
 
 const PORT = 8791;
 const BASE = `http://127.0.0.1:${PORT}`;
@@ -163,16 +165,43 @@ r = await get(twinPath);
 check('no Accept header → HTML', (r.headers.get('content-type') ?? '').includes('text/html'), `got ${r.headers.get('content-type')}`);
 check('…HTML answer also carries Vary: Accept', /accept/i.test(r.headers.get('vary') ?? ''), 'caches would mix the two bodies');
 
+// ── 4b. an EMPTY twin collection still 404s as a page ──────────────────────
+// /solutions/* and /vs/* are in run_worker_first from the day their schema
+// lands, which is before either has an entry. So the worker sees requests for
+// routes with no .html and no .md behind them, and it must fall through to the
+// styled 404 — not answer a worker error, and not answer an empty 200 that an
+// engine would index. Asserted for every declared twin collection that built no
+// pages, so the check keeps working as a site fills them in.
+for (const collection of twinCollections()) {
+  const route = routeOfCollection(collection);
+  if (existsSync(join('dist', route.slice(1)))) continue; // it has pages; the negotiation test above covers it
+  for (const accept of ['text/markdown', 'text/html']) {
+    r = await get(`${route}/nothing-here-yet`, { headers: { accept } });
+    check(
+      `${route}/<missing> with Accept: ${accept} → 404`,
+      r.status === 404,
+      `got ${r.status} — an empty collection route must 404, not error or answer empty`
+    );
+  }
+  r = await get(`${route}/nothing-here-yet`);
+  const body = await r.text();
+  check(
+    `${route}/<missing> serves the styled 404 page`,
+    /<html/i.test(body) && !/workers?\.dev|Error 1101|Internal Server Error/i.test(body),
+    `body starts: ${body.slice(0, 80)}`
+  );
+}
+
 // ── 6. permanent redirects ─────────────────────────────────────────────────
-// Parsed from the worker source, not copied: a row added there is asserted
-// here without anyone remembering. An empty map asserts nothing, deliberately.
-const redirectMap = readFileSync('worker/index.ts', 'utf8')
-  .match(/PERMANENT_REDIRECTS:\s*Record<string,\s*string>\s*=\s*\{([\s\S]*?)\}/)?.[1] ?? '';
-for (const [, from, to] of redirectMap.matchAll(/'(\/[^']*)':\s*'([^']+)'/g)) {
+// Read from src/data/redirects.json — the one place they live now, so a row
+// added there is asserted here without anyone remembering. An empty map asserts
+// nothing, deliberately.
+const { redirects } = JSON.parse(readFileSync('src/data/redirects.json', 'utf8'));
+for (const [from, row] of Object.entries(redirects)) {
   r = await get(from);
   check(
-    `${from} → 301 ${to}`,
-    r.status === 301 && new URL(r.headers.get('location') ?? '', BASE).pathname === to,
+    `${from} → 301 ${row.to}`,
+    r.status === 301 && new URL(r.headers.get('location') ?? '', BASE).pathname === row.to,
     `got ${r.status} → ${r.headers.get('location')}`
   );
 }

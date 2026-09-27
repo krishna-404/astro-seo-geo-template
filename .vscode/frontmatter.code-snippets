@@ -1,6 +1,7 @@
 {
   // Frontmatter scaffolds mirroring the zod schemas in src/content.config.ts —
-  // type `blog-post` or `glossary-entry` in an empty .md file and tab through.
+  // type `blog-post`, `glossary-entry`, `solution` or `comparison` in an empty
+  // .md file and tab through.
   // The strict schemas are the contract; these exist so a contributor never
   // has to guess a required field and meet the error message instead.
   // KEEP IN STEP with content.config.ts (and taxonomy.ts for the category
@@ -75,5 +76,89 @@
       "$0"
     ],
     "description": "Glossary entry frontmatter — category choices come from src/data/taxonomy.ts"
+  },
+  "Solution (money page) frontmatter": {
+    "scope": "markdown,mdx",
+    "prefix": "solution",
+    "body": [
+      "---",
+      "title: ${1:What you sell, as a buyer searches for it (max 70 chars)}",
+      "description: ${2:Meta description, 70-165 chars — the SERP pitch}",
+      "tldr: ${3:Front-loaded answer, 40-400 chars — what this is and who it is for}",
+      "primaryKeyword: ${4:the one query this page claims}",
+      "secondaryKeywords: [${5}]",
+      "offering: ${6:What the customer gets, one line, 20-200 chars}",
+      "schemaType: ${7|Service,Product,SoftwareApplication|}",
+      "pricing:",
+      "  model: ${8|published,on-request,free|}",
+      "  from: ${9:0}",
+      "  currency: ${10:USD}",
+      "  note: ${11:What the price covers, and what it does not}",
+      "process:",
+      "  - step: ${12:First step}",
+      "    detail: ${13:What happens, 10-240 chars}",
+      "outcomes:",
+      "  - ${14:What changes for the buyer — an outcome, not a feature}",
+      "cta:",
+      "  label: ${15:Book a call}",
+      "  href: ${16:/contact}",
+      "sources:",
+      "  - label: ${17:Source for any figure stated on this page}",
+      "    url: ${18:https://example.com/source}",
+      "    retrieved: ${19:$CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE}",
+      "faq:",
+      "  - q: ${20:What does it cost?}",
+      "    a: ${21:The direct answer.}",
+      "toc: ${22|false,true|}",
+      "updated: ${23:$CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE}",
+      "draft: ${24|true,false|}",
+      "---",
+      "",
+      "$0"
+    ],
+    "description": "Money page frontmatter — primaryKeyword is REQUIRED here; a stated number needs a source (check-source-rules)"
+  },
+  "Comparison (/vs) frontmatter": {
+    "scope": "markdown,mdx",
+    "prefix": "comparison",
+    "body": [
+      "---",
+      "title: ${1:Us vs Them: which to pick (max 70 chars)}",
+      "description: ${2:Meta description, 70-165 chars}",
+      "tldr: ${3:Front-loaded answer, 40-400 chars — the honest one-line verdict}",
+      "primaryKeyword: ${4:us vs them}",
+      "secondaryKeywords: [${5}]",
+      "us: ${6:Our product}",
+      "rivals:",
+      "  - name: ${7:Their product}",
+      "    url: ${8:https://rival.example/}",
+      "    pricingUrl: ${9:https://rival.example/pricing}",
+      "rows:",
+      "  - criterion: ${10:What you are comparing}",
+      "    us: ${11:Our answer}",
+      "    them: [${12:Their answer}]",
+      "    source: ${13:https://rival.example/pricing}",
+      "    retrieved: ${14:$CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE}",
+      "bestFor:",
+      "  - option: ${15:Our product}",
+      "    audience: ${16:Who should pick us, and why}",
+      "  - option: ${17:Their product}",
+      "    audience: ${18:Who should pick them — name a real case, or the page is not a comparison}",
+      "verdict: ${19:40-600 chars. Never \"best for everyone\".}",
+      "sources:",
+      "  - label: ${20:Source name}",
+      "    url: ${21:https://example.com/source}",
+      "    retrieved: ${22:$CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE}",
+      "faq:",
+      "  - q: ${23:Which is cheaper?}",
+      "    a: ${24:The direct answer.}",
+      "toc: ${25|false,true|}",
+      "updated: ${26:$CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE}",
+      "draft: ${27|true,false|}",
+      "---",
+      "",
+      "$0"
+    ],
+    "description": "Comparison frontmatter — min 3 rows, each with its own source and retrieved date (check-source-rules fails a row over 90 days old)"
   }
 }

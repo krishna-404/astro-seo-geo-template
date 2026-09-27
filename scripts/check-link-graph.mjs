@@ -26,10 +26,10 @@
  * Fast (markdown source only), so it runs at every rung via this one script.
  */
 
-import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-
-const ROUTE_DIR = {}; // collection name → route dir, where they differ
+import { readAll } from './lib/content.mjs';
+import { collections, routeOfCollection, staticRoutes as pageRoutes } from './lib/routes.mjs';
 
 let fail = 0;
 const bad = (msg) => {
@@ -38,45 +38,35 @@ const bad = (msg) => {
 };
 
 // ── collect nodes: content entries + static pages ──────────────────────────
-const entries = []; // { route, path, body, related[] }
-for (const dir of readdirSync('src/content', { withFileTypes: true })) {
-  if (!dir.isDirectory()) continue;
-  const coll = dir.name;
-  for (const f of readdirSync(join('src/content', coll)).filter((n) => /\.mdx?$/.test(n))) {
-    const p = join('src/content', coll, f);
-    const raw = readFileSync(p, 'utf8');
-    if (/^draft:\s*true$/m.test(raw)) continue;
-    const fm = raw.match(/^---\n([\s\S]*?)\n---\n/);
-    const relatedBlock = fm?.[1].match(/^related:\n((?:[ \t]+-[ \t]+.+\n)+)/m)?.[1] ?? '';
-    const related = [...relatedBlock.matchAll(/-[ \t]+(.+)/g)].map(
-      (m) => `/${ROUTE_DIR[coll] ?? coll}/${m[1].trim()}`
-    );
-    entries.push({
-      route: `/${ROUTE_DIR[coll] ?? coll}/${f.replace(/\.mdx?$/, '')}`,
-      path: p,
-      body: raw.slice(fm ? fm[0].length : 0),
-      related,
-    });
-  }
-}
+//
+// SCHEDULED entries are nodes: a link to a post queued for next Tuesday is not
+// a dead link, and the post still needs an inbound link before it goes live
+// unattended (scripts/lib/content.mjs § who wants what). Drafts are excluded —
+// they render nowhere, so a link to one IS dead.
+const entries = readAll({ include: ['published', 'scheduled'] }).map((e) => ({
+  route: e.route,
+  path: e.file,
+  body: e.body,
+  related: (Array.isArray(e.data.related) ? e.data.related : []).map(
+    (id) => `${routeOfCollection(e.collection)}/${String(id).trim()}`
+  ),
+}));
 
-const staticRoutes = new Set(['/']);
-(function walkPages(dir, prefix) {
+// Static routes, plus the endpoints that are pages without being .astro files
+// (robots.txt, rss.xml) — a link to one of those must not read as dead.
+const staticRoutes = new Set(Object.keys(pageRoutes()));
+(function walkEndpoints(dir, prefix) {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
-    if (e.isDirectory()) walkPages(join(dir, e.name), `${prefix}/${e.name}`);
-    else if (e.name.endsWith('.astro') && !e.name.includes('[')) {
-      const base = e.name.replace(/\.astro$/, '');
-      staticRoutes.add(base === 'index' ? prefix || '/' : `${prefix}/${base}`);
-    } else if (/\.(ts|xml\.ts)$/.test(e.name) && !e.name.includes('[')) {
+    if (e.isDirectory()) walkEndpoints(join(dir, e.name), `${prefix}/${e.name}`);
+    else if (/\.ts$/.test(e.name) && !e.name.includes('[')) {
       staticRoutes.add(`${prefix}/${e.name.replace(/\.ts$/, '')}`);
     }
   }
 })('src/pages', '');
 
 const contentRoutes = new Set(entries.map((e) => e.route));
-const collectionIndexes = new Set(
-  [...new Set(entries.map((e) => e.route.split('/')[1]))].map((c) => `/${c}`)
-);
+// Every declared collection's index, whether or not it has entries yet.
+const collectionIndexes = new Set(Object.keys(collections()).map((c) => routeOfCollection(c)));
 const known = new Set([...staticRoutes, ...contentRoutes, ...collectionIndexes]);
 
 // ── edges + per-link checks ────────────────────────────────────────────────

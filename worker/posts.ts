@@ -26,6 +26,11 @@
  * adds a frontmatter field adds it here too. A rejection is a 400 with every failure named, so the caller fixes
  * them in one round instead of one per build.
  *
+* WHERE THE RULES LIVE. The shape a post must have, and the MDX it becomes,
+ * are in worker/posts-rules.mjs — plain ESM, so the test suite reaches them
+ * directly. This file owns the HTTP: the bearer check, the rate limit, the
+ * GitHub calls, the status lookup.
+ *
  * SECRETS. POSTS_API_TOKEN (the caller's bearer) and GITHUB_POSTS_TOKEN (a
  * fine-grained PAT: Contents and Pull requests read/write on this repo only).
  * Either unset = the API answers 503 and the site is unaffected — the
@@ -33,6 +38,9 @@
  */
 
 import authorsRegistry from '../src/data/authors.json';
+// The shape rules and the MDX writer live in plain ESM so `node --test` can
+// run them without a bundler (worker/posts-rules.mjs explains why).
+import { validatePost, toMdx } from './posts-rules.mjs';
 
 export interface PostsEnv {
   /** Bearer token callers present. Secret. Unset = posts API off (503). */
@@ -49,13 +57,7 @@ export interface PostsEnv {
 
 type Headerize = (h: Headers) => Headers;
 
-// Mirrors the `proprietary` z.enum in src/content.config.ts. check-parity
-// fails the commit when the two lists differ — they did once (27 Sep 2026), and
-// every post the API accepted then failed the build.
-const PROPRIETARY = ['original-data', 'first-hand-experience', 'original-analysis', 'expert-interview', 'case-study'];
 const UPSTREAM_TIMEOUT_MS = 15_000;
-const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Constant-time string compare — a bearer check must not leak length or prefix. */
 function safeEqual(a: string, b: string): boolean {
@@ -77,183 +79,6 @@ function json(status: number, body: unknown, headerize: Headerize, extra: Record
 }
 
 /* ------------------------------------------------------------------ input */
-
-export interface PostInput {
-  slug?: string;
-  title: string;
-  description: string;
-  tldr: string;
-  published?: string;
-  updated?: string;
-  author: { name: string; title: string; sameAs: string[] };
-  tags?: string[];
-  proprietary: string;
-  sources?: { label: string; url?: string; retrieved?: string }[];
-  faq?: { q: string; a: string }[];
-  /** Figure declarations (src/data/figureSchema.ts). Validated in full by the build; shape-checked here. */
-  figures?: Record<string, unknown>[];
-  body: string;
-}
-
-const isStr = (v: unknown): v is string => typeof v === 'string';
-const isUrl = (v: unknown): boolean => isStr(v) && /^https?:\/\/\S+$/.test(v);
-
-export function slugify(title: string): string {
-  return title
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/&/g, ' and ')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 80)
-    .replace(/-+$/, '');
-}
-
-/**
- * Mirrors src/lib/clampTitle.ts: a title passes if it fits 60 characters, or
- * if it carries a trailing " — clause" or " | clause" that the clamp can drop
- * whole with the remainder inside 60. Anything else would be HARD-CUT on the
- * one line a searcher reads (check-source-rules enforces the same rule).
- */
-export function survivesClamp(title: string): boolean {
-  if (title.length <= 60) return true;
-  for (const sep of [' — ', ' | ']) {
-    const i = title.lastIndexOf(sep);
-    if (i > 0 && i <= 60) return true;
-  }
-  return false;
-}
-
-export function validatePost(raw: unknown): { errors: string[]; post: PostInput | null } {
-  const errors: string[] = [];
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { errors: ['body must be a JSON object'], post: null };
-  const r = raw as Record<string, unknown>;
-  const need = (k: string, ok: boolean, why: string) => { if (!ok) errors.push(`${k}: ${why}`); };
-
-  need('title', isStr(r.title) && r.title.trim().length >= 10 && r.title.length <= 70, 'string, 10–70 characters');
-  if (isStr(r.title) && !survivesClamp(r.title)) errors.push('title: over 60 characters with no " — " or " | " clause the SERP clamp can drop — it would be cut mid-phrase');
-  need('description', isStr(r.description) && r.description.length >= 70 && r.description.length <= 165, 'string, 70–165 characters (the SERP snippet band)');
-  need('tldr', isStr(r.tldr) && r.tldr.length >= 40 && r.tldr.length <= 400, 'string, 40–400 characters — the front-loaded answer');
-  need('proprietary', isStr(r.proprietary) && PROPRIETARY.includes(r.proprietary), `one of ${PROPRIETARY.join(', ')}`);
-  need('body', isStr(r.body) && r.body.trim().length >= 800, 'markdown string, at least 800 characters');
-
-  let slug = isStr(r.slug) ? r.slug : isStr(r.title) ? slugify(r.title) : '';
-  need('slug', SLUG_RE.test(slug) && slug.length >= 3 && slug.length <= 80, 'lowercase letters, digits and single hyphens, 3–80 characters');
-
-  if (r.published !== undefined) need('published', isStr(r.published) && DATE_RE.test(r.published) && !Number.isNaN(Date.parse(r.published)), 'YYYY-MM-DD');
-  if (r.updated !== undefined) need('updated', isStr(r.updated) && DATE_RE.test(r.updated), 'YYYY-MM-DD');
-  if (r.tags !== undefined) need('tags', Array.isArray(r.tags) && r.tags.every(isStr), 'array of strings');
-
-  const a = r.author as Record<string, unknown> | undefined;
-  need('author', !!a && typeof a === 'object', 'object { name, title, sameAs[] }');
-  if (a && typeof a === 'object') {
-    need('author.name', isStr(a.name) && a.name.length > 1, 'string');
-    need('author.title', isStr(a.title) && a.title.length > 1, 'string');
-    need('author.sameAs', Array.isArray(a.sameAs) && a.sameAs.length >= 1 && a.sameAs.every(isUrl), 'array of at least one https profile URL');
-    // The registry: a byline that links nowhere is a name, not a credential.
-    const reg = (authorsRegistry as { authors: { name: string; sameAs?: string[] }[] }).authors ?? [];
-    const profiles = Array.isArray(a.sameAs) ? (a.sameAs as string[]) : [];
-    const known = reg.some((e) => e.name === a.name || (e.sameAs ?? []).some((u) => profiles.includes(u)));
-    need('author', known, `not in src/data/authors.json — register the author (with a real profile and an /author page) before publishing under that name`);
-  }
-
-  if (r.sources !== undefined) {
-    const ok = Array.isArray(r.sources) && r.sources.every((s) => s && typeof s === 'object' && isStr((s as Record<string, unknown>).label)
-      && ((s as Record<string, unknown>).url === undefined || isUrl((s as Record<string, unknown>).url))
-      && ((s as Record<string, unknown>).retrieved === undefined || (isStr((s as Record<string, unknown>).retrieved) && DATE_RE.test((s as Record<string, unknown>).retrieved as string))));
-    need('sources', ok, 'array of { label, url?, retrieved? (YYYY-MM-DD) }');
-  }
-  if (r.figures !== undefined) {
-    const kinds = ['timeline', 'flow', 'steps', 'bars', 'tiles', 'compare', 'web', 'outline'];
-    const ok =
-      Array.isArray(r.figures) &&
-      r.figures.length <= 6 &&
-      r.figures.every((f) => {
-        if (!f || typeof f !== 'object') return false;
-        const g = f as Record<string, unknown>;
-        return isStr(g.kind) && kinds.includes(g.kind) && isStr(g.title) && g.title.length >= 8 && g.title.length <= 120;
-      });
-    need('figures', ok, `array (≤6) of figure declarations, each with kind (${kinds.join(', ')}) and a title of 8–120 chars — see AGENTS § Figures; the build validates the full shape`);
-    if (ok && (r.figures as Record<string, unknown>[]).filter((g) => g.place === undefined || g.place === 'lead').length > 1) {
-      need('figures', false, 'at most one figure may lead (place omitted or "lead"); the rest need place: "body" and an id');
-    }
-  }
-  if (r.faq !== undefined) {
-    need('faq', Array.isArray(r.faq) && r.faq.every((f) => f && typeof f === 'object' && isStr((f as Record<string, unknown>).q) && isStr((f as Record<string, unknown>).a)), 'array of { q, a }');
-  }
-
-  if (isStr(r.body)) {
-    const body = r.body;
-    if (/^#\s/m.test(body)) errors.push('body: contains a "# " heading — the template renders the title as the h1; start at "##"');
-    const links = (body.match(/\]\(\/[a-z]/g) ?? []).length;
-    if (links < 2) errors.push(`body: ${links} in-body internal link(s) — at least 2, anchored on the phrase a searcher types`);
-    if (/^import\s/m.test(body) || /^export\s/m.test(body)) errors.push('body: MDX import/export lines are not allowed — the markdown twin ships the raw body');
-    if (/<script/i.test(body)) errors.push('body: <script> is not allowed');
-    if (/^---\s*$/m.test(body.slice(0, 4))) errors.push('body: send frontmatter as JSON fields, not as a --- block');
-  }
-
-  if (errors.length) return { errors, post: null };
-  return {
-    errors,
-    post: {
-      slug,
-      title: (r.title as string).trim(),
-      description: r.description as string,
-      tldr: r.tldr as string,
-      published: (r.published as string | undefined) ?? new Date().toISOString().slice(0, 10),
-      updated: r.updated as string | undefined,
-      author: { name: a!.name as string, title: a!.title as string, sameAs: a!.sameAs as string[] },
-      tags: (r.tags as string[] | undefined) ?? [],
-      proprietary: r.proprietary as string,
-      sources: (r.sources as PostInput['sources']) ?? [],
-      faq: (r.faq as PostInput['faq']) ?? [],
-      figures: r.figures as PostInput['figures'],
-      body: (r.body as string).trim(),
-    },
-  };
-}
-
-/* -------------------------------------------------------------- the file */
-
-/** YAML scalar via JSON — a double-quoted JSON string is valid YAML. */
-const y = (v: string) => JSON.stringify(v);
-
-export function toMdx(p: PostInput): string {
-  const lines: string[] = ['---'];
-  lines.push(`title: ${y(p.title)}`);
-  lines.push(`description: ${y(p.description)}`);
-  lines.push(`tldr: ${y(p.tldr)}`);
-  lines.push(`published: ${p.published}`);
-  if (p.updated) lines.push(`updated: ${p.updated}`);
-  lines.push('author:');
-  lines.push(`  name: ${y(p.author.name)}`);
-  lines.push(`  title: ${y(p.author.title)}`);
-  lines.push('  sameAs:');
-  for (const u of p.author.sameAs) lines.push(`    - ${y(u)}`);
-  lines.push(`proprietary: ${p.proprietary}`);
-  lines.push(p.tags && p.tags.length ? `tags: [${p.tags.map(y).join(', ')}]` : 'tags: []');
-  if (p.sources && p.sources.length) {
-    lines.push('sources:');
-    for (const s of p.sources) {
-      lines.push(`  - label: ${y(s.label)}`);
-      if (s.url) lines.push(`    url: ${y(s.url)}`);
-      if (s.retrieved) lines.push(`    retrieved: ${s.retrieved}`);
-    }
-  }
-  // JSON is valid YAML flow syntax, so the nested declaration round-trips without a YAML emitter.
-  if (p.figures && p.figures.length) lines.push(`figures: ${JSON.stringify(p.figures)}`);
-  if (p.faq && p.faq.length) {
-    lines.push('faq:');
-    for (const f of p.faq) {
-      lines.push(`  - q: ${y(f.q)}`);
-      lines.push(`    a: ${y(f.a)}`);
-    }
-  }
-  lines.push('via: posts-api');
-  lines.push('---', '', p.body, '');
-  return lines.join('\n');
-}
 
 /* ---------------------------------------------------------------- github */
 
@@ -345,7 +170,7 @@ export async function handlePosts(request: Request, env: PostsEnv, url: URL, hea
   // ── POST /api/posts — validate, write, open the PR ────────────────────
   let raw: unknown;
   try { raw = await request.json(); } catch { return json(400, { error: 'body must be JSON' }, headerize); }
-  const { errors, post } = validatePost(raw);
+  const { errors, post } = validatePost(raw, authorsRegistry.authors ?? []);
   if (!post) return json(400, { error: 'validation failed', errors }, headerize);
 
   if (!env.GITHUB_POSTS_TOKEN) {

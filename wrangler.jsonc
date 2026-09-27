@@ -29,13 +29,18 @@
     // Serves dist/404.html with a 404 status for unknown paths.
     "not_found_handling": "404-page",
     // Routes the worker must intercept:
-    //   /api/*             form proxy + sheet data + (optional) analytics collector
+    //   /api/*             form proxy + sheet data + the posts API + (optional) analytics collector
     //   /hi, /hi/*         cookieless attribution rewrite to /contact
-    //   /blog/*, /glossary/*  markdown-twin content negotiation (Accept header)
+    //   /blog/*, /glossary/*, /solutions/*, /vs/*
+    //                      markdown-twin content negotiation (Accept header).
+    //                      One glob per `twins: true` collection in
+    //                      src/data/collections.json — check-parity rule 2
+    //                      holds this list to that config in both directions,
+    //                      because a glob here is a metered route (AGENTS 12).
     //   /s.js              (optional) same-origin analytics script proxy
     //   (+ every key of worker PERMANENT_REDIRECTS, exactly — a redirect whose
     //   path is not listed here never reaches the worker; check-parity enforces)
-    "run_worker_first": ["/api/*", "/hi", "/hi/*", "/blog/*", "/glossary/*", "/s.js"]
+    "run_worker_first": ["/api/*", "/hi", "/hi/*", "/blog/*", "/glossary/*", "/solutions/*", "/vs/*", "/s.js"]
   },
   // Non-secret config. Secrets are never set here:
   //   npx wrangler secret put CONTACT_SCRIPT_ID   ← Google Apps Script deployment id

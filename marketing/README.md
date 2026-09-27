@@ -12,7 +12,7 @@ browser or an image library. Nothing here runs during the build.
 | `og/default.html` | Source for the site-wide social card — name, tagline, domain, `--brand` colour | Edit once when adopting the template, then re-render |
 | `og/render.mjs` | Renders `og/default.html` → `public/og/default.png` (1200×630) | Whatever the default card says changes |
 | `og/page.html` | Template for per-page cards: brand row, eyebrow, title, description, and the page's lead figure (inline SVG lifted from the built page). Its `:root` tokens mirror `global.css` | The brand tokens change: edit the `EDIT FOR YOUR SITE` block |
-| `og/render-pages.mjs` | One card per built page at `public/og/<route>.jpg` — title, description and figure read from **dist/** HTML, never a hand-kept list; `SITE_NAME` and `TAGLINE` at the top | Any content change: `npm run build`, `npm i --no-save playwright`, `CHROMIUM_CHANNEL=chrome node marketing/og/render-pages.mjs`, `npm run build` |
+| `og/render-pages.mjs` | One card per built page at `public/og/<route>.jpg` — title, description and figure read from **dist/** HTML, never a hand-kept list; the brand row from `src/data/brand.json` and the eyebrow from `src/data/collections.json` | Any content change: `npm run build`, `npm i --no-save playwright`, `CHROMIUM_CHANNEL=chrome node marketing/og/render-pages.mjs`, `npm run build` |
 | `apps-script/contact-form.gs` | The Google Apps Script behind the contact form — Sheet row + email, honeypot filter, `selfTest()`. **This file is the source of truth**; Google's editor has no diffs | Any form-logic change: edit here, paste there, publish a NEW VERSION (saving the editor changes nothing live) |
 | `apps-script/appsscript.json` | The script project's manifest, pinning the two OAuth scopes (this spreadsheet, send mail as you). Without it Apps Script infers scopes from the source and asks for every spreadsheet in the account — see `apps-script/README.md` | Paste it alongside the `.gs` at setup; edit only if the script starts touching something new |
 
@@ -27,15 +27,17 @@ Two things to remember:
 
 ## The "EDIT FOR YOUR SITE" convention
 
-Node scripts cannot import `src/data/site.ts` (TypeScript), and Apps Script
-runs in Google's editor — so the few site-specific values these files need
-live as marked literals near the top of each file. When adopting the
-template, sweep:
+The brand STRINGS are no longer among these. `src/data/brand.json` holds the
+name, the tagline, the meta description and the quotable `brief`;
+`src/data/site.ts` spreads them into `SITE`, and the two node scripts that
+cannot import TypeScript — `scripts/generate-llms.mjs` and
+`og/render-pages.mjs` — read the same JSON. They each carried their own copy
+until 27 Sep 2026, which is three places to edit and two to forget.
 
-- `scripts/generate-llms.mjs` — the `LLMS` block (name, tagline,
-  description) that `public/llms.txt` opens with
-- `og/render-pages.mjs` — `SITE_NAME`, `TAGLINE` (under the
-  `EDIT FOR YOUR SITE` banner)
+What remains is the values a node script or Apps Script genuinely cannot
+share: colour literals in files that are not CSS, and the Apps Script
+constants that live in Google's editor. When adopting the template, sweep:
+
 - `og/page.html` — the `:root` tokens, mirroring `global.css`
 - `og/default.html` — the three strings (name, tagline, domain) and `--brand`
 - `favicon.mjs` — `BRAND_BG` (the apple-touch-icon backing colour)

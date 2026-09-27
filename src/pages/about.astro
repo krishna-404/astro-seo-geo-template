@@ -1,135 +1,314 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { SITE } from '../data/site';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import Faq from '../components/Faq.astro';
+import { SITE, FOUNDER } from '../data/site';
+import about from '../data/about.json';
+import { faqPageNode } from '../lib/faqSchema';
+import {
+  company,
+  filled,
+  filledList,
+  prose,
+  proseList,
+  address,
+  notableClients,
+} from '../lib/companyFacts';
 
 /**
- * /about — on a real site this sells the company. In the template it documents
- * the architecture, which doubles as a demo of the section/table patterns.
- * TODO per site: rebuild to marketing/page-guidelines.md § 3 (the entity
- * spec: eight sections, Key Facts from facts.json, six FAQs, the schema).
+ * /about — the entity source document.
+ *
+ * Two jobs at once: a normal About page for a person, and the one first-party
+ * document a knowledge graph and the assistants parse when someone asks "what
+ * is <Company>". Built to marketing/page-guidelines.md § 3: eight sections in
+ * order, the Key Facts table as a real HTML table, six FAQs from one array, and
+ * the schema that mirrors all of it.
+ *
+ * THE RULE THIS PAGE IS BUILT AROUND. Every value comes from
+ * src/data/facts.json (with its source) or src/data/about.json (the prose), and
+ * anything still TODO is OMITTED rather than rendered. A Key Facts row reading
+ * "TODO" is a claim that the company's legal name is TODO; an engine reads it
+ * as one. So the table shows the rows a site has filled, the schema asserts
+ * only what the page shows, and the placeholder markers stay visible to SETUP's
+ * grep and ACTIONS A-L02 / A-L04 / A-L13 until the owner supplies them.
+ *
+ * NO EM DASHES on this page (page-guidelines § 3, enforced by
+ * check-source-rules). It is the loudest machine tell in the voice standard,
+ * and this is the one page written entirely as markup rather than as content
+ * the voice check sweeps.
  */
-const title = `About — how the ${SITE.name} template is put together`;
-const description =
-  'How this template is put together: one contract file for the brand, zod-enforced content collections, generated machine surfaces, and free static hosting.';
+
+const name = SITE.name;
+const type = filled(company.type);
+const coreOffering = filled(company.coreOffering);
+const icp = prose(about.icp);
+const founded = filled(company.founded);
+const hq = address();
+const founder = FOUNDER;
+
+/**
+ * The entity sentence, shaped like a Wikipedia first line and BUILT from the
+ * same facts the Key Facts table renders, so the two cannot drift. Each clause
+ * drops out when its fact is TODO, and the sentence degrades to something true
+ * rather than something with a hole in it.
+ */
+const entitySentence = [
+  `${name} is`,
+  type ? `a ${type}` : 'a company',
+  coreOffering ? `that ${coreOffering}` : null,
+  icp ? `for ${icp}` : null,
+]
+  .filter(Boolean)
+  .join(' ')
+  .replace(/\s+/g, ' ')
+  .concat('.');
+
+const context = proseList(about.context);
+const services = (about.services ?? []).filter((s) => prose(s.name));
+const different = (about.different ?? []).filter((d) => prose(d.name));
+const segments = proseList(about.segments);
+const works = proseList(about.works);
+const clients = notableClients();
+const competitors = filledList(company.competitors);
+const customersServed = filled(company.customersServed);
+const projectsDelivered = filled(company.projectsDelivered);
+const faq = (about.faq ?? []).filter((f) => prose(f.q) && prose(f.a));
+
+/**
+ * The Key Facts rows, in the order page-guidelines § 3 lists them. A row with
+ * no value is dropped here, once, rather than guarded at each `<tr>`.
+ */
+const keyFacts: { label: string; value: string }[] = [
+  { label: 'Company name', value: name },
+  { label: 'Legal name', value: filled(company.legalName) ?? '' },
+  { label: 'Type', value: type ?? '' },
+  { label: 'Founded', value: founded ?? '' },
+  { label: 'Founder', value: filled({ value: founder.name }) ?? '' },
+  { label: 'Headquarters', value: hq ? `${hq.city}, ${hq.region}, ${hq.country}` : '' },
+  { label: 'Website', value: SITE.domain },
+  { label: 'Core offering', value: coreOffering ?? '' },
+  { label: 'Pricing', value: filled(company.pricing) ?? '' },
+  { label: 'Contract terms', value: filled(company.contractTerms) ?? '' },
+  { label: 'Services', value: filledList(company.services).join(', ') },
+  { label: 'Communication', value: filled(company.communication) ?? '' },
+  { label: 'Notable clients', value: clients.join(', ') },
+  { label: 'Customers served', value: customersServed ?? '' },
+  { label: 'Projects delivered', value: projectsDelivered ?? '' },
+  { label: 'Competitors', value: competitors.join(', ') },
+  { label: 'Social', value: filledList(company.social).join(', ') },
+].filter((row) => row.value.length > 0);
+
+const url = new URL('/about', SITE.url).href;
+
+/** Title to the spec: "About <Name> | <Type> for <ICP>", clamped to 60 by
+ *  BaseLayout, so the longest half goes after the pipe where the clamp drops
+ *  it whole rather than mid-phrase. */
+const titleTail = [type, icp ? `for ${icp}` : null].filter(Boolean).join(' ');
+const title = titleTail ? `About ${name} | ${titleTail}` : `About ${name}`;
+
+/** Description to the spec: the entity sentence, the founding fact, one
+ *  commercial fact. Padded to the 70-character floor the schema and the
+ *  invariants both want, from facts the page actually shows. */
+const descriptionParts = [
+  entitySentence,
+  founded && hq ? `Founded ${founded} in ${hq.city}.` : founded ? `Founded ${founded}.` : null,
+  filled(company.contractTerms) ? `${filled(company.contractTerms)}.` : filled(company.pricing) ? `${filled(company.pricing)}.` : null,
+].filter(Boolean);
+let description = descriptionParts.join(' ');
+if (description.length < 70) description = `${description} Read what ${name} does, who it is for, and how it works.`;
+if (description.length > 165) description = `${description.slice(0, 162).replace(/\s+\S*$/, '')}...`;
+
+const schema = [
+  {
+    '@type': 'AboutPage',
+    '@id': `${url}#about`,
+    url,
+    name: title,
+    description,
+    mainEntity: { '@id': `${SITE.url}/#organization` },
+    ...(context.length > 0 || services.length > 0 ? { significantLink: new URL('/contact', SITE.url).href } : {}),
+  },
+  {
+    '@type': 'BreadcrumbList',
+    itemListElement: [{ '@type': 'ListItem', position: 1, name: `About ${name}`, item: url }],
+  },
+  ...(faq.length > 0 ? [faqPageNode(url, faq)] : []),
+];
 ---
 
-<BaseLayout title={title} description={description}>
+<BaseLayout title={title} description={description} schema={schema}>
   <section class="band band--white">
-    <div class="wrap">
-      <p class="eyebrow">About</p>
-      <h1>How this template is put together</h1>
-      <p class="lede">
-        One rule organises everything: nothing brand- or fact-specific is typed into
-        markup. Pages import from data files, so rebranding is editing, not rewriting.
-      </p>
-    </div>
-  </section>
+    <div class="wrap about">
+      <Breadcrumbs items={[{ label: `About ${name}` }]} />
 
-  <section class="band band--cream">
-    <div class="wrap">
-      <div class="section-head">
-        <p class="eyebrow">The map</p>
-        <h2>Where everything lives</h2>
-      </div>
-      <div class="table-scroll" tabindex="0" role="region" aria-label="Where each concern lives in the repo">
-        <table>
-          <thead>
-            <tr><th>File</th><th>What it owns</th><th>Edit when</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>src/data/site.ts</code></td>
-              <td>Name, tagline, description, nav, contact channels, analytics IDs</td>
-              <td>Rebranding, or wiring analytics</td>
-            </tr>
-            <tr>
-              <td><code>src/data/origin.mjs</code></td>
-              <td>The canonical domain, in one place</td>
-              <td>Pointing at a new domain</td>
-            </tr>
-            <tr>
-              <td><code>src/data/facts.json</code></td>
-              <td>Every published number, each with a source</td>
-              <td>Any figure the site states changes</td>
-            </tr>
-            <tr>
-              <td><code>src/data/privacy.json</code></td>
-              <td>Everything the privacy policy renders</td>
-              <td>A vendor, cookie or controller fact changes</td>
-            </tr>
-            <tr>
-              <td><code>src/content.config.ts</code></td>
-              <td>Zod schemas for the blog and glossary collections</td>
-              <td>Adding a field or tightening a rule</td>
-            </tr>
-            <tr>
-              <td><code>src/layouts/BaseLayout.astro</code></td>
-              <td>Canonical, OG tags, JSON-LD, analytics — the whole <code>&lt;head&gt;</code></td>
-              <td>Rarely; pages pass props instead</td>
-            </tr>
-            <tr>
-              <td><code>src/styles/global.css</code></td>
-              <td>Colour tokens and the utility classes every page uses</td>
-              <td>Rebranding colours (re-run the contrast check)</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </section>
+      <h1>About {name}</h1>
 
-  <section class="band band--white">
-    <div class="wrap">
-      <div class="section-head">
-        <p class="eyebrow">The principles</p>
-        <h2>Three decisions doing the work</h2>
-      </div>
-      <div class="grid grid--3">
-        <div class="card">
-          <h3>Content is files in git</h3>
-          <p>
-            Markdown with zod-checked frontmatter, not a CMS. A wrong description length
-            or a glossary entry without a source fails the build — review, diffs and
-            rollback come free with the pull request.
-          </p>
-        </div>
-        <div class="card">
-          <h3>Static by default</h3>
-          <p>
-            No client JavaScript on content pages, CSS inlined, no render-blocking
-            requests. Core Web Vitals pass by construction, and hosting is free because
-            there is nothing to run.
-          </p>
-        </div>
-        <div class="card">
-          <h3>Machine surfaces are generated</h3>
-          <p>
-            The sitemap, RSS, llms.txt and the <a href="/for-llms">/for-llms</a> brief are
-            built from the same collections that render the pages, so they can never
-            contradict the site.
-          </p>
-        </div>
-      </div>
+      {/* Section 1. The entity definition: the most important sentence on the
+          site, in the third person, brand name in the first five words. */}
+      <p class="lede">{entitySentence}</p>
+      {context.map((sentence) => <p>{sentence}</p>)}
+
+      {/* Section 2. */}
+      {
+        services.length > 0 && (
+          <div class="about__section">
+            <h2>What {name} does</h2>
+            {services.map((s) => (
+              <div class="about__service">
+                <h3>{s.name}</h3>
+                <p>{s.delivers} {s.outcome}</p>
+              </div>
+            ))}
+          </div>
+        )
+      }
+
+      {/* Section 3. Rivals are named on purpose: it places this company in
+          their competitive set in the entity graph. */}
+      {
+        different.length > 0 && (
+          <div class="about__section">
+            <h2>What makes {name} different</h2>
+            {different.map((d) => (
+              <div class="about__service">
+                <h3>{d.name}</h3>
+                <p>{d.detail}</p>
+              </div>
+            ))}
+          </div>
+        )
+      }
+
+      {/* Section 4. A taxonomy, not copy. */}
+      {
+        (segments.length > 0 || customersServed || projectsDelivered || clients.length > 0) && (
+          <div class="about__section">
+            <h2>Who uses {name}</h2>
+            {segments.length > 0 && (
+              <ul>
+                {segments.map((s) => (
+                  <li>{s}</li>
+                ))}
+              </ul>
+            )}
+            {customersServed && <p>Customers served: {customersServed}.</p>}
+            {projectsDelivered && <p>Projects delivered: {projectsDelivered}.</p>}
+            {clients.length > 0 && <p>Named with permission: {clients.join(', ')}.</p>}
+          </div>
+        )
+      }
+
+      {/* Section 5. The founder link is the Person node's sameAs, one record
+          (src/data/authors.json, read through SITE's FOUNDER). */}
+      {
+        (prose(about.founderBio) || prose(about.origin) || prose(about.team)) && (
+          <div class="about__section">
+            <h2>The team behind {name}</h2>
+            {prose(about.founderBio) && <p>{prose(about.founderBio)}</p>}
+            {prose(about.origin) && <p>{prose(about.origin)}</p>}
+            {prose(about.team) && <p>{prose(about.team)}</p>}
+            {filled({ value: founder.linkedin }) && !/\/TODO/.test(founder.linkedin) && (
+              <p>
+                <a href={founder.linkedin} rel="noopener">
+                  {founder.name} on LinkedIn
+                </a>
+              </p>
+            )}
+          </div>
+        )
+      }
+
+      {/* Section 6. */}
+      {
+        (works.length > 0 || filled(company.communication)) && (
+          <div class="about__section">
+            <h2>How {name} works</h2>
+            {filled(company.communication) && <p>{filled(company.communication)}.</p>}
+            {works.map((w) => <p>{w}</p>)}
+          </div>
+        )
+      }
+
+      {/* Section 7. A real table, never an image. Rows whose value is still
+          TODO were dropped above: an unfillable row is omitted, not estimated. */}
+      {
+        keyFacts.length > 0 && (
+          <div class="about__section">
+            <h2>Key facts</h2>
+            <div class="table-scroll" tabindex="0" role="region" aria-label={`Key facts about ${name}`}>
+              <table>
+                <tbody>
+                  {keyFacts.map((row) => (
+                    <tr>
+                      <th scope="row">{row.label}</th>
+                      <td>{row.value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p class="fine">
+              Every figure here is recorded with its source in the site's facts file, and a fact
+              this company cannot state honestly is left out rather than estimated.
+            </p>
+          </div>
+        )
+      }
+
+      {/* Section 8. One array feeds the accordion and the FAQPage JSON-LD. */}
+      {faq.length > 0 && <Faq faq={faq} groupName="about" place="about" />}
+
       <div class="btn-row about__cta">
         <a
           class="btn btn--primary"
           href="/contact"
           data-umami-event="cta-contact"
-          data-umami-event-place="about-page">Get in touch</a
+          data-umami-event-place="about">Get in touch</a
         >
-        <a
-          class="btn"
-          href="/glossary"
-          data-umami-event="cta-glossary"
-          data-umami-event-place="about-page">See the glossary pattern</a
-        >
+        <a class="btn" href="/" data-umami-event="cta-home" data-umami-event-place="about">
+          What {name} does
+        </a>
       </div>
     </div>
   </section>
 </BaseLayout>
 
 <style>
+  .about {
+    max-width: 44rem;
+  }
+  .about h1 {
+    font-size: 1.875rem;
+    line-height: 1.15;
+    margin: 0 0 1rem;
+  }
+  .about__section {
+    margin-top: 2.5rem;
+  }
+  .about__service {
+    margin-top: 1.25rem;
+  }
+  .about__service h3 {
+    margin: 0 0 0.375rem;
+  }
+  .about__service p {
+    margin: 0;
+    line-height: 1.7;
+  }
+  .about__section ul {
+    padding-left: 1.25rem;
+  }
+  .about__section li {
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+  }
   .about__cta {
-    margin-top: 2rem;
+    margin-top: 3rem;
+  }
+
+  @media (min-width: 48rem) {
+    .about h1 {
+      font-size: 2.25rem;
+    }
   }
 </style>

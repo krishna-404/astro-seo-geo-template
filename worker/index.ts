@@ -2,7 +2,10 @@
  * The one piece of server-side code in the whole architecture.
  *
  * This worker replaces the ~510-line nginx.conf of the site this template
- * derives from. Everything it does exists because static config cannot do it:
+ * derives from. Everything it does exists because static config cannot do it.
+ * The numbers below label the SECTIONS, not the order they run in: the fetch
+ * handler answers 1, 1b, 2, 5, 3, 6, 4, because the cheapest and most specific
+ * matches go first and the twin negotiation has to come after the redirects.
  *
  *   1. POST /api/contact  — same-origin form proxy to Google Apps Script.
  *      The browser never sees the Apps Script URL (it is write-capable), the
@@ -25,9 +28,9 @@
  *   5. (optional) /s.js + /api/send — same-origin Umami proxy, so a
  *      domain-level blocker cannot drop analytics. Both hops or neither: the
  *      tracker derives its collector endpoint from its own script src.
- *   6. Permanent redirects (PERMANENT_REDIRECTS) — exact paths answered with
- *      a 301 instead of the 404 page: a URL that once existed and reached a
- *      sitemap or an IndexNow ping, or one visitors keep typing that the site
+ *   6. Permanent redirects (src/data/redirects.json) — exact paths answered
+ *      with a 301 instead of the 404 page: a URL that once existed and reached
+ *      a sitemap or an IndexNow ping, or one visitors keep typing that the site
  *      never had. Empty until a site needs one.
  *   7. POST /api/posts, GET /api/posts/<n> — the posts API (worker/posts.ts):
  *      external automation submits a blog post; the worker validates it,
@@ -41,6 +44,8 @@
  */
 
 import sheetsConfig from '../src/data/sheets.config.json';
+import collectionsConfig from '../src/data/collections.json';
+import redirectsConfig from '../src/data/redirects.json';
 import cspGenerated from './csp.generated.json';
 import { handlePosts, type PostsEnv } from './posts';
 
@@ -121,18 +126,29 @@ function deviceClass(ua: string): 'bot' | 'mobile' | 'tablet' | 'desktop' | 'non
 /** /hi or /hi/<code>: 1–40 chars, letters/digits/hyphen, no leading hyphen. */
 const HI_RE = /^\/hi(?:\/[A-Za-z0-9][A-Za-z0-9-]{0,39})?$/;
 
-/** Routes that have .md twins on disk (the content collections — must match
- *  scripts/markdown-twins.mjs COLLECTIONS and wrangler.jsonc run_worker_first). */
-const TWIN_PREFIXES = ['/blog/', '/glossary/'];
+/** Routes that have .md twins on disk, DERIVED from src/data/collections.json —
+ *  the one config the twin generator reads too, so the two cannot disagree.
+ *  wrangler.jsonc's run_worker_first cannot import JSON, so that one list stays
+ *  hand-kept and scripts/check-parity.mjs holds it to this config. */
+const TWIN_PREFIXES = Object.values(collectionsConfig.collections)
+  .filter((c) => c.twins)
+  .map((c) => `${c.route}/`);
 
-/** Exact paths answered with a 301 instead of the 404 page. Every key must
- *  also be in wrangler.jsonc run_worker_first or the request never reaches
- *  this worker and the visitor gets dist/404.html — scripts/check-parity.mjs
- *  enforces that, and scripts/smoke-worker.mjs asserts each entry live.
- *  Give every row a one-line reason in a comment (why the URL is asked for,
- *  why a 301 rather than a page) — a row without one is a mystery in a year.
- *  Example: '/cookies': '/privacy-policy'  // the page was folded into the policy after reaching the sitemap */
-const PERMANENT_REDIRECTS: Record<string, string> = {};
+/** Exact paths answered with a 301 instead of the 404 page, from
+ *  src/data/redirects.json — data, not code, because three scripts used to
+ *  regex-parse this map out of TypeScript to check it. Each row carries its
+ *  own `reason`; every key must also be in wrangler.jsonc run_worker_first or
+ *  the request never reaches this worker and the visitor gets dist/404.html
+ *  (scripts/check-parity.mjs enforces that, scripts/smoke-worker.mjs asserts
+ *  each entry live). */
+// The cast is needed because the shipped file is EMPTY, so TypeScript infers
+// `{}` for it and cannot see the row shape. The shape is documented in the
+// file's own $comment and checked by check-parity.
+const PERMANENT_REDIRECTS: Record<string, string> = Object.fromEntries(
+  Object.entries(redirectsConfig.redirects as Record<string, { to: string; reason: string }>).map(
+    ([from, row]) => [from, row.to]
+  )
+);
 
 export default {
   async fetch(request: Request, env: Env, ctx: Ctx): Promise<Response> {

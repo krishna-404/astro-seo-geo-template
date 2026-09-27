@@ -1,3 +1,5 @@
+import authors from './authors.json';
+import brand from './brand.json';
 import facts from './facts.json';
 import sheetsConfig from './sheets.config.json';
 import { SITE_URL } from './origin.mjs';
@@ -5,20 +7,23 @@ import { SITE_URL } from './origin.mjs';
 /**
  * ─── THE ONE FILE TO EDIT FOR A NEW SITE ─────────────────────────────────────
  * Everything brand- or deployment-specific lives here (plus origin.mjs for the
- * domain, facts.json for published numbers, and the tokens in global.css).
+ * domain, brand.json for the name/tagline/description the node scripts also
+ * need, facts.json for published numbers, and the tokens in global.css).
  * Nothing below is typed into markup anywhere — pages import from here.
  */
 
 export { SITE_URL };
 
 export const SITE = {
-  name: 'Example Co',
+  // name, tagline and description come from brand.json so the node scripts
+  // (llms.txt, the OG cards) read the same strings — they cannot import this
+  // file. The description band is 120–165 characters; CI enforces it on every
+  // indexable page.
+  name: brand.name,
   domain: new URL(SITE_URL).host,
   url: SITE_URL,
-  tagline: 'A one-line description of what this company does', // TODO per site
-  // 120–165 characters — CI enforces the bounds on every indexable page.
-  description:
-    'A 120–165 character description used as the default meta description and in the Organization schema. Say what you do, for whom, and what sets you apart.',
+  tagline: brand.tagline,
+  description: brand.description,
   locale: 'en',
   themeColor: '#0f4c81', // TODO per site — mirror the --brand token in global.css
   ogImage: '/og/default.png',
@@ -84,12 +89,34 @@ export const VERIFICATION = {
   bing: '',
 } as const;
 
-/** Feeds the site-wide Person node and every blog post's author.sameAs.
- *  A named human author with a real, linkable profile is non-negotiable for
- *  E-E-A-T and for answer engines. */
+/**
+ * Feeds the site-wide Person node, the RSS managing editor, /for-llms and
+ * llms.txt. A named human author with a real, linkable profile is
+ * non-negotiable for E-E-A-T and for answer engines.
+ *
+ * ONE RECORD, in src/data/authors.json. The founder's name and LinkedIn were
+ * also in facts.json → company.founder, which meant two places to change a
+ * name and two identities in the graph: the author page emitted
+ * `#author-founder` while every other page pointed at `#founder`. The registry
+ * is the record now, because it is the one an author page already renders and
+ * the one check-source-rules already holds every byline to.
+ *
+ * FOUNDER_SLUG names which registry entry is the founder. A site whose founder
+ * is not the first author changes this one line.
+ */
+export const FOUNDER_SLUG = 'founder';
+
+const founderEntry = authors.authors.find((a) => a.slug === FOUNDER_SLUG) ?? authors.authors[0]!;
+
 export const FOUNDER = {
-  name: facts.company.founder.name,
-  linkedin: facts.company.founder.linkedin,
+  slug: founderEntry.slug,
+  name: founderEntry.name,
+  /** The Person node's jobTitle. Was hard-coded as 'Founder' in BaseLayout. */
+  title: founderEntry.title,
+  bio: founderEntry.bio,
+  sameAs: founderEntry.sameAs,
+  /** The first profile, for the places that print one link. */
+  linkedin: founderEntry.sameAs[0] ?? '',
 } as const;
 
 export const CONTACT = {

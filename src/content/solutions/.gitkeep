@@ -1,0 +1,11 @@
+# The solutions collection ships EMPTY.
+#
+# A money page is the one page type nobody can write for you: it states what
+# this company sells, what it costs and what the buyer gets. A template that
+# shipped an example would ship a claim, and AGENTS rule 1 does not allow one.
+#
+# To add the first: /write-content picks the target from
+# marketing/keyword-map.md § High-intent, .vscode/frontmatter.code-snippets has
+# the `solution` snippet, and the schema in src/content.config.ts names every
+# required field. The route (src/pages/solutions/[...slug].astro) is already
+# here — getStaticPaths over an empty collection builds nothing.

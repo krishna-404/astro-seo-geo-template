@@ -20,7 +20,7 @@
  * changes — nothing checks this for you, and a favicon that still shows the old
  * brand colour is the kind of thing nobody notices for a year.
  */
-import { writeFileSync, readFileSync } from 'node:fs';
+import { writeFileSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import sharp from 'sharp';
 
@@ -90,7 +90,6 @@ for (const [name, size] of pngs) {
     .toFile(out(name));
 }
 
-const { statSync } = await import('node:fs');
 console.log('written to public/:');
 for (const f of ['favicon.ico', ...pngs.map(([n]) => n)]) {
   console.log(`  ${f.padEnd(22)} ${statSync(out(f)).size} bytes`);

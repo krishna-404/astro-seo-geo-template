@@ -2,7 +2,7 @@
 
 > A one-line description of what this company does
 
-Two or three sentences an answer engine can quote verbatim: what the company does, for whom, and the one thing that makes it different.
+Two or three sentences an answer engine can quote verbatim: what the company does, for whom, and the one thing that makes it different. Longer than the meta description on purpose — this one is written to be lifted whole into an answer, not clamped into a SERP.
 
 ## The numbers on this site
 
@@ -17,7 +17,7 @@ sourced is not published.
 - [About](https://example.com/about)
 - [Contact](https://example.com/contact)
 - [For LLMs](https://example.com/for-llms): a brand brief for automated readers
-- [Full corpus](https://example.com/llms-full.txt): every blog and glossary page in one file
+- [Full corpus](https://example.com/llms-full.txt): every content page in one file
 - [RSS](https://example.com/rss.xml)
 - [Sitemap](https://example.com/sitemap-index.xml)
 
@@ -39,9 +39,25 @@ Core Web Vitals · llms.txt
 
 Index: <https://example.com/glossary>
 
+## Solutions
+
+What this company sells, one page per offering: what the customer gets, how it is delivered, and what it costs where a price is published.
+
+(no entries published yet)
+
+Index: <https://example.com/solutions>
+
+## Compared
+
+Head-to-head comparisons. Every cell in every table names its source and the date it was checked.
+
+(no entries published yet)
+
+Index: <https://example.com/vs>
+
 ## Contact
 
-TODO Founder Name, founder
+TODO Founder Name, Founder
 LinkedIn: https://www.linkedin.com/in/TODO
 
 ## Note

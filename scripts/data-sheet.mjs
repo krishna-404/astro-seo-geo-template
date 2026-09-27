@@ -30,6 +30,7 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SITE_URL } from '../src/data/origin.mjs';
+import { dataSheet, linkTargets } from './lib/snapshots.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SHEET = join(ROOT, 'marketing/DATA-SHEET.md');
@@ -42,8 +43,6 @@ const AS_MD = args.includes('--markdown');
 const limitArg = args.indexOf('--limit');
 const LIMIT = limitArg > -1 ? Number(args[limitArg + 1]) || 3 : 3;
 
-const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
-
 function read(path) {
   try {
     return readFileSync(path, 'utf8');
@@ -52,69 +51,11 @@ function read(path) {
   }
 }
 
-/** Parse `### Q-A1 · Title ⬜` blocks out of the data sheet. */
-function parseQuestions(md) {
-  const out = [];
-  // Split on the question headings, keeping each heading with its body.
-  const parts = md.split(/^### (?=Q-)/m).slice(1);
-  for (const part of parts) {
-    const firstLine = part.slice(0, part.indexOf('\n'));
-    const m = firstLine.match(/^(Q-[A-Za-z0-9]+)\s*·\s*(.*?)\s*(⬜|✅|🚫)\s*$/);
-    if (!m) continue;
-    const [, id, title, mark] = m;
-    const body = part.slice(firstLine.length);
-    const field = (name) => {
-      const f = body.match(new RegExp(`\\*\\*${name}:\\*\\*\\s*([\\s\\S]*?)(?=\\n\\*\\*|\\n---|$)`));
-      return f ? f[1].trim().replace(/\s+/g, ' ') : '';
-    };
-    const priorityRaw = field('Priority').toLowerCase();
-    const priority = ['high', 'medium', 'low'].find((p) => priorityRaw.startsWith(p)) ?? 'medium';
-    out.push({
-      id,
-      title,
-      status: mark === '⬜' ? 'open' : mark === '✅' ? 'answered' : 'n/a',
-      priority,
-      unblocks: field('Unblocks'),
-      ask: field('Ask'),
-      answered: field('Answer').length > 0,
-    });
-  }
-  return out;
-}
-
-/** Parse the link-target tables. Any row whose status cell is a known state. */
-function parseTargets(md) {
-  const out = [];
-  const STATES = new Set(['todo', 'doing', 'live', 'skip']);
-  for (const line of md.split('\n')) {
-    if (!line.startsWith('|')) continue;
-    const cells = line
-      .split('|')
-      .slice(1, -1)
-      .map((c) => c.trim());
-    if (cells.length < 6) continue;
-    const [num, platform, why, cost, status, note] = cells;
-    if (!STATES.has((status ?? '').toLowerCase())) continue;
-    out.push({
-      n: Number(num) || 0,
-      platform: platform ?? '',
-      why: why ?? '',
-      cost: cost ?? '',
-      status: (status ?? '').toLowerCase(),
-      note: note ?? '',
-    });
-  }
-  return out;
-}
-
-const questions = parseQuestions(read(SHEET));
-const targets = parseTargets(read(TARGETS));
-
-const open = questions
-  .filter((q) => q.status === 'open')
-  .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority] || a.id.localeCompare(b.id));
-const todo = targets.filter((t) => t.status === 'todo').sort((a, b) => a.n - b.n);
-const live = targets.filter((t) => t.status === 'live');
+// Both files are parsed by scripts/lib/snapshots.mjs — the one reader, so this
+// printer and the ACTIONS check can never report different counts of the same
+// file (they did: one matched headings, the other parsed blocks).
+const { questions, open } = dataSheet(read(SHEET));
+const { rows: targets, todo, live } = linkTargets(read(TARGETS));
 
 const summary = {
   questions: { total: questions.length, open: open.length, answered: questions.length - open.length },

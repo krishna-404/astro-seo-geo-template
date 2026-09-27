@@ -185,16 +185,16 @@ session or Routine environment, never in the repo.
 ### A-K03 · UMAMI_URL + UMAMI_WEBSITE_ID (+ token or login) — visitors ⬜
 
 **Phase:** keys
-**Check:** env:UMAMI_URL+UMAMI_WEBSITE_ID
+**Check:** env:UMAMI_URL+UMAMI_WEBSITE_ID+UMAMI_BEARER_TOKEN|UMAMI_URL+UMAMI_WEBSITE_ID+UMAMI_USERNAME+UMAMI_PASSWORD
 **Why:** Visitors, CTA events, referrals from AI assistants, the country split. Without it stage 5 of the funnel and rung 1 of the funnel ladder are blind.
-**How:** Umami → Settings → Websites → Website ID; a bearer token or `UMAMI_USERNAME`/`UMAMI_PASSWORD`.
+**How:** Umami → Settings → Websites → Website ID; `UMAMI_BEARER_TOKEN`, or `UMAMI_USERNAME`/`UMAMI_PASSWORD` and the script logs in itself.
 **Done:**
 
 ### A-K04 · BING_WEBMASTER_API_KEY — the index behind Copilot and ChatGPT search ⬜
 
 **Phase:** keys
 **Check:** env:BING_WEBMASTER_API_KEY
-**Why:** The only automatic read of the index two of the three biggest assistants answer from. Without it stage 3 of the funnel knows only Google's half.
+**Why:** The only automatic read of the index two of the three biggest assistants answer from — and the key that lets `npm run indexnow` submit changed URLs to Bing's URL Submission API after every deploy, not just through the shared IndexNow endpoint. Without it stage 3 of the funnel knows only Google's half.
 **How:** Bing Webmaster Tools → Settings → API access → Generate. Read-only use.
 **Done:**
 

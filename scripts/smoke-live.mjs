@@ -23,6 +23,8 @@
 
 import { readFileSync } from 'node:fs';
 import { SITE_URL } from '../src/data/origin.mjs';
+import { SMOKE_AGENTS } from './lib/crawlers.mjs';
+import { twinCollections, routeOfCollection } from './lib/routes.mjs';
 
 const origin = process.argv[2] ?? SITE_URL;
 if (/example\.com/.test(origin)) {
@@ -89,7 +91,10 @@ check('/hi rewrite live: 200 + noindex header', r?.status === 200 && /noindex/.t
 
 // A twin route, discovered from the live sitemap so the test tracks content.
 const sitemap = await (await req(`${origin}/sitemap-0.xml`))?.text() ?? '';
-const twinUrl = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]).find((u) => /\/(blog|glossary)\//.test(u));
+const TWIN_PREFIXES = twinCollections().map((c) => `${routeOfCollection(c)}/`);
+const twinUrl = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)]
+  .map((m) => m[1])
+  .find((u) => TWIN_PREFIXES.some((p) => new URL(u).pathname.startsWith(p)));
 if (twinUrl) {
   r = await req(twinUrl, { headers: { accept: 'text/markdown' } });
   check('markdown twin negotiates live', (r?.headers.get('content-type') ?? '').includes('text/markdown') && /accept/i.test(r?.headers.get('vary') ?? ''), `ct=${r?.headers.get('content-type')} vary=${r?.headers.get('vary')}`);
@@ -106,19 +111,15 @@ for (const path of ['/favicon.ico', '/robots.txt', '/llms.txt', '/rss.xml', '/si
 // ── answer-engine crawlers get through the edge ────────────────────────────
 // robots.txt permission means nothing if the WAF or a bot-management rule
 // silently 403s the crawler: that failure is invisible in analytics and fatal
-// to being cited (the Sep 2026 discovery-audit frame, OFF-03). AI crawlers identify
-// themselves honestly and do not retry cleverly, so each named UA must get the
-// same 200 a browser gets, on the homepage and on the machine brief. Cloudflare
-// "Bot Fight Mode" and "Block AI bots" are the two toggles that break this.
-const CRAWLERS = {
-  GPTBot: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; GPTBot/1.2; +https://openai.com/gptbot',
-  'OAI-SearchBot': 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot',
-  ClaudeBot: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; ClaudeBot/1.0; +claudebot@anthropic.com)',
-  PerplexityBot: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; PerplexityBot/1.0; +https://perplexity.ai/perplexitybot)',
-  Bingbot: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm) Chrome/116.0.1938.76 Safari/537.36',
-  Googlebot: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Googlebot/2.1; +http://www.google.com/bot.html) Chrome/W.X.Y.Z Safari/537.36',
-};
-for (const [name, ua] of Object.entries(CRAWLERS)) {
+// to being cited (the AEO report's stage 1). AI crawlers identify themselves
+// honestly and do not retry cleverly, so each named UA must get the same 200 a
+// browser gets, on the homepage and on the machine brief. Cloudflare "Bot Fight
+// Mode" and "Block AI bots" are the two toggles that break this.
+//
+// The agent list comes from scripts/lib/crawlers.mjs (SMOKE_AGENTS) — the one
+// registry — so an answering engine added there gets its live check on the same
+// commit instead of when somebody remembers this file exists.
+for (const [name, ua] of Object.entries(SMOKE_AGENTS)) {
   for (const path of ['/', '/llms.txt']) {
     const res = await req(`${origin}${path}`, { headers: { 'user-agent': ua } });
     const challenged = /cf-mitigated|cf-chl/i.test([...(res?.headers ?? [])].map(([k, v]) => `${k}:${v}`).join(' '));

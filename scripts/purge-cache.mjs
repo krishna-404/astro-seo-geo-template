@@ -15,8 +15,11 @@
  *
  * CREDENTIALS COME FROM THE ENVIRONMENT AND MUST NEVER BE COMMITTED:
  *
- *   CLOUDFLARE_ZONE_ID     Overview tab, right-hand column. Not a secret, but
- *                          it lives here so the two cannot drift apart.
+ *   CLOUDFLARE_ZONE_ID     Overview tab, right-hand column. Not a secret. It is
+ *                          required rather than derived because the deploy token
+ *                          this repo uses (Edit Workers + Cache Purge) need not
+ *                          carry Zone:Read, so the script cannot look the zone
+ *                          up from the domain — it has to be told.
  *   CLOUDFLARE_API_TOKEN   A SCOPED token, not the Global API Key. The global
  *                          key can do anything to every zone on the account and
  *                          cannot be limited; a leaked one is a whole-account
