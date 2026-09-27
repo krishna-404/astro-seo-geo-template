@@ -58,6 +58,7 @@ export const DESCRIPTION_MAX = 165;
  * @property {{ name: string, title: string, sameAs: string[] }} author
  * @property {string[]} [tags]
  * @property {string} proprietary
+ * @property {string} [fuel]
  * @property {{ label: string, url?: string, retrieved?: string }[]} [sources]
  * @property {{ q: string, a: string }[]} [faq]
  * @property {Record<string, unknown>[]} [figures]
@@ -66,6 +67,7 @@ export const DESCRIPTION_MAX = 165;
  * @property {string[]} [secondaryKeywords]
  * @property {string} [canonical]
  * @property {string} [ogImage]
+ * @property {string} [ogImageAlt]
  * @property {boolean} [draft]
  * @property {string} body
  */
@@ -126,6 +128,8 @@ export function validatePost(raw, authors = []) {
   if (r.secondaryKeywords !== undefined) need('secondaryKeywords', Array.isArray(r.secondaryKeywords) && r.secondaryKeywords.every(isStr), 'array of strings');
   if (r.canonical !== undefined) need('canonical', isUrl(r.canonical), 'absolute https URL');
   if (r.ogImage !== undefined) need('ogImage', isStr(r.ogImage) && r.ogImage.startsWith('/'), 'root-relative path to an image in public/');
+  if (r.ogImageAlt !== undefined) need('ogImageAlt', isStr(r.ogImageAlt) && r.ogImageAlt.length >= 4 && r.ogImageAlt.length <= 180, 'string, 4–180 characters — what a CUSTOM ogImage shows');
+  if (r.fuel !== undefined) need('fuel', isStr(r.fuel) && r.fuel.length >= 4 && r.fuel.length <= 200, 'string, 4–200 characters — WHICH field note, news-log date or finding backs this post');
 
   const a = /** @type {Record<string, unknown> | undefined} */ (r.author);
   need('author', !!a && typeof a === 'object', 'object { name, title, sameAs[] }');
@@ -186,6 +190,7 @@ export function validatePost(raw, authors = []) {
       author: { name: /** @type {string} */ (a.name), title: /** @type {string} */ (a.title), sameAs: /** @type {string[]} */ (a.sameAs) },
       tags: /** @type {string[] | undefined} */ (r.tags) ?? [],
       proprietary: /** @type {string} */ (r.proprietary),
+      fuel: /** @type {string | undefined} */ (r.fuel),
       sources: /** @type {PostInput['sources']} */ (r.sources) ?? [],
       faq: /** @type {PostInput['faq']} */ (r.faq) ?? [],
       figures: /** @type {PostInput['figures']} */ (r.figures),
@@ -194,6 +199,7 @@ export function validatePost(raw, authors = []) {
       secondaryKeywords: /** @type {string[] | undefined} */ (r.secondaryKeywords),
       canonical: /** @type {string | undefined} */ (r.canonical),
       ogImage: /** @type {string | undefined} */ (r.ogImage),
+      ogImageAlt: /** @type {string | undefined} */ (r.ogImageAlt),
       draft: /** @type {boolean | undefined} */ (r.draft),
       body: /** @type {string} */ (r.body).trim(),
     },
@@ -223,6 +229,7 @@ export function toMdx(p) {
   lines.push('  sameAs:');
   for (const u of p.author.sameAs) lines.push(`    - ${y(u)}`);
   lines.push(`proprietary: ${p.proprietary}`);
+  if (p.fuel) lines.push(`fuel: ${y(p.fuel)}`);
   lines.push(p.tags && p.tags.length ? `tags: [${p.tags.map(y).join(', ')}]` : 'tags: []');
   if (p.sources && p.sources.length) {
     lines.push('sources:');
@@ -247,6 +254,7 @@ export function toMdx(p) {
   if (p.secondaryKeywords && p.secondaryKeywords.length) lines.push(`secondaryKeywords: [${p.secondaryKeywords.map(y).join(', ')}]`);
   if (p.canonical) lines.push(`canonical: ${y(p.canonical)}`);
   if (p.ogImage) lines.push(`ogImage: ${y(p.ogImage)}`);
+  if (p.ogImageAlt) lines.push(`ogImageAlt: ${y(p.ogImageAlt)}`);
   // The key the daily run's PR inbox identifies an API post by (the blog
   // schema declares `via` so this survives zod).
   lines.push('via: posts-api');

@@ -30,9 +30,9 @@ costs a cycle; a wrong number costs the site's standing.
    pieces extend clusters; they do not duplicate them.
 2. `npm run insights` — what does the searcher actually type? Titles and
    headings carry the query's own words.
-3. `marketing/field-notes.md` and `marketing/news-log.md` — what is the
-   proprietary claim? A piece with nothing only this site can say does not
-   run this week.
+3. **The fuel rule** — `marketing/content-guidelines.md § 2` states it in
+   full, and lists every channel that counts. In short: name the thing in
+   `fuel`, or the piece does not run this week.
 
 ## Review gates
 
@@ -45,7 +45,8 @@ costs a cycle; a wrong number costs the site's standing.
 2c. The piece's social posts are in `marketing/social-queue.md`.
 3. `published` is the real day the piece goes live; several on one day
    are fine, never backdated (no post caps since 20 Sep 2026).
-4. A human reads the PR before merge. Nothing auto-publishes.
+4. Who merges and who deploys is the merge model in `marketing/STRATEGY.md
+   § 9`; the default commits to `main` and deploys on a green battery.
 
 ## After publish
 

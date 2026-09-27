@@ -1,15 +1,20 @@
 # Playbook — how a site built from this template is built and operated
 
-The phase-by-phase runbook, adapted from the playbook of the site this
-template derives from (a static Astro site that spent two days in nginx/VPS
-debugging so you don't have to). That ancestor's 66 recorded traps shaped
-everything here; the ones that are platform-specific to nginx are gone as
-mechanisms but kept as lessons where they transfer.
+The order of work and the operating knowledge: what to build when, what the
+edge and the dashboards must say, and how to verify it against the live site.
+The decisions themselves, with their reasons, are `CHECKLIST.md`; the per-site
+values are `SETUP.md`.
 
-**Four documents, four jobs.** `SETUP.md` — the ordered per-site walkthrough a
-new site starts with. `CHECKLIST.md` — every decision already baked in, and
-why. This file — the order of work and the operating knowledge. `AGENTS.md` —
-the standing rules for anyone editing the repo.
+**Six documents, six jobs.** `README.md` — the quickstart, and the glossary of
+this repo's terms. `SETUP.md` — the ordered walkthrough a NEW site starts
+with: every per-site value, in dependency order, before any content work.
+`AGENTS.md` — the standing rules for anyone, human or agent, editing the repo.
+`CHECKLIST.md` — every architectural decision already made, with its reason.
+`PLAYBOOK.md` — the order of work, the operating knowledge and the traps.
+`marketing/` — the operating layer the content engine runs on;
+`marketing/README.md` indexes it. **Update the document that owns a rule in the
+same commit as the change** — a setting nobody wrote down is indistinguishable
+from a setting nobody made.
 
 Items marked ⚠ fail *silently* — they look fine and are not.
 
@@ -49,11 +54,12 @@ Three decisions that are cheap now and unrecoverable later:
   Browser
 ```
 
-There is no server. Static assets serve unmetered from Cloudflare's store;
-a handful of behaviours run in one worker (forms proxy, sheet data, `/hi`
+There is no server. Static assets serve unmetered from Cloudflare's store; a
+handful of behaviours run in one worker (forms proxy, sheet data, `/hi`
 rewrites, markdown-twin negotiation, optional analytics proxy, permanent
-redirects, the posts API in `worker/posts.ts`); Google Apps Script handles
-form storage + email off the critical path.
+redirects, the posts API); Google Apps Script handles form storage and email
+off the critical path. Why each of those is the shape it is: `CHECKLIST.md`
+§ 1–3.
 
 ## 2. Build-time architecture
 
@@ -78,11 +84,11 @@ OG cards land on the build after they're generated.
 off every surface (pages, sitemap, RSS, llms.txt, twins, lastmod — one filter,
 `src/data/publishing.mjs`) until a build runs on or after that date. A static
 site has no runtime clock: the post appears on the FIRST BUILD after the
-instant passes and the deploy that follows it. Nothing deploys by itself
-(Actions are opt-in): the daily cadence run builds and opens its PR, and a
-human's `/ship` is what releases the post — so a launch-time post needs a
-`/ship` on or after its date. Date-only YAML (`published: 2026-09-01`)
-means midnight UTC.
+instant passes and the deploy that follows it. GitHub Actions are opt-in, so
+the release is whatever the merge model says (`marketing/STRATEGY.md § 9`):
+on the default the daily cadence run's own deploy releases it, with no human
+step; on PR review a human's `/ship` on or after the date does. Date-only YAML
+(`published: 2026-09-01`) means midnight UTC.
 
 ## 3. Serve-time architecture (Workers static assets)
 
@@ -109,14 +115,13 @@ means midnight UTC.
   cancelled). The only route
   that writes anything, and it writes to GitHub, never to the site. Both
   secrets unset = 503 and nothing else changes.
-- Permanent redirects live in ONE map, `PERMANENT_REDIRECTS` in
-  worker/index.ts (a URL that once existed and reached a sitemap or an
-  IndexNow ping; a URL visitors keep typing that the site never had). Every
-  key must also be in `run_worker_first` or the request never reaches the
-  worker and the visitor gets the 404 page — `check-parity` enforces it, and
-  `smoke-worker` / `smoke-live` parse the map and assert each entry, so a
-  row added there is tested without anyone remembering. Each row carries a
-  one-line reason in a comment.
+- Permanent redirects live in ONE file, `src/data/redirects.json`, which the
+  worker imports (a URL that once existed and reached a sitemap or an IndexNow
+  ping; a URL visitors keep typing that the site never had). Every key must
+  also be in `run_worker_first` or the request never reaches the worker and the
+  visitor gets the 404 page — `check-parity` enforces it, and `smoke-worker` /
+  `smoke-live` read the same JSON and assert each entry, so a row added there
+  is tested without anyone remembering. Each row carries its own `reason`.
 - ⚠ `run_worker_first` in wrangler.jsonc is the metering boundary: listed
   routes cost invocations, everything else is free. Review it when adding
   worker behaviour.
@@ -178,55 +183,28 @@ Lessons encoded (each cost the ancestor site a bug):
   (`Faq.astro`) — the only first-party signal about which questions visitors
   actually relate to. Counts include closes; the first click is always an
   open, so read it as engagement, not a precise open-count.
-- `npm run insights` reads all three surfaces back — Umami, Search Console
-  (queries/pages/CTR/position, plus `--inspect` for per-URL indexing
-  verdicts) and Cloudflare edge (crawlers, answer engines, 404 scans) — and
-  prints one report so what-to-write-next decisions come from evidence.
-  Read-only env-var credentials; each section soft-skips until configured
-  (SETUP Phase 4). The Search Console section leads with the **high-intent
-  queries** (`src/data/intent.json` signal words + a curated watch list, each
-  term tied to the page that claims it; `scripts/lib/intent.mjs`): on a
-  zero-click site the buyer's transactional phrasings sit far below the
-  informational rows by volume and a report sorted by impressions never
-  shows them first. Every row is kept (never a top-N slice — GSC orders by
-  clicks, which on a zero-click site is arbitrary) and the page × query
-  dimension is pulled too, so a title rewrite uses the words the page is
-  actually shown for.
-- Before organic traffic exists, the metric that matters is **AI citations**:
-  keep a list of target queries, run each monthly in ChatGPT,
-  Perplexity and Google AI Overviews, and log who got cited. Rankings and
-  pageviews say nothing yet; citations move weeks before the traffic
-  reports do.
+- ⚠ Before organic traffic exists, rankings and pageviews say nothing. The
+  metric that moves first is **AI citations** — run the target queries monthly
+  in the assistants and log who got named (`marketing/ai-panel.md`). Citations
+  move weeks before the traffic reports do.
 
-**The generative-AI half of measurement (Sep 2026).** Search Console's
-*Generative AI* report — impressions inside AI Overviews and AI Mode, by page,
-country, device and date — is UI-only: no API `type`, no BigQuery. So it is
-read through its Export button: the owner drops the zip into
-`marketing/insights/genai/` (one a week, dated), `scripts/lib/genai.mjs` opens
-it, joins AI vs web impressions per page and diffs against the previous export,
-and `npm run insights` prints it as its own section beside two proxies for what
-the report withholds (prompt-shaped web queries; referrals from AI assistants in
-Umami). `BING_WEBMASTER_API_KEY` adds Bing's read-back — the index behind
-Copilot and ChatGPT search, and the only one of the two big non-Google
-answer indexes that will tell you what it holds. `marketing/ai-panel.md` is
-the monthly manual share-of-voice panel across the assistants;
-`npm run aeo` scores the whole picture: the five funnel stages, and beside
-them the six off-funnel levers nothing else measures. The cadence works all of
-it (`.claude/skills/content-cadence/SKILL.md` step 2e, weekly step 17).
+**Reading the numbers back.** `npm run insights` pulls Umami, Search Console
+(including `--inspect` for per-URL indexing verdicts) and the Cloudflare edge
+into one report, and `npm run aeo` folds them into the answer-engine funnel.
+Read-only credentials from the environment; every section soft-skips until it
+is configured. **Setting them up is SETUP Phase 4**; what each number means and
+how it is scored is the header of the script that computes it
+(`scripts/insights.mjs`, `scripts/lib/intent.mjs`, `scripts/lib/genai.mjs`,
+`scripts/lib/aeo.mjs`, `scripts/lib/crawlers.mjs`); which run works which block
+is `marketing/runbook.md`. Two things worth knowing before you read one:
 
-**And the one-screen answer: `npm run aeo`.** The numbers above are five
-tables that a person has to reconcile before they mean anything, which is the
-manual step worth deleting. `scripts/lib/aeo.mjs` folds them into the funnel
-that getting cited actually is — **reachable → ingested → indexed → shown →
-followed** — scores each stage 0–100, and names the highest stage that is
-under its bar, because a site an engine is refusing at the edge does not need
-more content. Two of its inputs are new and both are automatic: the Cloudflare
-pull now classifies every answer-engine user-agent at the edge
-(`scripts/lib/crawlers.mjs`) into the agents that build an index, the agents
-that fetch a page mid-answer, and the agents that only train — and counts
-401/403/429 apart from 404, because a refused crawler is a rule we wrote and a
-404 is link rot. Each stage declares whether it was measured automatically,
-partially, or by a human, so "we don't know" never reads as "we're fine".
+- The Search Console section leads with the **high-intent queries**, not the
+  biggest ones. On a zero-click site the buyer's transactional phrasings sit
+  far below the informational rows by volume, and a report sorted by
+  impressions never shows them first.
+- Every row is kept, never a top-N slice: GSC orders by clicks, which on a
+  zero-click site is arbitrary. The page × query dimension is pulled too, so a
+  title rewrite uses the words the page is actually shown for.
 
 ## 6. Cloudflare dashboard — setting by setting
 
@@ -332,66 +310,48 @@ serving pages, which is exactly why they get forgotten)
 
 ## 8. Verification — against the LIVE site, not localhost
 
-**The routing/header items below marked ⚙ run automatically after every
-deploy** (`scripts/smoke-live.mjs`, the last step of `/ship`) once
-`origin.mjs` carries the real domain. They stay listed because this section
-is also the launch-day manual checklist and the smoke test's specification —
-if the script and this list disagree, one of them is wrong. Unmarked items
-remain manual.
+**`npm run smoke:live` is the automated half and its own specification.**
+`scripts/smoke-live.mjs` runs as the last step of every deploy once
+`origin.mjs` carries the real domain, and asserts: the routing set (apex 200,
+www → 301, http → https, trailing slash normalised, unknown route → real 404,
+every row in `src/data/redirects.json` → its 301), exactly one HSTS value, a
+CSP carrying generated hashes, the security set on a page, `/hi/*` 200 +
+noindex, markdown-twin negotiation with `Vary: Accept`, the machine surfaces
+(`/favicon.ico`, `/robots.txt`, `/llms.txt`, `/rss.xml`, `/sitemap-index.xml`,
+`/.well-known/security.txt`) and an unchallenged 200 for every answer-engine
+agent in `scripts/lib/crawlers.mjs`. Do not restate those here — a second copy
+is a second thing to drift.
 
-**Routing** ⚙
-- [ ] `curl -sI https://DOMAIN/ | head -1` → 200
-- [ ] `curl -sI https://www.DOMAIN/` → 301 to apex ⚠
-- [ ] `curl -sI http://DOMAIN/` → https, same host
-- [ ] `curl -sIL https://DOMAIN/ | grep -c '^HTTP'` → redirects resolve in one hop
-- [ ] `curl -sI https://DOMAIN/about/` → redirect to `/about` (trailing
-      slash; the platform emits 307 here — see CHECKLIST §2 for why that is
-      accepted)
-- [ ] `curl -sI https://DOMAIN/definitely-not-a-page | head -1` → 404
+**What no script can see, and stays a human's — the launch-day list:**
 
-**Headers — on a page AND on a fingerprinted asset** ⚠⚙ (the pairing catches
-header-scoping bugs; the page half is automated, the asset half manual)
-- [ ] Security set present on both; `Cache-Control` 300 on pages,
-      `immutable` on `/_astro/*`
-- [ ] Exactly one HSTS header
-- [ ] `curl -sI https://DOMAIN/ | grep -ci content-security-policy` → `1`,
-      and the value contains `sha256-` hashes (the marker comment shipping
-      instead means the generator never ran). Check a worker route too
-      (`/hi/test`) — the worker emits the same policy from
-      `worker/csp.generated.json`. ⚠ Then open `/search` in a browser and
-      run a query: a CSP mistake breaks Pagefind's WebAssembly first, and
-      only the browser console will say so.
-- [ ] `curl -sI -H 'Accept: text/markdown' https://DOMAIN/blog/<slug>` →
-      `content-type: text/markdown`, `vary: Accept`; without the header → HTML
-- [ ] `curl -sI https://DOMAIN/hi/test` → 200, `x-robots-tag: noindex`
-
-**Assets & metadata**
-- [ ] `/favicon.ico` 200 ⚠ (crawlers probe it regardless of HTML) ·
-      `/apple-touch-icon.png` 200 and opaque
-- [ ] `/robots.txt`, `/llms.txt`, `/llms-full.txt`, `/rss.xml`,
-      `/.well-known/security.txt`, IndexNow key file — all 200
-- [ ] `/pagefind/pagefind-entry.json` → 200 with a sane `page_count`;
-      `/search?q=<a real term>` returns results in a browser; `/search`
-      absent from the sitemap
-- [ ] Sitemap: URL count sane; noindex pages absent; every URL has a
-      `lastmod` and they are not all identical ⚠
-- [ ] Canonicals match served URLs (no `.html`, no trailing slash)
-- [ ] JSON-LD validates (Rich Results Test); paste a URL into a social
-      composer and see the OG card render
-
-**Behaviour**
-- [ ] Submit the real form → row in Sheet + email arrives ⚠ (the redirect
-      proves nothing — every failure path also redirects)
-- [ ] Honeypot-filled submission lands in `Filtered`, emails no one
-- [ ] Analytics records a pageview ⚠ (a tag in the HTML proves nothing) and
-      each tracked CTA fires with its `place`
-- [ ] `LiveData` values update after a Sheet edit (≤5 min)
-- [ ] Site renders and form submits with JavaScript disabled
-- [ ] No horizontal scroll at 320px; consent banner (if armed) doesn't cover
-      the hero CTA at 375×667 ⚠
-- [ ] Lighthouse in a clean profile ⚠ (extensions appear in traces and get
-      blamed on your site); read observed metrics, not the simulated
-      headline; check what the LCP element actually IS before optimising it
+- [ ] **Redirects resolve in one hop**: `curl -sIL https://DOMAIN/ | grep -c '^HTTP'`.
+- [ ] **Headers on a fingerprinted asset, not only a page** ⚠ — the pairing is
+      what catches header-scoping bugs. `Cache-Control` 300 on pages,
+      `immutable` on `/_astro/*`.
+- [ ] **`/search` in a browser, with a real query** ⚠ — a CSP mistake breaks
+      Pagefind's WebAssembly first, and only the console says so. Then
+      `/pagefind/pagefind-entry.json` → 200 with a sane `page_count`, and
+      `/search` absent from the sitemap.
+- [ ] `/apple-touch-icon.png` 200 **and opaque** · `/llms-full.txt` 200 · the
+      IndexNow key file 200 with its body equal to its name.
+- [ ] **Sitemap sanity**: URL count plausible, noindex pages absent, every URL
+      carrying a `lastmod` and not all of them identical ⚠.
+- [ ] Canonicals match the served URLs (no `.html`, no trailing slash).
+- [ ] JSON-LD validates (Rich Results Test); paste a URL into a social composer
+      and watch the OG card render.
+- [ ] **Submit the real form** → row in the Sheet **and** the email arrives ⚠.
+      The redirect proves nothing: every failure path also redirects. Then a
+      honeypot-filled submission → lands in `Filtered`, emails no one.
+- [ ] **Analytics records a pageview** ⚠ — a tag in the HTML proves nothing —
+      and each tracked CTA fires with its `place`.
+- [ ] `LiveData` values update after a Sheet edit (≤5 min).
+- [ ] The site renders and the form submits with JavaScript disabled.
+- [ ] No horizontal scroll at 320px; the consent banner, if armed, does not
+      cover the hero CTA at 375×667 ⚠.
+- [ ] Lighthouse in a clean profile ⚠ — extensions appear in traces and get
+      blamed on your site. Read the observed metrics, not the simulated
+      headline, and check what the LCP element actually IS before optimising
+      it.
 
 ## 9. Recurring cadence — the site is launched, now what
 
@@ -420,43 +380,24 @@ This section keeps only the traps those lists cannot explain in a row:
 - ⚠ **Dashboards drift silently and have no diff.** The annual re-run of
   the §8 battery exists because nothing else would notice.
 
-## 10. Inherited trap archive (the short version)
+## 10. Process lessons
 
-Platform traps this architecture *eliminated* (kept here so nobody
-re-introduces the vulnerable pattern): nginx `add_header` non-merge ·
-`location` matching request-vs-resolved URI · `try_files`/`$uri` split ·
-`absolute_redirect` http behind TLS proxies · envsubst eating `$vars` ·
-literal-hostname `proxy_pass` taking the site down with a DNS outage ·
-`mirror`-and-loopback contraptions · Docker layer/`.git` exclusion killing
-lastmod.
+The traps that live in code are AGENTS rules 10 and 13 and the checks the
+battery runs; the decisions behind them are `CHECKLIST.md`. These four are not
+about this codebase, and each cost a day:
 
-Traps that still apply in full — each encoded in code or the verify battery here, details in
-`CHECKLIST.md`: measured contrast (2.8:1 brand colours look fine) ·
-autofilled honeypots · Apps Script versioning/scopes/quota ·
-`Vary: Accept` on negotiated content · noindex⇔sitemap agreement ·
-git-dates-not-build-dates · SVG-only favicons → grey globe in SERPs ·
-transparent apple-touch-icons → black squares · two HSTS emitters ·
-self-written review markup → manual action · collections without routes ·
-hidden-link cloaking · deploy races on indexing pings · `fetch-depth: 0`.
-
-## 11. Process lessons
-
-Not about this codebase — about not wasting a day. Each cost the ancestor
-project exactly that:
-
-- **Read the whole command output.** A piped `| tail -2` showed the check
-  passing while the build it gated never ran — and the next check read a
+- **Read the whole command output.** A piped `| tail -2` showed a check
+  passing while the build it gated never ran — and the next check then read a
   stale `dist/` and passed too.
-- **Verify the failure path, not just the happy path.** Two form designs
-  both redirected perfectly; only a logging stand-in revealed that one of
-  them delivered nothing.
+- **Verify the failure path, not just the happy path.** Two form designs both
+  redirected perfectly; only a logging stand-in revealed that one of them
+  delivered nothing.
 - **Test against a committed state, not the working tree.** A negative test
   passed because the generator had regenerated the file before the diff ran.
-- **Squash merges make branches look permanently unmerged.** The original
-  commits never become ancestors of main, so "N commits ahead" persists
-  forever with zero content difference — compare trees, not commit counts.
-  Corollaries: never stack branches on a squash-merging repo (the same
-  content arriving from two ancestries is a guaranteed conflict; branch off
-  main every time), and after a squash neither `git diff main branch` nor
-  `git diff main...branch` answers "is this merged" — compare the branch
-  tree against the main commit it merged into.
+- **Squash merges make branches look permanently unmerged** (`/ship` step 8
+  cites this). The original commits never become ancestors of main, so "N
+  commits ahead" persists forever with zero content difference. Never stack a
+  branch on a squash-merging repo — the same content arriving from two
+  ancestries is a guaranteed conflict; branch off main every time — and to
+  answer "is this merged", compare the branch tree against the main commit it
+  merged into, not commit counts and not `git diff main...branch`.

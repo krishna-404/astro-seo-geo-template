@@ -30,8 +30,12 @@ rules) and ask against them.
 
 ## Order of questions
 
-1. **The business** — what is sold, to whom, what the buyer stops suffering.
-   Three sentences, concrete.
+1. **The business — deepen, do not re-ask.** `brief.md` already carries the
+   business in three sentences, the one job, what is off-limits and the
+   owner's taste; /discover asked for those and this skill does not ask
+   again. Read them back in one line and ask only what is still soft: which
+   of the three sentences the owner would defend against a competitor
+   claiming the same, and what the buyer stops suffering in their own words.
 2. **The reader** — one specific person. What do they already know? What
    burned them? What do they type into a search box at 11pm?
 3. **The thesis** — the one argument the whole site advances. Test it: does

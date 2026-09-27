@@ -134,9 +134,12 @@ does not — there is no volume cap; high-intent supporting pieces
 - Each H2 stands alone; the first sentence under it is a self-contained
   answer; no back-references ("as mentioned above"). Semantic triples.
   Entities by name. Short sentences.
-- `proprietary` names the fuel: which field note, which news event, which
-  finding. `sources` carries every claim's origin. Respect `[private]`
-  marks in field notes absolutely.
+- **Two fields, not one.** `proprietary` is the KIND of fuel (the enum);
+  **`fuel` names the thing itself** and this run always fills it — the
+  field-note id, the news-log date, the insights finding, the social-sweep
+  post. A piece whose `fuel` you cannot write in one line has not cleared the
+  fuel rule (`marketing/content-guidelines.md § 2`). `sources` carries every
+  claim's origin. Respect `[private]` marks in field notes absolutely.
 - The `author` block matches an entry in `src/data/authors.json` (enforced)
   so the byline links to the author page. Never attribute a piece to someone
   who did not supply its substance.
@@ -187,7 +190,7 @@ tool-intent queries with impressions ("calculator", "how much", "estimate",
 "checker"), repeated social/forum requests for the same computation, or a
 field note where a reader did the arithmetic by hand.
 
-Rules for building one (the ancestor site's calculator is the precedent):
+Rules for building one:
 
 - **Deterministic code computes; a model never does.** Every constant,
   rate and formula lives in a data file (e.g. `src/data/assumptions.json`)
@@ -244,9 +247,11 @@ the piece's sources.
    fan-out bucket), and leave a one-line reason in the PR body for any it
    cannot. `--min 70` is the bar for a new piece.
 2. `npm run verify` (full battery) before pushing.
-3. One PR: drafts, page updates, news-log and field-notes changes, the
-   social-queue entries, regenerated inventory. PR body: what ran, what was dropped and why, which
-   queries each piece targets. **A human merges. Nothing auto-publishes.**
+3. One changeset: drafts, page updates, news-log and field-notes changes, the
+   social-queue entries, regenerated inventory. The body says what ran, what
+   was dropped and why, and which queries each piece targets. **The merge
+   model in `marketing/STRATEGY.md § 9` decides who merges and who deploys;
+   the default deploys on a green battery.**
 4. After merge reaches production: OG cards if titles changed; IndexNow is
    submitted by `/ship`; the GSC request-indexing shortlist goes in the
    cadence report.

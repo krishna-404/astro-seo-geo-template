@@ -31,7 +31,7 @@
     "indexnow": "node scripts/indexnow.mjs",
     "insights": "node scripts/insights.mjs",
     "aeo": "node scripts/aeo.mjs",
-    "ask": "node scripts/data-sheet.mjs && node scripts/actions.mjs",
+    "ask": "node scripts/ask.mjs",
     "actions": "node scripts/actions.mjs",
     "audit:pages": "node scripts/page-audit.mjs",
     "report:html": "node scripts/report-html.mjs",

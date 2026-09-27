@@ -15,6 +15,11 @@ import { ROBOTS_AGENTS } from './lib/crawlers.mjs';
 import { walkHtml, routeOf, decode, strip, ldNodes } from './lib/html.mjs';
 import { collections, twinCollections, routeOfCollection } from './lib/routes.mjs';
 
+/** The one copy of the brand strings and the default social card (src/data/brand.json).
+ *  Read as JSON because this script cannot import site.ts — and read rather than
+ *  regex-parsed, which is what it used to do against site.ts in two places. */
+const BRAND = JSON.parse(readFileSync('src/data/brand.json', 'utf8'));
+
 const DIST = 'dist';
 let fail = 0;
 
@@ -378,9 +383,8 @@ check('canonicals are self-consistent', (bad) => {
 // the built homepage points at SITE.ogImage, and no home card sits in public/
 // waiting for the lookup to prefer it again.
 check('homepage og:image is the brand card, not a page card', (bad) => {
-  const site = readFileSync('src/data/site.ts', 'utf8');
-  const brand = /ogImage:\s*'([^']+)'/.exec(site)?.[1];
-  if (!brand) { bad('src/data/site.ts has no SITE.ogImage'); return; }
+  const brand = BRAND.defaultCard;
+  if (!brand) { bad('src/data/brand.json has no defaultCard'); return; }
   const home = html.get(join(DIST, 'index.html'));
   if (!home) { bad('no dist/index.html'); return; }
   const og = /<meta property="og:image" content="([^"]+)"/.exec(home)?.[1] ?? '';
@@ -404,8 +408,7 @@ check('homepage og:image is the brand card, not a page card', (bad) => {
 // third of the pages previewed as the default card for weeks because two
 // collections had cards nothing pointed at and one had none. CHECKLIST §9.
 check('every indexable page has its own social card, and no two pages share one', (bad) => {
-  const site = readFileSync('src/data/site.ts', 'utf8');
-  const brand = /ogImage:\s*'([^']+)'/.exec(site)?.[1] ?? '/og/default.png';
+  const brand = BRAND.defaultCard;
   const seen = new Map();
   for (const [f, h] of html) {
     const route = '/' + f.slice(DIST.length + 1).replace(/\.html$/, '').replace(/(^|\/)index$/, '');

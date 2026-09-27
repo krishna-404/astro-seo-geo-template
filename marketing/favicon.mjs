@@ -24,9 +24,21 @@ import { writeFileSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import sharp from 'sharp';
 
-/** Backing colour for the opaque apple-touch-icon — keep in step with the
- *  brand colour in public/favicon.svg / site.ts. */
-const BRAND_BG = '#0f4c81';
+/**
+ * Backing colour for the opaque apple-touch-icon. Read from the `--brand`
+ * token in src/styles/global.css, which is the ONE place the brand colour is
+ * decided (AGENTS rule 6). It used to be typed here as a literal with a
+ * comment asking the next editor to keep it in step, which is how an
+ * apple-touch-icon ends up in last year's colour with nobody noticing.
+ * The two HTML card templates cannot import anything, so check-parity rule 7
+ * asserts their copies against the same token.
+ */
+const BRAND_BG = (() => {
+  const css = readFileSync(resolve(process.cwd(), 'src/styles/global.css'), 'utf8');
+  const hex = /--brand:\s*(#[0-9a-fA-F]{3,8})/.exec(css)?.[1];
+  if (!hex) throw new Error('no --brand token in src/styles/global.css');
+  return hex;
+})();
 
 const SRC = resolve(process.cwd(), 'public/favicon.svg');
 const out = (name) => resolve(process.cwd(), 'public', name);

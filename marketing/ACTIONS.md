@@ -166,6 +166,12 @@ There is no API that hands a script a credential. Each item names the key,
 where it comes from, and what stays dark without it. Keys live in the
 session or Routine environment, never in the repo.
 
+With `GSC_SA_KEY`, `UMAMI_URL` + `UMAMI_WEBSITE_ID`, `CLOUDFLARE_READ_ANALYTICS`,
+`CADENCE_REPORT_TOKEN` and `CLOUDFLARE_DEPLOY_TOKEN` + `CLOUDFLARE_ZONE_ID` set,
+the daily run measures, writes, commits and **deploys itself** — no human step
+between a green battery and the live site (`marketing/STRATEGY.md § 9`). Add
+`BING_WEBMASTER_API_KEY` and it tells Bing directly on the way out.
+
 ### A-K01 · GSC_SA_KEY — Search Console read-back ⬜
 
 **Phase:** keys
@@ -194,7 +200,7 @@ session or Routine environment, never in the repo.
 
 **Phase:** keys
 **Check:** env:BING_WEBMASTER_API_KEY
-**Why:** The only automatic read of the index two of the three biggest assistants answer from — and the key that lets `npm run indexnow` submit changed URLs to Bing's URL Submission API after every deploy, not just through the shared IndexNow endpoint. Without it stage 3 of the funnel knows only Google's half.
+**Why:** The only automatic read of the index two of the three biggest assistants answer from, and the key that lets `npm run indexnow` submit the recently changed URLs to Bing's URL Submission API on every deploy — the daily run's deploy included — rather than reaching Bing only through the shared IndexNow endpoint. Without it stage 3 of the funnel knows only Google's half.
 **How:** Bing Webmaster Tools → Settings → API access → Generate. Read-only use.
 **Done:**
 
@@ -210,8 +216,8 @@ session or Routine environment, never in the repo.
 
 **Phase:** keys
 **Check:** env:CLOUDFLARE_DEPLOY_TOKEN
-**Why:** Nothing deploys a merge except `/ship` run from a session holding this token (GitHub Actions are opt-in, CHECKLIST §2).
-**How:** Cloudflare → API tokens → Edit Workers + Cache Purge, this account only. Never a Global API Key. Set `CLOUDFLARE_ZONE_ID` beside it (the purge step needs it; the zone id is on the dashboard overview).
+**Why:** Nothing deploys except the ship steps run from a session holding this token — `/ship` by hand, or the daily cadence run itself on the default merge model (GitHub Actions are opt-in, CHECKLIST §2). Without it the run falls back to opening a pull request and says so in the report.
+**How:** Cloudflare → API tokens → Edit Workers + Cache Purge, this account only. Never a Global API Key. Set `CLOUDFLARE_ZONE_ID` beside it: the purge step needs it, and without it a deploy serves stale pages for up to five minutes (`max-age=300`) instead of immediately. The zone id is on the dashboard overview; record it in PLAYBOOK §6.
 **Done:**
 
 ### A-K07 · Posts API secrets (optional) ⬜
@@ -232,12 +238,12 @@ session or Routine environment, never in the repo.
 **How:** The report's **Do this today** lists up to 10 URLs with an "Inspect in Search Console" link each. Click, Request indexing. Write today's date here (or reply "indexed" to the report and the next run records it).
 **Done:**
 
-### A-D02 · Merge the run's pull requests ⬜
+### A-D02 · Read the deploy line; act on what the run declined ⬜
 
 **Phase:** daily
 **Check:** manual:2
-**Why:** Nothing auto-publishes. A run's improvements reach the site only when a human merges and ships.
-**How:** Read the PR body (what changed, which number it targets), merge, `/ship`. The report's **Pull requests** section lists them.
+**Why:** On the default merge model (`marketing/STRATEGY.md § 9`) the run commits to `main` and deploys itself, so most days this is a read. What still needs you is a pull request the run declined — an API post it would not merge, a change outside its scope — and a run that fell back to the PR path because a guard fired.
+**How:** Read the report's first line (deploy version id, URLs submitted, live smoke) and its **Pull requests** section. Act only on the rows the run named as declined: read the reason, then merge and `/ship`, or reply with the decision.
 **Done:**
 
 ### A-D03 · Post the social drafts for each new piece ⬜
@@ -339,7 +345,7 @@ session or Routine environment, never in the repo.
 **Phase:** quarterly
 **Check:** manual:92
 **Why:** Redirect chains, orphans and stray 404s accumulate between deploys and no per-page check sees the whole graph at the edge.
-**How:** Screaming Frog free tier (500 URLs) or equivalent against the live origin. Fix what it finds; a URL that must keep working goes in `PERMANENT_REDIRECTS`.
+**How:** Screaming Frog free tier (500 URLs) or equivalent against the live origin. Fix what it finds; a URL that must keep working goes in `src/data/redirects.json` plus `wrangler.jsonc → run_worker_first`.
 **Done:**
 
 ### A-Q02 · Re-validate structured data, one page per type ⬜

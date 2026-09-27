@@ -50,11 +50,22 @@ worth nothing; every cycle's work is ordered bottom-up:
 2. **Then CTR where the site already ranks.** Position ≤20 — above all
    ≤10 — with impressions and few clicks is the highest-probability work on
    the board: titles and descriptions in the searcher's own words. (Getting
-   indexed and to page one is this rung's precondition.)
+   indexed and to page one is this rung's precondition.) A FAQ entry in the
+   searcher's words is the cheapest correct fix; retitling a money page is a
+   Decision.
+2b. **The snippet test.** A page at position **≤10 with ≥50 impressions and
+   near-zero clicks** is a snippet problem, not a ranking problem. Rewrite its
+   `title` and `description` in the searcher's own words and **record it as a
+   test**: the keyword map's Status column gets "title tested <date>, check
+   <date + 4 weeks>". One page at a time, never a batch, or nothing is
+   attributable; never re-test a page inside its four weeks. Those three
+   numbers are this rung's definition — every file that mentions the snippet
+   test cites them from here.
 3. **Impressions last.** New content targets the highest-search keywords
    within a winnable cluster — consistent work, but only after rungs 1–2
    hold on what exists; new pages then enter rung 2's CTR loop as they
-   rank.
+   rank. A page with rising impressions at position 50+ gets an in-body link
+   from an *indexed* page on its target anchor, never a rewrite.
 
 - The cadence: <!-- TODO: e.g. 1–3 pieces/week, weekly news run, monthly
   refresh — set the interval the /content-cadence Routine runs on. -->
@@ -64,7 +75,7 @@ worth nothing; every cycle's work is ordered bottom-up:
 - The queries: picked from evidence (`npm run insights`), never invented.
   Impressions at position 4–20 are the shortlist; position 50+ means the
   page needs links and authority, not a better title.
-- The fuel rule (AGENTS § Content rules; /write-content): a new post
+- The fuel rule (`marketing/content-guidelines.md § 2` states it in full): a new post
   exists only when it can name something real — a field note
   (marketing/field-notes.md), a news-log event with primary sources
   (marketing/news-log.md), a verified ICP social-sweep finding, or an
@@ -93,12 +104,32 @@ worth nothing; every cycle's work is ordered bottom-up:
 
 ## 9. Merge model
 
-<!-- TODO: decided at /new-site phase 13. Default: **PR review** — every run
-     opens a PR, a human merges, `/ship` deploys; the daily run's PR inbox
-     pushes its updates to an API post's branch and leaves it ready for
-     review. Alternative: **commit to main** — the run merges green PRs that
-     clear the bar and ships them, with `npm run verify` as the only gate;
-     choosing it rewrites content-cadence step 9. Write the choice and the
-     date here; the cadence reads this section. -->
+**This is the one full statement of who merges and who deploys.** Every other
+file cites this section rather than repeating it.
 
-Merge model: PR review (default). Decided: <!-- YYYY-MM-DD -->
+**Merge model: commit-to-main (default) · decided 2026-09-27.** A
+`/content-cadence` run commits its work to `main` once `npm run verify` is
+green on the exact tree, then runs the ship steps itself: regenerate
+`lastmod`, the inventory and the OG cards, build, `wrangler deploy`, purge,
+`npm run indexnow` (IndexNow plus the Bing URL submission), live smoke. The
+battery is the gate; a green tree ships the same day it is written. The
+report's first line carries the deployed version id, the URLs submitted and
+the live-smoke result.
+
+Guards, in the run: never when `src/data/origin.mjs` still says
+`example.com`, never on a red battery, never without `CLOUDFLARE_DEPLOY_TOKEN`
+— any of those and the run falls back to opening a pull request and says so in
+the report (ACTIONS A-K06 names the missing key).
+
+**Alternative: PR review.** Every run opens a pull request, a human merges,
+`/ship` deploys. Choose it for a site whose owner wants to read before
+publish; write the choice and the date on the line above, and the cadence
+follows it. A site on this model releases a future-dated post only when a
+human ships on or after its date.
+
+**Why the default deploys itself.** The owner's instruction, 27 Sep 2026:
+"when a daily routine runs here on claude, it should automatically deploy and
+also update indexnow & bing with the recent changes." The battery is the
+quality gate under either model; a run that waits for a human to merge leaves
+scheduled posts unreleased and the committed `lastmod` map behind the live
+site.

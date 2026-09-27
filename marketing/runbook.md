@@ -12,6 +12,27 @@ one page at a time on anything attributable; a question, never an
 estimate; the report says what changed and which number it targets; every
 prompt that writes content ends with "Remove all mannered prose."
 
+## Your ten minutes today
+
+The rows below marked *human* are the only ones a person does. On an ordinary
+weekday they are these four, in this order, and they take about ten minutes:
+
+| | What | How long | Row |
+|---|---|---|---|
+| 1 | **Read the report's first line** — the deploy version id, the URLs submitted, the live-smoke result. Anything red here outranks the rest of your day. | 1 min | D13 |
+| 2 | **Paste the request-indexing shortlist** into Search Console: up to 10 URLs, each with an "Inspect" button in the email. No API exists for this. | 4 min | D9 · A-D01 |
+| 3 | **Post the unposted social drafts** for anything that went live, and flip each to `posted:<date>`. | 3 min | D14 · A-D03 |
+| 4 | **Act on what the run declined** — usually nothing. A pull request it would not merge is named with the reason. | 0–2 min | D15 · A-D02 |
+
+Then **answer what the report asks** when it asks (What I need from you,
+Decisions, Where to list next). Those are not daily; they are the weekly
+half, and an unanswered question blocks the work it names.
+
+Weekly adds roughly twenty minutes: export the Generative AI report (A-W01),
+claim the next listing (A-W04), read the report's Decisions and reply (A-W05),
+and check Search Console's Security & Manual Actions (A-W06) — the one item
+with no API and the worst failure mode if it is left a week.
+
 ## What the engine delivers in a month
 
 The scope a client of a content agency would be sold, kept here so a month
@@ -36,8 +57,14 @@ that delivered less is visible (ingested from a published monthly scope,
 - A watch on competitors: what they publish, which searches they gain
 - Directory submissions surfaced and tracked; outreach pitches proposed
 - A weekly report on what changed and what moved
+- Everything it writes deployed the same day, on a green battery
+  (STRATEGY.md § 9)
 
 ## Daily run (weekdays)
+
+The shipped Routine fires on weekdays only, because every row marked *human*
+below expects somebody to read the report that day. A site that schedules
+weekend firings gets an ordinary daily run; nothing here changes.
 
 | # | Item | Owner | Script / step | Report section |
 |---|---|---|---|---|
@@ -53,9 +80,9 @@ that delivered less is visible (ingested from a published monthly scope,
 | D10 | Open questions and next listings | machine surfaces, human answers | `npm run ask` (step 5); ACTIONS A-W03/A-W04 | What I need from you · Where to list next |
 | D11 | News and ICP-social scan, candidates logged, nothing written | machine | step 6 | Decisions (time-critical only) |
 | D12 | Competitor watch: rows naming a rival; new pages a rival published (from the landscape's sitemap or feed) | machine | `searchConsole.competitorQueries` (step 2h) | Competitors |
-| D13 | Build (a future-dated post whose day has come enters this build); regenerate inventory; `npm run verify`; one PR — the next human `/ship` releases it | machine builds, human ships | steps 7–9 | first line · Do this today |
+| D13 | Regenerate lastmod, inventory and OG cards; build (a future-dated post whose day has come enters this build); `npm run verify`; commit to `main`; deploy; IndexNow + Bing; live smoke | machine | steps 7–9; STRATEGY § 9 | first line |
 | D14 | Social queue: post the unposted drafts | human | ACTIONS A-D03 | Do this today |
-| D15 | Merge and ship | human | ACTIONS A-D02; `/ship` | Do this today |
+| D15 | Read the deploy line; act only on a pull request the run declined | human | ACTIONS A-D02 | first line · Do this today |
 | D16 | Deliver the report | machine | § The report; Apps Script channel, else the Gmail connector if attached, else committed | — |
 
 ## Weekly run (Monday, adds to the daily)
