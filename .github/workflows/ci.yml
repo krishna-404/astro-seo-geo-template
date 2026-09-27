@@ -1,17 +1,21 @@
 name: CI
 
-# Every PR gets the full check battery; main additionally deploys — and only
-# after every check passes. That ordering is the reason deploy lives HERE as a
-# dependent job rather than using Cloudflare's git-connected Workers Builds:
-# Workers Builds deploys on push in parallel with CI, so a commit that fails an
-# invariant would ship anyway. `needs: build` makes green checks a precondition.
 # OPT-IN, NOT AUTOMATIC (20 Sep 2026). This workflow runs only when dispatched
-# by hand. GitHub Actions minutes are metered and the free quota runs out fast
-# on a site that pushes daily (the ancestor site burned through it and every
-# run died at job start with no runner). The hooks already run the identical
-# battery on every push (`.githooks/pre-push` → `npm run verify`), so a second
-# automatic copy buys nothing the hooks do not. If your organisation has the
-# minutes and wants the belt AND the braces, restore the triggers below.
+# by hand, so by default it gates nothing and deploys nothing. GitHub Actions
+# minutes are metered and the free quota runs out fast on a site that pushes
+# daily (the ancestor site burned through it and every run then died at job
+# start with no runner). The hooks already run the identical battery on every
+# push (`.githooks/pre-push` → `npm run verify`), and the deploy is the ship
+# steps — `/ship` by hand, or the daily cadence run itself on the default
+# merge model (marketing/STRATEGY.md § 9).
+#
+# WHAT IT IS FOR. An organisation with the minutes restores the triggers below
+# and gets the belt AND the braces: every PR checked by a non-advisory runner
+# (hooks are advisory — `--no-verify` exists), and main deployed only after
+# those checks pass. That ordering is why deploy lives here as a dependent job
+# rather than using Cloudflare's git-connected Workers Builds: Workers Builds
+# deploys on push in parallel with CI, so a commit that fails an invariant
+# would ship anyway. `needs: build` makes green checks a precondition.
 on:
   workflow_dispatch:
   # push:
@@ -169,6 +173,12 @@ jobs:
           npm install --no-save playwright axe-core
           npm run check:a11y
 
+  # DORMANT while the workflow is dispatch-only: this job's `if` requires a
+  # `push` event, and a manual dispatch is never one — so dispatching runs the
+  # battery above and skips this entirely. That is deliberate (a dispatched run
+  # is a check, not a release), and it means restoring the `push` trigger above
+  # is what arms this job. Until then the deploy is the ship steps, run by a
+  # human or by the daily cadence run (marketing/STRATEGY.md § 9).
   deploy:
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

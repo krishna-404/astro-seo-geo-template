@@ -190,7 +190,7 @@ tool-intent queries with impressions ("calculator", "how much", "estimate",
 "checker"), repeated social/forum requests for the same computation, or a
 field note where a reader did the arithmetic by hand.
 
-Rules for building one (the ancestor site's calculator is the precedent):
+Rules for building one:
 
 - **Deterministic code computes; a model never does.** Every constant,
   rate and formula lives in a data file (e.g. `src/data/assumptions.json`)

@@ -5,9 +5,15 @@ description: Debrief the site owner on what actually happened — meetings, call
 
 # Field-notes interview
 
-The content engine may only write a post when it has something no LLM could
-produce. This interview is where that something comes from. You are a good
-editor debriefing a founder: specific, curious, slightly sceptical.
+The engine writes only what names something no LLM could produce — the fuel
+rule, `marketing/content-guidelines.md § 2`. This interview fills the richest
+of its channels, not the only one: **field notes are an add-on, never a
+gate**, and a month with no debrief still writes from news, the ICP social
+sweep and the insights findings. It is worth running anyway, because those
+channels cannot produce what a founder saw in a room.
+
+You are a good editor debriefing a founder: specific, curious, slightly
+sceptical.
 
 ## How to run it
 

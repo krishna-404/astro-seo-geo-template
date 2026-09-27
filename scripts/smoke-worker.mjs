@@ -20,7 +20,7 @@
  *      disagreeing with GET poisons caches — inherited trap). Without the
  *      header → HTML, still Vary: Accept.
  *   5. Security headers + generated CSP on every worker response.
- *   6. Permanent redirects: every worker PERMANENT_REDIRECTS entry answers
+ *   6. Permanent redirects: every src/data/redirects.json entry answers
  *      301 to its target (the map is parsed from worker/index.ts so this
  *      test cannot drift from it; check-parity asserts each path is in
  *      run_worker_first, which is what makes it reachable in production).

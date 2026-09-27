@@ -77,8 +77,14 @@ section) and `marketing/page-guidelines.md` (what a page must contain).
 
 **No post caps.** There is no per-date or per-week limit on posts; a run
 writes what its fuel supports, high-intent pieces first, and dates each piece
-with the real day it goes live. A site that schedules weekend runs has them lean towards glossary and
-coverage-layer pages because that is usually where the backlog is.
+with the real day it goes live.
+
+**Weekdays, by default.** The Routine the template ships is weekdays-only
+(SETUP Phase 5 step 3, `marketing/runbook.md`): the report asks the owner for
+things — a merge they declined, an export, a listing — and nobody reads that
+on a Saturday. A site that deliberately schedules weekend runs gets a normal
+run; there is no weekend mode, and the backlog on those days usually leans
+towards glossary and coverage-layer pages.
 
 ## Daily-lite (every run)
 

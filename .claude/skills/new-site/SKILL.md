@@ -28,8 +28,8 @@ kind of decision:
 |---|---|
 | The brief: the one action, what a trust page carries, what exists | Two or three sites in the owner's category, fetched during /discover; the owner's own admired and disliked sites with the reason recorded |
 | The category: who the buyer compares us with | The owner's list, the money-query SERPs, the "alternatives" listings and directories, the category on awwwards — torn down the same way in /landscape and put to the owner for a verdict |
-| Positioning, hero copy, page structure | The three or four best-designed sites in the owner's category and the standing list of well-designed product sites (Stripe, Linear, Vercel, Apple, Notion, 37signals, Ramp, Mercury, Raycast, Resend, Sanity, PostHog); the pages that rank for the owner's money queries |
-| Design | awwwards.com/websites/<category>/ and the current Sites of the Day; the galleries that curate other registers (Godly, Land-book, SiteInspire, Minimal Gallery, Refero, Fonts In Use…); the same standing list; the writing that explains why it works (Refactoring UI, Practical Typography, Utopia, Every Layout, NN/g, web.dev); this year's "what held up in production" reality-checks (see /design-direction § 1) |
+| Positioning, hero copy, page structure | The three or four best-designed sites in the owner's category, the standing list in `/design-direction § 1` (kept there, not copied), and the pages that rank for the owner's money queries |
+| Design | `/design-direction § 1` — it holds the whole reference set: the awwwards categories, the galleries that curate each register, the standing list, the writing that explains why it works, and this year's production reality-checks |
 | Voice | The category's money pages read aloud (`landscape.md § 7`); the four tone-of-voice dimensions; the published voice guides that show their working (Mailchimp, GOV.UK, Monzo, Polaris, Atlassian, Intercom, Microsoft, Apple, 18F — /onboard-marketing step 8); VOICE-GUIDE's straightforward default; the anti-AI sources /refresh-anti-ai-rules reads |
 | SEO, AEO, GEO | Google Search Central's current documentation (structured data, helpful content, scaled content); the Search Console reports the site will be measured by (Performance, Generative AI, Discover); the peer-reviewed GEO evidence (cited sources, quotations, statistics) |
 | Entity and profiles | schema.org Organization; Wikidata, LinkedIn company pages, Crunchbase, Bing Places, Apple Business Connect — what a competitor's record looks like when it is done well |
@@ -94,27 +94,16 @@ and checks the exit condition before moving on. It does not pause between
 phases to wait for a file to be filled in: an open DATA-SHEET question holds
 up only the decisions that actually depend on it.
 
-1. **Discover** (/discover). The interview that shapes everything after
-   it — why now and what success is, the one job, who signs off and who
-   maintains, what exists today, markets and constraints, the category
-   names, the owner's taste, what is off-limits — and the asset intake:
-   logo, colours, fonts and their licences, product screenshots or
-   product access, photography, copy and collateral, proof with
-   permission, legal identity, people, contact channels, profiles, access
-   held by whom, the existing site's URLs that must keep working. *Exit:*
-   `marketing/brief.md` filled, every question in it put to the owner in the
-   session, every still-missing asset a DATA-SHEET question, the brief read
-   back to the owner in five lines.
+1. **Discover** — run **/discover**, which owns the question set and the
+   asset intake. *Exit:* `marketing/brief.md` filled, every question in it put
+   to the owner in the session, every still-missing asset a DATA-SHEET
+   question, the brief read back to the owner in five lines.
 
-2. **Landscape** (/landscape). Six to ten sites the buyer actually
-   compares this one with — the owner's list, the money-query SERPs, the
-   "alternatives" listings, the category's designed sites — each torn
-   down the same way (positioning, the one action, page layers, proof,
-   pricing, design register, voice read aloud, discovery levers, speed)
-   and put to the owner: do they win deals, what to admire, what to
-   reject, where we differ. *Exit:* `marketing/landscape.md` with the
-   owner's verdicts, the three things nobody in the category does, and
-   the register decision (inside the category's norms or outside them).
+2. **Landscape** — run **/landscape**, which owns how a site is torn down and
+   how the teardowns are put to the owner. *Exit:* `marketing/landscape.md`
+   with the owner's verdict on each site, the three things nobody in the
+   category does, and the register decision (inside the category's norms or
+   deliberately outside them).
 
 3. **Decide** (SETUP Phase 0). One buyer; one primary conversion; one
    canonical domain; the target markets in order; the sending domains that
@@ -168,7 +157,7 @@ up only the decisions that actually depend on it.
    Cloudflare zone and worker, `wrangler.jsonc` name, generated surfaces
    (favicons, OG cards, llms.txt), first deploy, zone HSTS, redirects — and,
    when a site is being replaced, the redirect map from `brief.md
-   § Migration` into `worker/index.ts → PERMANENT_REDIRECTS` with the
+   § Migration` into `src/data/redirects.json` with the
    matching `run_worker_first` entries, checked against the old site's
    analytics so no URL with traffic is dropped. *Examples:* the PLAYBOOK's
    setting-by-setting table is the reference here; show the owner what

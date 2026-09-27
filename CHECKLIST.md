@@ -377,13 +377,27 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   `BlogPosting` (author by `@id`, `dateModified`) per page type. **Emit a
   field only when the thing exists** — an `image` pointing at a missing file
   is worse than no `image`. Escaped `</script>` (`<`) in the emitter.
+- ✅ **Blog `tags` render as plain spans; there are no tag pages** (27 Sep
+  2026). They carry the post's `keywords` into JSON-LD and feed the related-
+  links scorer, and that is all they do. WHY no `/tag/<slug>` archive: a tag
+  page is a thin index of pages that already have a home, competing with the
+  collection index for the same query — the layer that earns its own queries
+  is the glossary and the keyword map's coverage layers, not a tag cloud.
+- ✅ **A glossary entry carries `dateModified` only, no `datePublished`**
+  (27 Sep 2026). A definition has no publication event worth asserting: it is
+  correct or it is not, and the date that matters is when it was last
+  re-checked against its sources. `updated` fills it; `check-invariants`
+  requires a source on every entry, which is the freshness signal that counts.
 - ✅ **Structured data has visible counterparts, single-sourced.**
   `BreadcrumbList` is mirrored by a visible `<Breadcrumbs />` trail on detail
   pages (CI asserts count+order agree; Google's rich-result guidance expects
   markup to reflect on-page navigation — index pages emit neither, on
   purpose). `FAQPage` and the on-page `<Faq />` accordion render from the ONE
   `faq` frontmatter array via `src/lib/faqSchema.ts` — the schema cannot
-  claim a question the page doesn't show. Honest expectation: since 2023
+  claim a question the page doesn't show. Same rule, same reason: the
+  glossary's `alternateName` aliases render as "Also called" in the definition
+  list (27 Sep 2026), because a name only the schema knows is a name the page
+  does not have. Honest expectation: since 2023
   Google shows FAQ rich results only for well-known government and health
   sites, so for most sites this markup earns no SERP treatment — its value
   here is AEO (extractable Q&A pairs for answer engines) and the
@@ -401,6 +415,14 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   walking `src/pages` (a hand list goes stale silently). CI regenerates with
   full history and diffs, plus a COVERAGE check against the built sitemap
   (a route missing from both map and sitemap agrees with itself).
+- ✅ **Date drift in that map is a NOTE, not a failure** (decided 27 Sep
+  2026). A missing route still fails; a date that has moved does not. WHY:
+  the answer to drift is to remove the gap, not to fail on it — every deploy
+  path now regenerates `lastmod`, the inventory and the cards BEFORE it
+  builds (`/ship` step 2b, content-cadence step 8), so the committed map is
+  current at the moment it ships. Failing on drift would only ever fail a
+  commit that was about to regenerate anyway, and a check that fires on
+  correct work is a check people learn to bypass.
 - ✅ **noindex ⇔ out of sitemap, always both** (thanks page, draft privacy
   page). Listing a URL you told crawlers to ignore asks them to fetch it.
 - ✅ **Favicon pipeline** (`marketing/favicon.mjs`): one `favicon.svg` →
@@ -464,6 +486,19 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   (`scripts/markdown-twins.mjs`, post-build), served at the SAME pretty URL
   when `Accept: text/markdown` — with `Vary: Accept` so caches keep the
   bodies apart. Clean markdown for agents, zero extra URLs.
+- ✅ **The twins stay on the worker** (decided 27 Sep 2026), which means every
+  HTML view of `/blog/*`, `/glossary/*`, `/solutions/*` and `/vs/*` passes
+  through a METERED route to answer a header most requests never send. WHY it
+  is worth it: one URL per page. The alternative — static `/blog/<slug>.md`
+  files — doubles the URL space, splits the canonical signal and gives an
+  agent a second address for the same content, to save invocations a small
+  site will not spend. **The threshold to revisit:** Cloudflare's free tier is
+  100,000 worker invocations a day; a site whose content routes approach that
+  should move the twins to static files and drop the routes from
+  `run_worker_first` (`marketing/runbook.md` has no row for this — it is a
+  growth problem, not a cadence one). `wrangler.jsonc → run_worker_first` is
+  the cost lever (AGENTS rule 12): every route on it is metered, everything
+  else serves free.
 - ✅ **RFC 8288 `Link` headers** pointing every response at `llms.txt` /
   `llms-full.txt` (`rel="describedby"`) and `/for-llms`
   (`rel="service-doc"`) — set in `public/_headers` for assets and mirrored
@@ -528,11 +563,11 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   (`eslint.config.js`, `npm run lint`, CI step) — catches malformed ARIA in
   templates, which the built-HTML checks structurally cannot. devDependency
   only — see § 6's dependency policy, stated once there.
-- ✅ **Motion is opt-in via media query** (AGENTS rule 14): disclosure/entry
-  animation uses `@starting-style` / `allow-discrete` / `interpolate-size` /
-  `::details-content`, always inside `prefers-reduced-motion:
-  no-preference` — reduced motion is the absence of rules, and no motion
-  requires JS.
+- ✅ **Motion is opt-in via media query, and needs no JavaScript** — the rule
+  and its toolkit are AGENTS rule 14. The decision here is the CHOICE: modern
+  CSS (`@starting-style`, `allow-discrete`, `interpolate-size`,
+  `::details-content`) over a library, so animation costs no bytes and reduced
+  motion is the absence of rules rather than an override block.
 - ✅ **Anchor targets clear the sticky header**: `:target
   { scroll-margin-block-start: 5rem }`, plus `scrollbar-gutter: stable` (with
   `overflow-y: scroll` fallback) so short↔tall page navigation never shifts
@@ -589,12 +624,11 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   requires to be one of the entry's own `sources` labels. The twins and
   `llms-full.txt` carry each figure as an italic title-and-caption line.
   `/write-content` § Every piece carries a figure has the picking table.
-- ✅ **No dead token references.** The stylesheet inherited `var(--orange)`,
-  `--orange-soft` and `--orange-strong` from the ancestor site after the
-  tokens were renamed to `--brand*` — so `:focus-visible` had an INVISIBLE
-  outline and `.prose a` no colour. Fixed Sep 2026; `check-source-rules`
-  bans hex literals outside the token files, which is why the leftovers
-  were references and not colours, and why they went unnoticed.
+- ✅ **No dead token references.** A `var(--x)` naming a token that no longer
+  exists renders as nothing — an invisible focus outline, an uncoloured link —
+  and the hex-literal ban is exactly why such leftovers are references rather
+  than colours, so nothing flags them. Rename a token and grep for the old
+  name in the same commit.
 - ⬜ **Dark mode** — not included: it doubles the contrast-audit matrix and
   marketing sites rarely need it. Adding it means re-measuring every token
   pair in both schemes.
@@ -732,9 +766,8 @@ dispatched), in order:
 - ✅ **All built-output invariants live in ONE script**
   (`scripts/check-invariants.mjs`) shared verbatim by CI and
   `npm run verify` — two copies of a check are two checks that drift. It
-  collects every failure per run rather than stopping at the first. (This
-  replaced the earlier inline-bash step; its "no `set -e`, grep exits 1 on
-  no-match" trap died with the bash.) Additions beyond the ones above:
+  collects every failure per run rather than stopping at the first. Additions
+  beyond the ones above:
   **every JSON-LD block parses** (a malformed @graph costs rich results
   with no symptom) · **every content page has its markdown twin** (the
   worker falls back to HTML, so a broken generator degrades silently) ·
@@ -757,16 +790,18 @@ dispatched), in order:
   (empty-default rule), GET → 405, unknown data tab → 404, `/hi` rewrite +
   header-level noindex + malformed-code fallthrough, twin negotiation for
   GET **and HEAD** with `Vary: Accept` on both bodies, every
-  `PERMANENT_REDIRECTS` entry → 301 to its target (the map is parsed from
-  worker/index.ts, so a row added there is asserted without anyone
+  `src/data/redirects.json` entry → 301 to its target (read from the same JSON
+  the worker imports, so a row added there is asserted without anyone
   remembering; `smoke-live` does the same at the edge), security set + the
   committed CSP on every worker response. Deliberately not covered: the
   Apps Script upstream (needs a live secret — stays a PLAYBOOK §8 launch
   step) and the rate limiter (asserting on the local simulator tests the
   simulator).
-- ✅ A dispatched `ci.yml` runs the checks only; its deploy job is gated
-  on a push event and fires only for an organisation that restores the
-  push trigger. The deploy path is `/ship` after a green pre-push battery.
+- ✅ A dispatched `ci.yml` runs the checks only; its deploy job requires a
+  `push` event, which a manual dispatch never is, so it fires only for an
+  organisation that restores the push trigger. The deploy path is the ship
+  steps after a green battery — `/ship` by hand, or the daily cadence run
+  itself (`marketing/STRATEGY.md § 9`).
 - ✅ **Post-deploy live smoke** (`scripts/smoke-live.mjs`, the last step of
   `/ship`) — the automated subset of
   PLAYBOOK §8: zone redirects
@@ -943,27 +978,18 @@ dispatched), in order:
   human runs at publish time (may install a headless browser ad hoc).
 - ✅ **Generate, commit the output, never hand-edit the output** (llms.txt,
   favicons, OG cards, lastmod.json, sheet snapshots).
-- ✅ **What a human has to do is an action, checked every run.**
-  `marketing/ACTIONS.md` (format parsed by `scripts/actions.mjs`; § 9 above)
-  is the ledger of every human action; `marketing/runbook.md` is the
-  daily/weekly/monthly/quarterly checklist the cadence works;
-  `marketing/launch-playbook.md` is the launch; `marketing/page-guidelines.md`
-  and `marketing/content-guidelines.md` are what a page contains and how it
-  is written; `marketing/social-queue.md` holds the social drafts every
-  piece ships with; `marketing/playbook-intake.md` records every outside
-  playbook `/ingest-playbook` sorted (transfers / already covered / refused)
-  so none is re-argued. The standing prompt line "Remove all mannered
-  prose." lives once in `src/data/voice.json → prompt.standing` and every
-  content-producing skill quotes it.
-- ✅ **What the engine cannot find out is a question, not an estimate.**
-  `marketing/DATA-SHEET.md` holds the open questions only the owner can
-  answer (format is parsed by `scripts/data-sheet.mjs`; it holds no answers
-  — an answer moves to facts.json or its data file with a source and the
-  question is marked ✅ with a pointer); `marketing/link-targets.md` holds
-  the directory and entity-anchor targets with a status each (a run
-  surfaces the next three, never claims one). `npm run ask` prints both,
-  and the `.claude/settings.json` SessionStart hook runs it so anyone
-  opening the repo sees what is blocked before they start.
+- ✅ **The operating model — which file owns which rule — is
+  `AGENTS.md § Content rules`**, one table row per rule. Two decisions
+  belong here because they are conventions rather than rules: every one of
+  those files is **parsed** by a script, so its format is load-bearing
+  (`ACTIONS.md` by `scripts/actions.mjs`, `DATA-SHEET.md` and
+  `link-targets.md` by `scripts/data-sheet.mjs`); and `npm run ask` runs from
+  the `.claude/settings.json` SessionStart hook, so anyone opening the repo
+  sees what is blocked before they start.
+- ✅ **`marketing/DATA-SHEET.md` holds questions, never answers.** An answer
+  moves to `facts.json` or its own data file with a source, and the question
+  is marked ✅ with a pointer — otherwise the sheet becomes a second,
+  unsourced copy of the facts.
 - ✅ Sections shared between routes live in one component and are imported,
   never copied — two pages meant to agree then cannot drift.
 - ✅ **Glossary categories are a closed vocabulary** (`src/data/taxonomy.ts`

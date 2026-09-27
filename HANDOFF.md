@@ -558,6 +558,13 @@ matching rows in `marketing/audit-2026-09-27.md § 4` and add a Log line.
 
 ## 5. Stream C — the cadence deploys itself (the owner's answer to decision 9)
 
+> **✅ LANDED 27 Sep 2026**, with D pass 1 in one commit, as § 8 ordered. All
+> of it done as specified. The only addition the plan did not call for:
+> `scripts/smoke-live.mjs` still regex-parsed `PERMANENT_REDIRECTS` out of
+> `worker/index.ts` after stream A moved the map to `redirects.json`, so the
+> regex no longer matched and every live redirect assertion had silently
+> stopped running. It reads the JSON now, as `smoke-worker` already did.
+
 The owner: *"when a daily routine runs here on claude, it should
 automatically deploy and also update indexnow & bing with the recent
 changes."* And on drift: *"Everything should be deployed immediately."*
@@ -620,6 +627,40 @@ changes."* And on drift: *"Everything should be deployed immediately."*
   waits for a human to merge leaves scheduled posts unreleased).
 
 ## 6. Stream D — the doc consolidation (three passes, each pushed green)
+
+> **✅ LANDED 27 Sep 2026**, three commits. Every item below done, plus the
+> § 9 scan findings and the missing docs M7–M9. What changed against the plan:
+>
+> - **The word targets were not met, and were not forced.** AGENTS 4,010 →
+>   3,030 (target 2,400), PLAYBOOK 3,869 → 3,430 (target 2,300),
+>   content-cadence 5,737 → 5,125 (target 3,700). Every duplication the audit
+>   named is gone; what remains in each file is stated nowhere else — PLAYBOOK
+>   § 3, § 4, § 6, § 7 and § 8's manual list are operating knowledge with no
+>   second copy, and AGENTS' enforced subset and the cadence's report spec are
+>   the same. Cutting further would have deleted content rather than
+>   duplication, which is the opposite of what § 5 asked for. The numbers are
+>   recorded in the audit's O12 row.
+> - **PLAYBOOK § 8 was consolidated too**, which the plan did not list. Its
+>   header said "if the script and this list disagree, one of them is wrong" —
+>   parity by prose, the exact anti-pattern O3 names. `smoke-live.mjs` is now
+>   the automated half's only statement and § 8 keeps the manual launch list.
+> - **CHECKLIST grew** (9,419 → ~9,700) rather than shrinking: the asides were
+>   cut as planned, but the pass also had to RECORD decisions there — the
+>   cadence deploying itself, the twin-routing threshold, drift staying a note,
+>   `tags` and the glossary's `dateModified`, and the new parity rule. That is
+>   § 8 step 5 working as intended; CHECKLIST is where decisions go.
+> - **M8 settled the two numbering schemes by keeping both** and explaining
+>   them, rather than renumbering. /new-site numbers the conversation, SETUP
+>   numbers the files; renumbering either makes it wrong for its own purpose.
+> - **One § 9 finding was skipped as no longer applying:** the trailing-slash
+>   307 is already stated once (CHECKLIST § 2) and cited by PLAYBOOK and
+>   smoke-live. The `discover` "as /new-site phase 1" vs "/new-site from Phase
+>   3" pair was verified and is CORRECT (discover is phase 1, landscape is
+>   phase 2, so the next step is phase 3) — a clarifying clause was added
+>   rather than a change.
+> - **New check, proven red:** `check-parity` rule 7, the `--brand` token
+>   against the two card templates. `marketing/favicon.mjs` stops typing the
+>   colour and reads the token.
 
 Principle: a rule is stated once in the file that owns it and cited
 everywhere else with a pointer. Owners (audit § 5):

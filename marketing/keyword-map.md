@@ -11,24 +11,19 @@ Generated/updated: <!-- date -->
 
 ## How to read this
 
-- **status**: `mapped` (planned, no page yet) → `drafting` → `live` → `ranking`
-  (position ≤20 with impressions) → `won` (position ≤10 with clicks).
-- **intent**: informational · commercial-investigation · transactional ·
-  navigational — decides the page type.
-- **evidence**: impressions/position from `npm run insights`, or `social sweep` /
-  `cluster head` / `competitor gap` for queries not yet earning impressions.
+The row shape, the status ladder, the intent classes and what counts as
+evidence are defined once in **`/keyword-map § 3`**, which is also what writes
+and maintains this file. This header does not repeat them; it used to, and the
+two drifted.
 
 ## High-intent — the buyer's queries, worked first
 
-<!-- Every transactional or commercial query with impressions — the
-     `searchConsole.highIntent` block of the latest snapshot (★ = watch-list
-     term in src/data/intent.json) — has a row here, ranked by impressions
-     then position, with the money page that claims it and the supporting
-     pieces planned or published for it. A query is high-intent when a buyer
-     choosing would type it: "software", "system", "tool", "pricing", "vs",
-     "calculator". These rows are worked before any informational cluster
-     (content-cadence step 2). Keep intent.json → watch in step with this
-     section: a term added here is added there with its page, same commit. -->
+<!-- The rows from the latest snapshot's `searchConsole.highIntent` block
+     (★ = watch-list term in src/data/intent.json), ranked by impressions then
+     position. /keyword-map § 3 says what belongs here and why these rows are
+     worked before any informational cluster. The one rule that lives in this
+     file: a term added here is added to intent.json → watch with its page, in
+     the same commit. -->
 
 | Query (★ = watch list) | Impr · position | Page Google shows | Claiming page | Status | Supporting pieces |
 |---|---|---|---|---|---|

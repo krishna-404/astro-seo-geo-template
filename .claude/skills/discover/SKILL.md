@@ -12,18 +12,15 @@ skill runs once, before anything is decided, and produces one file:
 `marketing/brief.md` — the brief (what the site is for) and the asset
 register (what we have, what we need, where each lands).
 
-Four rules hold here. **Read before asking:** the engine researches what
-it can on its own first (§ 0) and puts that read in front of the owner to
-correct — never ask a question the internet answers. **Show before asking:** when a
-question is a choice (what a homepage's one action is, what a trust page
-carries), fetch two or three current examples from the owner's category
-first and ask against them, never against a blank. **Ask in the session:**
-every question below is put to the owner here, in the run, with the
-`AskUserQuestion` tool — never written into a file for them to discover
-later. **Write, don't remember:** every answer goes into `brief.md` in the
-same session, every number with a source, and a question the owner was asked
-and could not answer goes into `marketing/DATA-SHEET.md` with what they
-said — never a guess, and never a question nobody put to them.
+**/new-site § The three rules** governs this conversation as it governs every
+other: show before asking, ask here in the run with `AskUserQuestion`, write
+the answer into the file that owns it. Read it once; it is not repeated here.
+
+One rule is this skill's own. **Read before asking:** the engine researches
+what it can on its own first (§ 0) and puts that read in front of the owner to
+correct. Never ask a question the internet already answers — a discovery
+interview that opens by asking what the business does teaches the owner that
+nobody looked.
 
 Ask in batches of up to four related questions per `AskUserQuestion` call, in
 the order below, each question carrying two to four concrete options built
@@ -140,7 +137,7 @@ question, and it names the file, the format and the date they gave.
 | Contact channels | Phone, email, WhatsApp, address, opening hours — and who answers each | `site.ts`, contact page |
 | Social and entity profiles | Handles and URLs for every profile that exists (LinkedIn company page, Google Business Profile, Crunchbase, X, YouTube…) and which are missing | `site.ts` `sameAs`, `marketing/link-targets.md` for the missing ones |
 | Domain and access | Registrar login, DNS control, Cloudflare account, existing analytics, Search Console and Bing properties, GitHub org | Recorded as **have/needed** only — never the credentials themselves; `src/data/origin.mjs` gets the domain |
-| Existing site | URL, a crawl or sitemap, the analytics export, the list of URLs that must keep working | The redirect map in `brief.md § Migration`, later `worker/index.ts → PERMANENT_REDIRECTS` |
+| Existing site | URL, a crawl or sitemap, the analytics export, the list of URLs that must keep working | The redirect map in `brief.md § Migration`, later `src/data/redirects.json` |
 | Pricing | Whether prices are published, the model, and what may be shown | `STRATEGY.md`, the pricing page decision in /keyword-map |
 
 Assets that arrive as files go into the repo in their final location in
@@ -170,7 +167,8 @@ the repo: record that access exists and who holds it.
 Read the brief back to the owner in five lines: the outcome, the one
 action, the buyer, what exists, what is missing. That is a checkpoint, not
 the end of the session: unless the owner stops you, carry straight on in
-order — /landscape (the category, from the names in § 1.7), then /new-site
-from Phase 3 (Decide), which reads `brief.md` and does not ask again what the
-brief already answers. Open DATA-SHEET questions travel with the work; they
+order. This skill IS /new-site phase 1, so the next steps are its phase 2 —
+/landscape, the category, from the names in § 1.7 — and then /new-site from
+phase 3 (Decide), which reads `brief.md` and does not ask again what the brief
+already answers. Open DATA-SHEET questions travel with the work; they
 do not hold the next phase.

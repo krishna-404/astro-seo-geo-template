@@ -164,16 +164,10 @@ is the mechanism by which a new page becomes a ranking page.
 
 ## 4. Conversion & trust — what the ranking is *for*
 
-Impressions alone are worth nothing. The order of work is fixed by the funnel
-ladder (the standing order in STRATEGY.md § Content strategy), and it runs
-bottom-up:
-
-1. **Convert what already lands.** Every page that receives visitors has a
-   working, *measured* next step (CTA events per entrance). Fix this first.
-2. **Then CTR where you already rank.** Position ≤20 (above all ≤10) with
-   impressions and few clicks — titles and descriptions in the searcher's words.
-3. **Impressions last.** New content for the highest-search winnable keywords —
-   real, consistent work, but only after rungs 1–2 hold on what exists.
+Impressions alone are worth nothing. The order of work is the **funnel ladder**,
+stated in full — rungs, the snippet test and its three numbers — in
+`marketing/STRATEGY.md § 5`. It runs bottom-up: convert what already lands,
+then CTR where the site already ranks, then impressions.
 
 The elements that do the converting:
 
@@ -207,22 +201,16 @@ content the models pull from is far smaller than the pool competing for rank. Th
 levers with *measured* lift (Aggarwal et al., KDD 2024) are **cited sources,
 quotations from authorities, and statistics**; keyword stuffing measurably hurts.
 
-- **Front-load the answer.** The `tldr` answers the primary query outright, in
-  the one band this repo uses — one to three sentences, 40–400 characters
-  (`marketing/page-guidelines.md § 1` states it; the schema enforces it).
-  Repeat the move under every heading: 2–4 self-contained sentences that
-  answer the heading before anything elaborates on it. The `tldr` field
-  enforces the page-level version; the per-heading version is written by hand.
-- **Question-shaped headings.** H2/H3 phrased as the actual query — "What is X?",
-  "How do I…?" — with the answer directly beneath.
-- **Inverted pyramid, one idea per paragraph, 2–4 sentence chunks.** Dense blocks
-  get skipped or misquoted. Half the word count of print writing is the target.
-- **Lists and tables.** Answer engines parse, extract and cite these most easily.
-  Each list item and table row is self-contained and leads with its key concept.
-- **Fact density.** Roughly one concrete, quotable statistic per 150–200 words,
-  each with a cited authoritative source. This is the single strongest GEO lever.
-- **Write every sentence to survive being quoted alone.** Kill vague pronouns; a
-  sentence that only makes sense in context can't be cited out of context.
+**How a citable page is written** — answer first, every H2 an island,
+extractable passages, one sourced statistic per 150–200 words, every sentence
+able to survive being quoted alone — is `marketing/content-guidelines.md § 1`.
+**What each page type must contain**, including the `tldr` band and the
+citation checklist `npm run audit:pages` scores, is
+`marketing/page-guidelines.md § 1`. Neither is repeated here; the numbers
+drifted when they were.
+
+What belongs to this document is the structural half:
+
 - **Structured data.** `FAQPage` is the highest-impact type for AEO — it turns
   Q&A pairs into explicit citation candidates (render it from one source array,
   never hand-write FAQ markup in the body). Add `Article`/`BlogPosting` with a
@@ -242,40 +230,31 @@ quotations from authorities, and statistics**; keyword stuffing measurably hurts
 
 ## 6. Straightforward messaging — the house voice, generic half
 
-The voice this template writes in is deliberately plain. This is the transferable
-half of the standard; the per-site specifics (the reader, the stance, the words
-this brand keeps and bans) live in `VOICE-GUIDE.md`, and the mechanical bans live
-in `src/data/voice.json`. The generic rules — the ones true for any business:
+The voice this template writes in is deliberately plain, and it is **stated
+once, as numbered rules, in `marketing/VOICE-GUIDE.md § 3`** — rules 10 to 12
+are the generic half true for any business (lead with *what*; "you/your"
+outnumbers "I/we/our"; the read-aloud test and no false empathy), and rule 13
+is "remove all mannered prose". The per-site specifics — the reader, the
+stance, the words this brand keeps and bans — are the rest of that file; the
+mechanical bans are data in `src/data/voice.json`; how a piece is written is
+`marketing/content-guidelines.md`.
 
-- **The read-aloud test.** Delete any sentence you would not actually say out loud
-  to a prospect's face. If it reads like a brochure, it is dead copy.
-- **Lead with *what*.** The reader needs to know what you do before anything else.
-  Never open with vision, mission or mood.
-- **"You/your" outnumbers "I/we/our".** Copy centred on yourself instead of the
-  reader is the most common failure. Write to the person who owns the problem.
-- **Cut claims a competitor could paste onto their own site.** A line that could
-  carry anyone's logo says nothing; prove the difference with evidence, not
-  adjectives.
+Three things this document adds, because they are about the market rather
+than the brand:
+
+- **Cut claims a competitor could paste onto their own site.** A line that
+  could carry anyone's logo says nothing; prove the difference with evidence,
+  not adjectives.
 - **Use only words 100% of the audience already uses.** No jargon the reader
-  doesn't say themselves.
-- **Specificity over brevity — but keep the chunks short.** Use as many sentences
-  as clarity needs; do not amputate meaning to look sleek. And do not chase the
-  all-one-line-paragraphs fad — it reads as monotonous. Short paragraphs (two to
-  five sentences, one idea each) that each say something concrete.
-- **No false empathy.** Don't tell the reader how they feel ("you're frustrated
-  and overwhelmed"). Let a real example or testimonial carry the emotion.
-- **Be concrete.** Replace abstractions with numbers, names and observable
-  outcomes. State the specific result, not "great results".
+  does not say themselves.
+- **Specificity over brevity — but keep the chunks short.** Use as many
+  sentences as clarity needs; do not amputate meaning to look sleek, and do
+  not chase the all-one-line-paragraphs fad. Replace abstractions with
+  numbers, names and observable outcomes.
 
-- **Remove all mannered prose.** No metaphor where a literal phrase exists;
-  the full definition and the rest of the writing rules (answer first, islands,
-  extractable passages, write for objections) are in
-  `marketing/content-guidelines.md`; what each page type contains is in
-  `marketing/page-guidelines.md`.
-
-Plain, objective, factual copy is not just nicer — it measurably works: NN/g found
-objective language raised usability 27% over promotional "marketese", and concise
-+ scannable + objective together raised it 124%.
+Plain, objective, factual copy is not just nicer — it measurably works: NN/g
+found objective language raised usability 27% over promotional "marketese",
+and concise + scannable + objective together raised it 124%.
 
 ---
 
@@ -315,19 +294,12 @@ are confident, small and in scope, delivered under the merge model in
 
 ### Where each rule is enforced
 
-Doctrine is only real when it is checked. The mechanizable parts of this blueprint
-live in the battery (CHECKLIST §9 lists every check with its WHY):
+Doctrine is only real when it is checked. **`CHECKLIST.md § 9` is the one list
+of every check and its WHY** — which rule of this blueprint each one mechanizes
+is read there, not duplicated here, because a second list goes stale the first
+time a check is added.
 
-- **Orphans, dead internal links, junk anchors, anchor-uniqueness** →
-  `check-link-graph.mjs`
-- **Blog dates parse, ≥2 in-body links, registered author** →
-  `check-source-rules.mjs`
-- **Front-loaded `tldr`, FAQ single-source, one H1, every collection has a route**
-  → the schemas + `check-collection-routes.mjs` + `check-invariants.mjs`
-- **CTA measured** → `check-invariants.mjs`
-- **The mechanical voice bans** → `check-voice.mjs` (`src/data/voice.json`)
-
-The judgement halves — is the answer actually front-loaded, is the proof real, is
-the voice straightforward, is the cluster genuinely covered — are run by hand
-against this document, `VOICE-GUIDE.md § 6`, and the audit above. A green battery
-is a floor, not a pass.
+The judgement halves — is the answer actually front-loaded, is the proof real,
+is the voice straightforward, is the cluster genuinely covered — are run by
+hand against this document, `marketing/VOICE-GUIDE.md § 6`, and the audit
+above. **A green battery is a floor, not a pass.**

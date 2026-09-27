@@ -345,7 +345,7 @@ between a green battery and the live site (`marketing/STRATEGY.md § 9`). Add
 **Phase:** quarterly
 **Check:** manual:92
 **Why:** Redirect chains, orphans and stray 404s accumulate between deploys and no per-page check sees the whole graph at the edge.
-**How:** Screaming Frog free tier (500 URLs) or equivalent against the live origin. Fix what it finds; a URL that must keep working goes in `PERMANENT_REDIRECTS`.
+**How:** Screaming Frog free tier (500 URLs) or equivalent against the live origin. Fix what it finds; a URL that must keep working goes in `src/data/redirects.json` plus `wrangler.jsonc → run_worker_first`.
 **Done:**
 
 ### A-Q02 · Re-validate structured data, one page per type ⬜

@@ -12,6 +12,27 @@ one page at a time on anything attributable; a question, never an
 estimate; the report says what changed and which number it targets; every
 prompt that writes content ends with "Remove all mannered prose."
 
+## Your ten minutes today
+
+The rows below marked *human* are the only ones a person does. On an ordinary
+weekday they are these four, in this order, and they take about ten minutes:
+
+| | What | How long | Row |
+|---|---|---|---|
+| 1 | **Read the report's first line** — the deploy version id, the URLs submitted, the live-smoke result. Anything red here outranks the rest of your day. | 1 min | D13 |
+| 2 | **Paste the request-indexing shortlist** into Search Console: up to 10 URLs, each with an "Inspect" button in the email. No API exists for this. | 4 min | D9 · A-D01 |
+| 3 | **Post the unposted social drafts** for anything that went live, and flip each to `posted:<date>`. | 3 min | D14 · A-D03 |
+| 4 | **Act on what the run declined** — usually nothing. A pull request it would not merge is named with the reason. | 0–2 min | D15 · A-D02 |
+
+Then **answer what the report asks** when it asks (What I need from you,
+Decisions, Where to list next). Those are not daily; they are the weekly
+half, and an unanswered question blocks the work it names.
+
+Weekly adds roughly twenty minutes: export the Generative AI report (A-W01),
+claim the next listing (A-W04), read the report's Decisions and reply (A-W05),
+and check Search Console's Security & Manual Actions (A-W06) — the one item
+with no API and the worst failure mode if it is left a week.
+
 ## What the engine delivers in a month
 
 The scope a client of a content agency would be sold, kept here so a month
@@ -40,6 +61,10 @@ that delivered less is visible (ingested from a published monthly scope,
   (STRATEGY.md § 9)
 
 ## Daily run (weekdays)
+
+The shipped Routine fires on weekdays only, because every row marked *human*
+below expects somebody to read the report that day. A site that schedules
+weekend firings gets an ordinary daily run; nothing here changes.
 
 | # | Item | Owner | Script / step | Report section |
 |---|---|---|---|---|

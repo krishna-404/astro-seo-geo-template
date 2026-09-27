@@ -116,7 +116,7 @@ for an asset that is merely late.
 
 <!-- Only when an existing site is being replaced. Every URL that has
      traffic, inbound links or is printed on things maps to its new home;
-     the map becomes worker/index.ts → PERMANENT_REDIRECTS plus the matching
+     the map becomes src/data/redirects.json plus the matching
      wrangler.jsonc run_worker_first entries (check-parity fails one without
      the other). -->
 

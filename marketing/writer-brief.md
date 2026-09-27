@@ -30,9 +30,9 @@ costs a cycle; a wrong number costs the site's standing.
    pieces extend clusters; they do not duplicate them.
 2. `npm run insights` — what does the searcher actually type? Titles and
    headings carry the query's own words.
-3. `marketing/field-notes.md` and `marketing/news-log.md` — what is the
-   proprietary claim? A piece with nothing only this site can say does not
-   run this week.
+3. **The fuel rule** — `marketing/content-guidelines.md § 2` states it in
+   full, and lists every channel that counts. In short: name the thing in
+   `fuel`, or the piece does not run this week.
 
 ## Review gates
 

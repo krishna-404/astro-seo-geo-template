@@ -150,11 +150,10 @@ informed it and the constraint that bounds it:
    (`--radius`, `--radius-lg`), shadow depth. Decorative layers are inert
    (`aria-hidden`, `pointer-events: none`) and never behind text unless
    measured.
-7. **Imagery.** Where product screens come from and how they are cut (the
-   ancestor site crops full-page app captures to the band that carries the
-   point, 1440 px wide, through `astro:assets`), the illustration style if
-   any, the social-card treatment (`marketing/og/default.html` follows the
-   tokens).
+7. **Imagery.** Where product screens come from and how they are cut — crop a
+   full-page app capture to the band that carries the point, 1440 px wide,
+   through `astro:assets` — the illustration style if any, and the
+   social-card treatment (`marketing/og/default.html` follows the tokens).
 8. **What we refuse.** The list from § 1's trend check, plus the brand's own
    no-gos, so the next editor does not re-argue them.
 9. **The design language.** The tokens and patterns *are* the design
