@@ -123,6 +123,7 @@ weekend firings gets an ordinary daily run; nothing here changes.
 | Q3 | About page key facts reconfirmed; landscape refreshed (`/landscape`) | human + machine | ACTIONS A-Q03 |
 | Q4 | Channel gaps re-argued with any new playbook (`/ingest-playbook`) | machine | `marketing/channel-gaps.md`, `playbook-intake.md` |
 | Q5 | robots.txt and `scripts/lib/crawlers.mjs` against new answer-engine bots (know what each governs before blocking) | machine | PLAYBOOK §7 |
+| Q6 | Design references re-swept (`npm run design:refs`), diffed against the last sweep, the brief dated or its direction re-affirmed (`/design-direction` § 5) | machine + human | ACTIONS A-Q04, `marketing/design-refs.md` |
 
 ## Annual
 

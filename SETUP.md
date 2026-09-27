@@ -99,17 +99,26 @@ Work top to bottom; later files read earlier ones.
       `npm run build && npm run check:contrast` — do not ship a colour the
       checker rejects; darken it until it passes.
 - [ ] **Design direction** — run `/design-direction` before anyone outside
-      the team sees the site. It pulls references from awwwards (the site's
-      category and the current Sites of the Day) and a standing list of the
-      best-designed product sites, decides type, colour, layout motif,
-      motion and imagery inside the template's constraints (AA measured,
-      CSS-only motion, no client JS, LCP), writes `marketing/design-brief.md`
-      and applies it through the tokens in `global.css` — `--font-display`
-      (self-hosted woff2 in `public/fonts/`, `font-src 'self'`), the fluid
-      `--step-*` scale, the band and `--on-ink-*` tokens — and the patterns
-      the homepage already uses (editorial hero, bento, numbered rail,
-      inverted band, scroll reveal). A site that skips this ships the
-      template's look, and a buyer reads "template" as "nobody is home".
+      the team sees the site. It interviews the owner on the visitor's
+      journey (what they meet first, what they must believe, the one moment
+      they will remember), then **looks before deciding**: `npm run
+      design:refs -- --category <slug>` writes `marketing/design-refs.md`
+      with the category's current awwwards entries and the latest Sites of
+      the Day, live URLs and tags (register tags to borrow, tech tags to
+      refuse), plus the galleries and a standing list of the best-designed
+      product sites. It decides type, colour, layout motif, motion, states,
+      one signature move and the fingerprint inside the template's
+      constraints (AA measured, CSS-only motion, no client JS, LCP), writes
+      `marketing/design-brief.md` and applies it through the tokens in
+      `global.css` — `--font-display` (self-hosted woff2 in `public/fonts/`,
+      `font-src 'self'`), the fluid `--step-*` scale, the band and
+      `--on-ink-*` tokens, the radius and ease scale — and the patterns the
+      homepage already uses (editorial hero, bento, numbered rail, inverted
+      band, scroll reveal, the phone menu). Then it proves it: `npm run
+      check:design` (the measured smell sweep, in CI) and `npm run
+      design:shoot` (the contact sheets the owner signs off on). A site
+      that skips this ships the template's look, and a buyer reads
+      "template" as "nobody is home".
 - [ ] `public/.well-known/security.txt` — `Contact`, `Canonical` (your real
       host — RFC 9116 makes the file assert which host it belongs to, so a
       wrong value is worse than none), `Expires` ~1 year out. Put the annual

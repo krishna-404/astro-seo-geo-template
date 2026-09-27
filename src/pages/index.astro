@@ -79,11 +79,15 @@ const schema = [
     the page has a second visual weight without a stock illustration. The
     design pass (/design-direction) swaps the panel for whatever this brand's
     proof is: a product screen, a figure from facts.json, a photograph.
+
+    No eyebrow over the h1: the wordmark is in the header, and a label on
+    every heading is the first tell of a generated page — the page carries
+    two eyebrows in five bands (the panel and the bento), which is the
+    ceiling `npm run check:design` enforces (one per three sections).
   -->
   <section class="band band--white hero hero--editorial">
     <div class="wrap hero__grid">
       <div>
-        <p class="eyebrow">{SITE.name}</p>
         <h1>{SITE.tagline}</h1>
         <p class="lede">{SITE.description}</p>
         <div class="btn-row">
@@ -116,7 +120,9 @@ const schema = [
   </section>
 
   <!-- Bento: one lead card spanning four of six columns, then four supporters
-       — 4+2 over 2+2+2 on desktop. The asymmetry is the design. -->
+       — 4+2 over 2+2+2 on desktop. The asymmetry is the design. The cards
+       carry no eyebrow: the h3 is the label, and the lead card differs in
+       span and band so the row never reads as three identical boxes. -->
   <section class="band band--cream">
     <div class="wrap">
       <div class="section-head">
@@ -129,7 +135,6 @@ const schema = [
       </div>
       <div class="bento">
         <div class="card card--feature card--ink bento__wide reveal">
-          <p class="eyebrow">SEO machinery</p>
           <h3>One layout emits every signal</h3>
           <p>
             Canonical URLs, Open Graph tags, JSON-LD (Organization, Person, BlogPosting,
@@ -138,12 +143,10 @@ const schema = [
           </p>
         </div>
         <div class="card card--feature reveal">
-          <p class="eyebrow">Checked, not asked</p>
           <h3>Three rungs</h3>
           <p>Pre-commit, pre-push, CI — the same scripts at each, so they cannot disagree.</p>
         </div>
         <div class="card card--feature reveal">
-          <p class="eyebrow">AEO &amp; GEO</p>
           <h3>The answer, first</h3>
           <p>
             Every entry front-loads a required <code>tldr</code>; glossary terms will not
@@ -153,12 +156,10 @@ const schema = [
           </p>
         </div>
         <div class="card card--feature card--brand reveal">
-          <p class="eyebrow">Measured</p>
           <h3>Colour clears AA on every band</h3>
           <p>A sweep of every text node on every built page fails the build under 4.5:1.</p>
         </div>
         <div class="card card--feature reveal">
-          <p class="eyebrow">Zero-cost hosting</p>
           <h3>Static files, no server</h3>
           <p>
             The form lands in a Sheet you own; analytics is cookieless by default, so
@@ -174,18 +175,16 @@ const schema = [
        above. -->
   <section class="band band--tint">
     <div class="wrap">
-      <div class="section-head">
-        <p class="eyebrow">Questions</p>
-      </div>
       <Faq faq={faq} groupName="home" heading="About this template" place="home" />
     </div>
   </section>
 
-  <!-- Final CTA on the inverted band: the one dark moment on the page. -->
+  <!-- Final CTA on the inverted band: the one dark moment on the page, and
+       the close — the last band resolves into one action and holds; it never
+       trails off into the footer (design-brief § 0, the ending). -->
   <section class="band band--ink">
     <div class="wrap">
       <div class="section-head">
-        <p class="eyebrow">Next</p>
         <h2>Make it yours</h2>
         <p class="lede">
           Read how the pieces fit, then replace this copy with your own pitch — and run the

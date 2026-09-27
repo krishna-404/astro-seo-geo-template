@@ -10,6 +10,35 @@ does. Decisions with reasons are `CHECKLIST.md`.
 
 ## Unreleased
 
+- **The design pass gets an interview, a live sweep, a journey, a signature
+  move and a measured proof** — the design intake of 27 Sep (the owner's
+  playbook, scroll-craft, taste-skill, the component libraries and galleries,
+  sorted in `marketing/playbook-intake.md`). `/design-direction` now asks the
+  owner where the visitor goes and what they must feel before it looks,
+  runs `npm run design:refs -- --category <slug>` (the category's current
+  awwwards entries and the Sites of the Day with live URLs and tags, register
+  vs tech, into `marketing/design-refs.md`, generated), writes the journey
+  and its one peak before any band, decides one CSS-only signature move and
+  a six-dimension fingerprint against the template default, and proves the
+  result with `npm run design:shoot` (contact sheets: phone, desktop, six
+  frames along the scroll) and **`npm run check:design`** — a new
+  built-output check in verify and CI: no sideways scroll or spill at 375 and
+  1440, the page intact at 200 % text, touch targets ≥44px, the hero CTA
+  inside the fold, no gradient text, glass, `transition: all`, emoji,
+  eyebrow-over-everything, section numbers, identical card rows, repeated
+  bands or pure black. `check-source-rules` bans `transition: all` and lone
+  `vh` heights. In the tokens: one radius scale (`--radius-sm/--radius/
+  --radius-lg`), `--ease-out` with two durations, a measured `.btn`
+  disabled state, pointer-gated hover, brand `::selection` and
+  `accent-color`; the contact form shows errors inline by `:user-invalid`;
+  the header gains a native `<details>` phone menu and wraps at 200 % text.
+  The template homepage drops from ten eyebrows to two. `marketing/
+  design-brief.md` grows § 0 (the journey), § 11 (signature move) and § 12
+  (fingerprint); ACTIONS A-Q04 re-sweeps quarterly. **Adopting sites:**
+  `npm run check:design` will be red on a page with a label over every
+  heading or a `transition: all` — fix the composition, not the threshold;
+  re-run `/design-direction` § 0–2 to fill the brief's new sections.
+
 - **The cadence deploys itself, and every rule has one owner** — streams C and
   D of the 27 Sep audit. `marketing/STRATEGY.md § 9` becomes the one statement
   of the merge model, and its default changes from PR review to

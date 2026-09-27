@@ -629,6 +629,39 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   and the hex-literal ban is exactly why such leftovers are references rather
   than colours, so nothing flags them. Rename a token and grep for the old
   name in the same commit.
+- ✅ **The design pass has an interview, a sweep, a journey and a proof**
+  (27 Sep 2026, the design intake — `marketing/playbook-intake.md`).
+  `/design-direction` now starts by asking the owner where the visitor
+  goes and what they must feel (§ 0), runs `npm run design:refs` so the
+  category's current awwwards entries and the Sites of the Day are read on
+  a date (`marketing/design-refs.md`, generated; tags split into register
+  vs tech, because a look that needs GSAP is a look this template cannot
+  hold), writes the journey — beats, a feeling curve, ONE peak, an ending
+  that resolves — before any band (§ 2), decides one signature move and a
+  six-dimension fingerprint against the template default (§ 3.10–11), and
+  proves the result on contact sheets (`npm run design:shoot`, six frames
+  along the scroll, read cold against the curve; the squint test) and the
+  measured sweep below. The process is scroll-craft's and taste-skill's,
+  with their runtimes refused: every mechanism is CSS (`view()`/`scroll()`
+  timelines, `clip-path`, `@property`, `::details-content`).
+- ✅ **Every control has every state, in tokens** (27 Sep 2026): one radius
+  scale (`--radius-sm` controls · `--radius` panels · `--radius-lg` cards —
+  a page whose corners disagree reads as assembled), one ease
+  (`--ease-out`) and two durations (`--dur-hover`, `--dur-press`) for every
+  UI transition, named properties never `transition: all`; `.btn` has
+  hover, focus-visible, active and **disabled** (a measured pair, --ink-3
+  on --line-2, not opacity); the card lift is gated to `(hover: hover) and
+  (pointer: fine)` so a tap never leaves a card raised; `::selection` and
+  `accent-color` follow the brand (the two UA-blue surfaces a design
+  forgets); the contact form shows errors inline by `:user-invalid` alone —
+  after the field is touched, never on first paint, no JS.
+- ✅ **A phone menu, native `<details>`** (27 Sep 2026, `Header.astro`).
+  Reverses the earlier CTA-only phone header ("three links did not earn a
+  menu"): a destination only reachable from the footer is, on a phone, not
+  reachable. Zero JS, keyboard-operable, `::details-content` transition
+  inside the motion query, the visible word "Menu" as the accessible name,
+  Contact kept as the CTA beside it (one control per action). The header
+  row wraps at 200 % text instead of overflowing (WCAG 1.4.4, now measured).
 - ⬜ **Dark mode** — not included: it doubles the contrast-audit matrix and
   marketing sites rarely need it. Adding it means re-measuring every token
   pair in both schemes.
@@ -763,6 +796,46 @@ dispatched), in order:
 - ✅ WCAG AA contrast sweep of every built page (browser installed in-job),
   with all `<details>` force-opened first — closed FAQ answers are
   display:none and would otherwise never be measured.
+- ✅ **Design-smell sweep** (`scripts/check-design-smells.mjs`, `npm run
+  check:design`, 27 Sep 2026; in verify and CI after axe). WHY: the smell
+  pass was a prose list read by eye on two screenshots, and every item on
+  it is a rule class — it recurs on the next page or the next site and
+  each instance looks fine alone. So the half a browser can measure is
+  measured on the RENDERED page (computed style, layout boxes; a grep sees
+  none of it), at 375 and 1440, motion on: no sideways scroll and nothing
+  spilling past the viewport (AGENTS rule 2, previously prose); the
+  desktop page intact at 200 % root font (WCAG 1.4.4 — the header's
+  non-wrapping flex row failed it on first run and now wraps); touch
+  targets ≥44px on buttons, controls, summaries and header links (inline
+  text links exempt, as WCAG exempts them; AT-hidden controls skipped —
+  the honeypot fired on first run); the hero's first CTA inside a 375×667
+  fold; no `background-clip: text`; no `backdrop-filter` outside the
+  header; no `transition: all` with a real duration (the computed
+  property is "all" on every element by default — only a declared
+  duration ≥50 ms counts; the reduced-motion clamp's 0.01 ms flagged the
+  whole site on first run); no pictographic glyph in a heading, eyebrow,
+  button or summary; at most max(1, ⌈sections/3⌉) `.eyebrow` labels per
+  page and none that is a section number (the template homepage carried
+  TEN over five bands and was cut to two — the label-over-every-heading
+  tell; "404" is a status code and is allowed); no three consecutive
+  sibling cards with the same structure, background and width (the bento
+  passes because its lead differs); no two adjacent `.band`s with the
+  same class list (grouping sections like the glossary's letters are not
+  bands and are not counted); no pure #000 as text or background. Proven
+  red by injecting a gradient h1, a frosted panel, a "01 / 06" eyebrow,
+  `transition: all` and a third identical card into the built homepage —
+  five findings — then restored. Loosen a threshold only with a dated
+  line here.
+- ✅ **`transition: all` and lone `vh` heights banned at the source rung**
+  (`scripts/check-source-rules.mjs`, 27 Sep 2026). WHY: both are one line
+  long, both are what a generated stylesheet reaches for first, and both
+  are caught before a build (the built sweep sees the first too; the
+  second leaves a gap under a collapsing mobile URL bar — AGENTS rule 13 —
+  and no built check can see a URL bar). A block with a `vh` height passes
+  only if it also declares a `dvh` value; comments are stripped first (a
+  comment that SAYS "never transition: all" flagged itself on first run).
+  Proven red on Faq.astro, restored; `search.astro`'s 70vh was the one
+  real hit and is now stacked vh/svh/dvh.
 - ✅ **All built-output invariants live in ONE script**
   (`scripts/check-invariants.mjs`) shared verbatim by CI and
   `npm run verify` — two copies of a check are two checks that drift. It

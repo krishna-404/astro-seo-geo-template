@@ -25,7 +25,9 @@ being checked is not a reason to ignore it here; the prose carries the WHY.
    a source or leave a visible TODO — never estimate.
 2. **Mobile-first CSS, always.** The unprefixed rule is the phone rule;
    `min-width` queries add tablet and desktop. Touch targets ≥44px. No
-   horizontal body scroll at any width — wide tables go in `.table-scroll`
+   horizontal body scroll at any width (`npm run check:design` measures it,
+   plus spill, 200 % text, targets and the hero fold, at 375 and 1440) —
+   wide tables go in `.table-scroll`
    (markdown tables are wrapped automatically with region semantics; don't
    hand-wrap those, don't remove the rehype plugin). A hand-authored
    `.table-scroll` in an `.astro` file carries `tabindex="0" role="region"`
@@ -57,9 +59,17 @@ being checked is not a reason to ignore it here; the prose carries the WHY.
    CI. **Design is chosen, not inherited**: the expressive layer in
    `global.css` (fluid `--step-*` type scale, `--font-display`, the inverted
    `.band--ink`, `.bento`, `.rail`, `.reveal`) is how a site gets its own look
-   inside those constraints; `/design-direction` decides it and
-   `marketing/design-brief.md` records it. Borrow composition, type and
-   rhythm from the best sites — never their WebGL or their JavaScript.
+   inside those constraints; `/design-direction` decides it — after an
+   interview on the visitor's journey and a live sweep of the category's
+   awwwards entries (`npm run design:refs` → `marketing/design-refs.md`,
+   generated) — and `marketing/design-brief.md` records it: the journey
+   and its one peak, one signature move, a fingerprint that differs from
+   the template default on ≥4 of 6. Borrow composition, type and rhythm
+   from the best sites — never their WebGL or their JavaScript; a pattern
+   from a component library is re-expressed in CSS or left. One radius
+   scale, one ease, every control with all four states; the measured smell
+   sweep (`npm run check:design`) and the contact sheets (`npm run
+   design:shoot`) are the proof.
 7. **One `<h1>` per page.** Templates render the frontmatter `title` as the
    h1 — MDX bodies start at `##`.
 8. **noindex and the sitemap must agree.** A page excluded from one is
@@ -103,7 +113,10 @@ being checked is not a reason to ignore it here; the prose carries the WHY.
     lives INSIDE `@media (prefers-reduced-motion: no-preference)`. Reduced
     motion is the absence of rules, not an override block. (The global
     `prefers-reduced-motion: reduce` clamp in global.css stays as
-    belt-and-braces.) No motion requires JavaScript.
+    belt-and-braces.) No motion requires JavaScript. Transitions name their
+    properties (`transform`, `opacity`, `clip-path`, colour) — never
+    `transition: all`, which `check-source-rules` fails; hover effects are
+    gated to `(hover: hover) and (pointer: fine)`.
 15. **External links that open new tabs announce it.** Default is same-tab.
     If you use `target="_blank"`, the link needs `rel` containing `noopener`
     and an accessible name that says so — visible text or an `.sr-only`
@@ -283,6 +296,7 @@ Three more that own themselves:
 | A new step in a run, or a new report section | The `marketing/runbook.md` row AND the content-cadence step AND the report section, same commit |
 | Any product change that alters a price, a feature or a claim | The About page's Key Facts, the pricing table, every comparison cell that mentions it, the glossary entries that define it — before the announcement (runbook § The accuracy check after a ship) |
 | Any inline `<script is:inline>` | `npm run build` regenerates the CSP hashes; commit the changed `worker/csp.generated.json` (CI diffs it). Never add an inline `onclick=`-style handler — the CSP generator fails the build on those |
+| The design direction (tokens, a pattern, the homepage composition) | `marketing/design-brief.md` in the same commit (the fingerprint table if the motif, hero, band order, close, type or signature move changed); `npm run check:design`; re-shoot and re-read the contact sheets |
 | Brand colour / favicon.svg | Edit the literal `BRAND_BG` in `marketing/favicon.mjs`, the `:root` tokens in `marketing/og/page.html` (they mirror `global.css`), and `--brand` in `marketing/og/default.html`; then `node marketing/favicon.mjs`, `node marketing/og/render.mjs`, re-run the page cards, `npm run check:contrast` |
 | Any vendor or data collection | `src/data/privacy.json` in the same commit |
 | Domain | `src/data/origin.mjs` (one place) |

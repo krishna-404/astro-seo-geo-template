@@ -62,6 +62,36 @@ for (const f of files) {
 }
 if (!found) console.log('   ok');
 
+// Two motion/sizing bans from the design intake (marketing/playbook-intake.md,
+// 2026-09-27), at the source rung because both are one line long and both
+// are what a generated stylesheet reaches for first:
+//   `transition: all` animates layout properties (width, padding) and jank
+//   is the result; name the properties. The built-output sweep sees the
+//   computed value too — this catches it before a build.
+//   A `vh` height on its own leaves a gap under a collapsing mobile URL bar
+//   (AGENTS rule 13): `dvh` with `svh` and `vh` stacked before it, or none.
+console.log('→ no `transition: all`, no lone `vh` height (AGENTS rules 13–14, design intake)');
+found = 0;
+for (const f of files) {
+  if (!/\.(astro|css)$/.test(f)) continue;
+  // Comments are stripped first: a comment that SAYS "never transition: all"
+  // is not a use of it (bit the first run).
+  const text = readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, ' '));
+  for (const m of text.matchAll(/transition\s*:\s*all\b/g)) {
+    const line = text.slice(0, m.index).split('\n').length;
+    bad(`${f}:${line} uses \`transition: all\` — name the properties (transform, opacity, colour)`);
+    found = 1;
+  }
+  for (const block of text.split('}')) {
+    if (!/\b(min-|max-)?height\s*:[^;]*\b\d+(\.\d+)?vh\b/.test(block)) continue;
+    if (/\d+dvh\b/.test(block)) continue;
+    const line = text.indexOf(block) > -1 ? text.slice(0, text.indexOf(block)).split('\n').length : '?';
+    bad(`${f}:${line} sizes a height in plain vh — stack svh/vh fallbacks before a dvh value (AGENTS rule 13)`);
+    found = 1;
+  }
+}
+if (!found) console.log('   ok');
+
 console.log('→ no colour literals outside the token files (AGENTS rule 6)');
 const HEX_ALLOWED = new Set(['src/styles/global.css', 'src/data/site.ts']);
 found = 0;
