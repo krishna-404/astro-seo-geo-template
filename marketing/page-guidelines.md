@@ -18,8 +18,10 @@ Six groups. A page is scored on them; the audit prints the ones it fails.
 
 **Page components** (what a machine extracts and cites)
 
-- Key takeaways up top: the `tldr`, four to six sentences that answer the
-  query outright and survive being lifted alone.
+- Key takeaways up top: the `tldr`, one to three sentences (the schema
+  allows 40–400 characters) that answer the query outright and survive
+  being lifted alone; the opening paragraph expands it inside the first
+  100–150 words.
 - A FAQ section from the `faq` frontmatter: real questions in the
   searcher's words, each answered in two sentences with a number, a date
   or a fact. No vague claims that read as bias. Three or more.
@@ -121,7 +123,7 @@ Built only with data specific to the segment, or it is a doorway page.
 ### Guides and blog posts
 
 The `proprietary` field names the fuel. `tldr`, question-shaped H2s, a
-lead figure, two to eight in-body links, three or more FAQ entries, named
+lead figure, two to five in-body links (never more than eight), three or more FAQ entries, named
 sources, an author with a real profile. `toc: true` at four or more H2s.
 One primary query; its words in title, description, a heading and a FAQ.
 

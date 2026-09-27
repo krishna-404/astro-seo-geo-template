@@ -3,8 +3,8 @@
 The operating checklists. `.claude/skills/content-cadence/SKILL.md` is the
 executable (a Routine fires it, one run a day); this file is the list it
 works, with who does each item (machine or human), the script that does it,
-and what the report has to say. PLAYBOOK §9 is the older, shorter version
-and points here. `marketing/ACTIONS.md` is the human half as a ledger the
+and what the report has to say. PLAYBOOK §9 keeps only the traps behind
+these rows and points here. `marketing/ACTIONS.md` is the human half as a ledger the
 script verifies every run (`npm run actions`).
 
 Standing rules for every run: high-intent first; measure before writing;
@@ -46,14 +46,14 @@ that delivered less is visible (ingested from a published monthly scope,
 | D3 | PR inbox: review API posts, merge what the site's merge model allows | machine | step 1b | Pull requests |
 | D4 | High-intent rows: right page, right words, one link on the exact anchor | machine | step 2a–d | High-intent queries |
 | D5 | Quick wins: a page at position ≤5 for words it does not say → add the phrase to a heading, the description or a FAQ line | machine | `searchConsole.quickWins` (step 2f) | Quick wins |
-| D6 | BOFU rows at 4–20: pick one page, work the page checklist against the SERP above it, record the test | machine, one page a day | `searchConsole.bofu` + `npm run audit:pages -- --page` (step 2g) | Bottom of funnel |
+| D6 | BOFU rows at 4–20: check the page being pushed daily; start a new one only after four weeks | machine, one page at a time | `searchConsole.bofu` + `npm run audit:pages -- --page` (step 2g) | Bottom of funnel |
 | D7 | Generative AI: cited pages strengthened, uncited pages given the three levers, prompt-shaped rows into FAQs | machine | step 2e | Generative AI |
 | D8 | Funnel ladder: one to three small evidence-backed changes (CTA, snippet test, links and freshness) | machine | step 3 | What changed |
 | D9 | Request-indexing shortlist (up to 10 URLs) | human | step 4; ACTIONS A-D01 | Do this today |
 | D10 | Open questions and next listings | machine surfaces, human answers | `npm run ask` (step 5); ACTIONS A-W03/A-W04 | What I need from you · Where to list next |
 | D11 | News and ICP-social scan, candidates logged, nothing written | machine | step 6 | Decisions (time-critical only) |
 | D12 | Competitor watch: rows naming a rival; new pages a rival published (from the landscape's sitemap or feed) | machine | `searchConsole.competitorQueries` (step 2h) | Competitors |
-| D13 | Release future-dated posts; regenerate inventory; `npm run verify`; one PR | machine | steps 7–9 | first line |
+| D13 | Build (a future-dated post whose day has come enters this build); regenerate inventory; `npm run verify`; one PR — the next human `/ship` releases it | machine builds, human ships | steps 7–9 | first line · Do this today |
 | D14 | Social queue: post the unposted drafts | human | ACTIONS A-D03 | Do this today |
 | D15 | Merge and ship | human | ACTIONS A-D02; `/ship` | Do this today |
 | D16 | Deliver the report | machine | § The report; Apps Script channel, else the Gmail connector if attached, else committed | — |
@@ -84,7 +84,7 @@ that delivered less is visible (ingested from a published monthly scope,
 | M3 | Link-rot result read; dead citations fixed, archived or dropped | human reads, machine fixes | ACTIONS A-M02 |
 | M4 | Competitors named in `intent.json`; a rival that appeared in a SERP or a panel answer added | human confirms | ACTIONS A-M03 |
 | M5 | Field-notes interview: the five objections heard on calls this month are the next five posts | human | `/interview`; ACTIONS A-M04; content-guidelines § 3 |
-| M6 | Content decay: pages that stopped earning views refreshed or consolidated | machine | PLAYBOOK §9 |
+| M6 | Content decay: pages that stopped earning views (Umami then → now) refreshed or consolidated, never left to thin out | machine | insights-review § Umami |
 | M7 | Social audit: last twenty posts labelled top / middle / bottom; if eighteen are top, the two lower layers were never built | machine reads `social-queue.md`, human decides | content-guidelines § 6 |
 
 ## Quarterly
@@ -95,7 +95,7 @@ that delivered less is visible (ingested from a published monthly scope,
 | Q2 | Structured data re-validated, one page per type | human | ACTIONS A-Q02 |
 | Q3 | About page key facts reconfirmed; landscape refreshed (`/landscape`) | human + machine | ACTIONS A-Q03 |
 | Q4 | Channel gaps re-argued with any new playbook (`/ingest-playbook`) | machine | `marketing/channel-gaps.md`, `playbook-intake.md` |
-| Q5 | robots.txt crawler list against new vendor bots | machine | PLAYBOOK §9 |
+| Q5 | robots.txt and `scripts/lib/crawlers.mjs` against new answer-engine bots (know what each governs before blocking) | machine | PLAYBOOK §7 |
 
 ## Annual
 

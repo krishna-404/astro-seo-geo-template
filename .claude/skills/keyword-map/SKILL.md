@@ -5,6 +5,10 @@ description: Turn keyword research into a deliberate site architecture — resea
 
 # Map keywords to pages
 
+Every prompt this skill writes (a row's evidence line, a backlog item's
+brief) ends with the line in `src/data/voice.json → prompt.standing`: Remove
+all mannered prose.
+
 The difference between "write some blog posts" and a site that wins is this map.
 Every page the site will ever build should trace to a query in
 `marketing/keyword-map.md`, and every priority query should trace to a page (live

@@ -69,8 +69,8 @@ snapshot and is the only view that shows the funnel MOVING.
 **One SCHEDULED firing a day; a second one stands down.** When this skill was
 fired by a Routine rather than typed by a human, read `marketing/news-log.md`
 first for a run entry dated today. If one exists this is a duplicate firing:
-do not repeat the sweep, do not write a post onto a date that already carries
-one, work only what is genuinely new since that entry, and say in the report
+do not repeat the sweep, do not write a second post the first run already
+wrote, work only what is genuinely new since that entry, and say in the report
 that a run had already gone out. A duplicate Routine is fixed in the Routines
 UI, not in the repo (it usually means one was recreated while the old one
 still existed).
@@ -95,7 +95,7 @@ section) and `marketing/page-guidelines.md` (what a page must contain).
 
 **No post caps.** There is no per-date or per-week limit on posts; a run
 writes what its fuel supports, high-intent pieces first, and dates each piece
-with the real day it goes live. Weekend runs still lean towards glossary and
+with the real day it goes live. A site that schedules weekend runs has them lean towards glossary and
 coverage-layer pages because that is usually where the backlog is.
 
 ## Daily-lite (every run)
@@ -195,7 +195,7 @@ coverage-layer pages because that is usually where the backlog is.
      the phrase where it is true: a heading, the description, a FAQ line in
      the searcher's words. Work every row; this is the cheapest ranking move
      on the board and it is mechanical. Record each in the report.
-   - **(g) Bottom of funnel, one page a day, from `searchConsole.bofu`.**
+   - **(g) Bottom of funnel, one page at a time, from `searchConsole.bofu`.**
      The rows are the buyer's shapes (alternatives, vs, review, best X for Y,
      software for role, export from, pricing, with MCP) at position 4–20.
      Pick the one whose page is easiest to move: read the two or three pages
@@ -225,7 +225,7 @@ coverage-layer pages because that is usually where the backlog is.
      question. If not, add them — a FAQ entry in the searcher's words is the
      cheapest correct fix; retitling a money page is a Decision.
    - **Rung 2b, the snippet is the only thing a searcher sees.** A page at
-     position 4–10 with impressions and **zero clicks** is a snippet
+     position ≤10 with ≥50 impressions and **near-zero clicks** is a snippet
      problem, not a ranking problem. Pick one such page a run, rewrite its
      `title` and `description` in the searcher's own words, **and record it
      as a test**: the keyword map's Status column gets "title tested <date>,
@@ -269,8 +269,9 @@ coverage-layer pages because that is usually where the backlog is.
    write pieces on a daily run; the weekly run works them. Exception: a
    candidate that is clearly time-critical for the site's readers goes in
    the report as a flagged Decision.
-7. **Release.** If a future-dated post's date has arrived, the deploy of
-   today's merged work publishes it — note it in the report.
+7. **Release.** If a future-dated post's date has arrived, today's build
+   includes it and the next `/ship` publishes it — say so in **Do this
+   today**, because nothing deploys by itself.
 8. **Housekeeping.** `npm run inventory`; then `npm run verify` — green, or
    the PR is not opened and the report's first line says why.
 9. **Deliver.** One PR: snapshot, log, inventory, the step-0 actions update,
@@ -284,8 +285,8 @@ coverage-layer pages because that is usually where the backlog is.
 
 10. **Rules refresh.** Run /refresh-anti-ai-rules (its own PR: rule diff +
    sweep of the latest posts for newly landed tells).
-11. **Writing run.** Run /write-content (its own PR: drafts with spread
-   dates, page updates, glossary upkeep, interlinks, news-log entry). The
+11. **Writing run.** Run /write-content (its own PR: drafts dated the day
+   they go live, page updates, glossary upkeep, interlinks, news-log entry). The
    step-2c high-intent supporting piece is drafted first. Its weekly ICP social sweep runs here in full — read where the
    ICP posts, harvest pain-points and the ICP's own keyword phrasing, log
    them to news-log (the daily scan only notes candidates). The fuel rule
@@ -479,13 +480,15 @@ words, the action first, the tables last. Compose markdown in this order:
    an "Inspect in Search Console" button); then the PRs awaiting merge; then
    the unposted entries in `marketing/social-queue.md`; then anything else
    that needs the owner's hands.
-5b. **Actions** — the output of `npm run actions -- --markdown`: how many
+5b. **Actions** — the output of `node scripts/actions.mjs --markdown`: how many
    done, the keys the scripts are missing (each with where it comes from and
    what stays dark without it), and the open items by phase with the how-to.
    Mandatory every run; when an item was ticked since the last run, say so.
    Where no API exists for an item, this is where the owner is asked to do
    it by hand; where a key exists, this is where it is asked for by name.
-6. **What I need from you** — the output of `npm run ask -- --markdown`, in
+6. **What I need from you** — the output of `node scripts/data-sheet.mjs
+   --markdown` (the `ask` npm script chains two scripts, so a flag after
+   `--` reaches only the second), in
    the owner's words: the top open questions from `marketing/DATA-SHEET.md`,
    each with the ask itself and what it unblocks, answerable from the email
    without opening the repo. **Mandatory while anything is open** — the one

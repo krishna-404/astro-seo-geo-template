@@ -211,7 +211,7 @@ session or Routine environment, never in the repo.
 **Phase:** keys
 **Check:** env:CLOUDFLARE_DEPLOY_TOKEN
 **Why:** Nothing deploys a merge except `/ship` run from a session holding this token (GitHub Actions are opt-in, CHECKLIST §2).
-**How:** Cloudflare → API tokens → Edit Workers + Cache Purge, this account only. Never a Global API Key.
+**How:** Cloudflare → API tokens → Edit Workers + Cache Purge, this account only. Never a Global API Key. Set `CLOUDFLARE_ZONE_ID` beside it (the purge step needs it; the zone id is on the dashboard overview).
 **Done:**
 
 ### A-K07 · Posts API secrets (optional) ⬜
@@ -355,7 +355,7 @@ session or Routine environment, never in the repo.
 **Phase:** quarterly
 **Check:** manual:92
 **Why:** Pricing, contract terms, notable clients and competitors named on the About page go stale in a quarter, and a stale key fact is the fastest way to lose a citation already earned. The landscape is re-fetched on the same clock.
-**How:** Walk the Key Facts table with the owner; bump `updated`; run `/landscape` § refresh and date the Log in `marketing/landscape.md`.
+**How:** Walk the Key Facts table with the owner; bump `updated`; run `/landscape` § 5 (Revisit) and date the Log in `marketing/landscape.md`.
 **Done:**
 
 ## Annual

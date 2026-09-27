@@ -68,7 +68,8 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   add routes casually.
 - ✅ **One worker (`worker/index.ts`) does all edge logic**: form proxy, sheet
   data proxy, `/hi` rewrites, markdown-twin negotiation, optional analytics
-  proxy. ~150 lines replacing the ancestor's ~510-line nginx.conf.
+  proxy, permanent redirects, and the posts API in `worker/posts.ts`.
+  Two files, no framework, no server.
 - ✅ **`html_handling: "drop-trailing-slash"`** — serves `/page.html` at
   `/page` and redirects `/page/` and `/page.html` → `/page`. Trailing-slash
   404s only ever bite links arriving from OUTSIDE, which is where backlinks
@@ -332,8 +333,10 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   (`src/pages/robots.txt.ts`) so the Sitemap URL derives from `origin.mjs`
   like every other absolute URL; a domain change needs no manual edit.
 - ✅ **One `<h1>` per page (CI-enforced); MDX bodies start at `##`.**
-- ✅ **System font stack, no web fonts.** Zero requests, zero font-swap
-  layout shift, nothing to self-host or get consent for.
+- ✅ **System font stack by default; at most one self-hosted display face.**
+  Zero requests and zero font-swap shift out of the box; a site that chooses
+  a display face (§8, `--font-display`) self-hosts one woff2 family in
+  `public/fonts/` under `font-src 'self'` — never a hosted font service.
 - ✅ **Playwright and sharp are NOT dependencies** — installed in CI/at
   publish time, keeping a 300MB browser out of `npm ci`. **`pagefind` IS a
   devDependency** — the documented exception: it runs on every build (the
@@ -650,11 +653,11 @@ dispatched), in order:
   Apps Script upstream (needs a live secret — stays a PLAYBOOK §8 launch
   step) and the rate limiter (asserting on the local simulator tests the
   simulator).
-- ✅ When `ci.yml` is dispatched, its deploy job runs only on green
-  (`needs: build`); the normal deploy path is `/ship` after a green
-  pre-push battery.
+- ✅ A dispatched `ci.yml` runs the checks only; its deploy job is gated
+  on a push event and fires only for an organisation that restores the
+  push trigger. The deploy path is `/ship` after a green pre-push battery.
 - ✅ **Post-deploy live smoke** (`scripts/smoke-live.mjs`, the last step of
-  `/ship` and of the dispatched workflow) — the automated subset of
+  `/ship`) — the automated subset of
   PLAYBOOK §8: zone redirects
   (www→apex, http→https, trailing slash), real 404s, single HSTS emitter,
   live CSP with hashes, `/hi` + twin negotiation at the edge, machine
@@ -816,7 +819,7 @@ dispatched), in order:
 
 - ❌ **A CMS** — drops the zod enforcement that makes content rules real.
 - ❌ **Tailwind / arbitrary hex in components** — breaks measured contrast.
-- ❌ **Web fonts** — cost with no measurable win for a marketing site.
+- ❌ **Hosted web fonts** (Google Fonts and the like) — a third-party request, a consent question and layout shift for no measurable win; a self-hosted display face is the one allowed form (§6, §8).
 - ❌ **localStorage / sessionStorage** — anywhere, for anything.
 - ❌ **fetch()-based form submission** — the no-JS POST + 303 is sturdier.
 - ❌ **GA4 as the default** — it drags a consent banner into every page for

@@ -174,8 +174,8 @@ Run in this order on every piece, human or machine:
    prompt-shaped rows, the social sweep).
 5. A table or list where the content is enumerable; a lead figure declared.
 6. A number with a source every 150–200 words; two or more named sources.
-7. Two to eight in-body links on searcher phrasing; one inbound from an
-   indexed page.
+7. Two to five in-body links on searcher phrasing (never more than eight);
+   one inbound from an indexed page.
 8. Title says what the searcher types; ≤60 characters or the sacrificial
    half after " — ".
 9. `npm run check:voice` green; `npm run audit:pages -- --page` read and

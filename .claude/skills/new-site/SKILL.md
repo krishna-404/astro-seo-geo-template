@@ -5,6 +5,10 @@ description: Take a new site from an empty copy of this template to launched and
 
 # New site — from template to launched
 
+Every prompt this skill writes into a file (site.ts copy, the About page,
+seed content) ends with the line in `src/data/voice.json → prompt.standing`:
+Remove all mannered prose.
+
 SETUP.md is the checklist of every per-site value and where it lives. This
 skill is the *conversation* that fills it: one phase at a time, one decision at
 a time, and never a decision without examples. Its job is to make the owner's
@@ -119,7 +123,7 @@ up only the decisions that actually depend on it.
    it found. *Exit:* the three decisions written into STRATEGY.md § Honest
    state.
 
-4. **Identity and the entity record** (SETUP Phase 1; PLAYBOOK §1). Name,
+4. **Identity and the entity record** (SETUP Phase 1). Name,
    tagline, description, locale, contact channels, founder with a real
    profile — and the record engines resolve the brand from: legal name,
    address, founding date, the company's own LinkedIn/Crunchbase/Wikidata
@@ -214,7 +218,7 @@ up only the decisions that actually depend on it.
     *Exit:* every launch action ✅; the sign-off dated in `brief.md`'s Log;
     ACTIONS A-L14 dated with the KPI.
 
-13. **Cadence and the posts API** (SETUP Phase 5; DEPLOY-equivalent docs).
+13. **Cadence and the posts API** (SETUP Phase 5; STRATEGY.md § 9).
     Schedule /content-cadence as a Routine, one firing a day; decide the
     merge model (PR review, or commit-to-main with verify as the gate) and
     record it in STRATEGY.md; set the report channel; if external automation

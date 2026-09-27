@@ -188,7 +188,7 @@ jobs:
           else
             echo "configured=false" >> "$GITHUB_OUTPUT"
             echo "CLOUDFLARE_API_TOKEN is not set — nothing to deploy; skipping (green)."
-            echo "To arm deploys: add the repo secret (scoped: Edit Workers) — README § A new site."
+            echo "To arm deploys: restore the push trigger and add the repo secret (scoped: Edit Workers) — CHECKLIST §2, SETUP Phase 3."
           fi
 
       - uses: actions/checkout@v7

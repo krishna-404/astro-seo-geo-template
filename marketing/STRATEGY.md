@@ -64,10 +64,12 @@ worth nothing; every cycle's work is ordered bottom-up:
 - The queries: picked from evidence (`npm run insights`), never invented.
   Impressions at position 4–20 are the shortlist; position 50+ means the
   page needs links and authority, not a better title.
-- The fuel rule: a new post exists only when it can cite a field note
-  (marketing/field-notes.md), a news-log event (marketing/news-log.md, with
-  primary sources), or an insights finding as its `proprietary` claim. No
-  fresh fuel, no new post — that cycle does updates and interlinking instead.
+- The fuel rule (AGENTS § Content rules; /write-content): a new post
+  exists only when it can name something real — a field note
+  (marketing/field-notes.md), a news-log event with primary sources
+  (marketing/news-log.md), a verified ICP social-sweep finding, or an
+  insights finding. Field notes are an add-on, never a gate. No fuel in any
+  channel, no new post — that cycle does updates and interlinking instead.
 
 ## 6. Canonical numbers and claims
 
@@ -86,4 +88,17 @@ worth nothing; every cycle's work is ordered bottom-up:
 
 <!-- TODO: as of <date>: what exists, what is claimed, what is not yet true.
      Update this section whenever reality changes; the content engine reads
-     it before writing so the site never runs ahead of the truth. -->
+     it before writing so the site never runs ahead of the truth. The one
+     KPI the launch points at (launch-playbook § 0) is recorded here too. -->
+
+## 9. Merge model
+
+<!-- TODO: decided at /new-site phase 13. Default: **PR review** — every run
+     opens a PR, a human merges, `/ship` deploys; the daily run's PR inbox
+     pushes its updates to an API post's branch and leaves it ready for
+     review. Alternative: **commit to main** — the run merges green PRs that
+     clear the bar and ships them, with `npm run verify` as the only gate;
+     choosing it rewrites content-cadence step 9. Write the choice and the
+     date here; the cadence reads this section. -->
+
+Merge model: PR review (default). Decided: <!-- YYYY-MM-DD -->

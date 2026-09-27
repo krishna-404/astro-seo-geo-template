@@ -51,4 +51,4 @@ costs a cycle; a wrong number costs the site's standing.
 
 Re-run the OG cards if titles changed, and request indexing in Search Console
 for the new URLs — `npm run insights -- --inspect` prints the day's shortlist.
-IndexNow submission happens automatically on deploy.
+`/ship` submits the sitemap to IndexNow after every deploy.

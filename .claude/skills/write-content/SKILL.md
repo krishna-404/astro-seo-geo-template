@@ -202,7 +202,7 @@ Rules for building one (the ancestor site's calculator is the precedent):
 
 `published` is the real day a piece goes live; several on one day are fine.
 A future-dated post publishes when a build runs on/after its date; the daily
-cadence run's build is what releases it. Never backdate.
+cadence run's build includes it and the next `/ship` releases it. Never backdate.
 
 ## 5b. Every piece ships with its social posts
 
@@ -229,7 +229,7 @@ the piece's sources.
    social-queue entries, regenerated inventory. PR body: what ran, what was dropped and why, which
    queries each piece targets. **A human merges. Nothing auto-publishes.**
 4. After merge reaches production: OG cards if titles changed; IndexNow is
-   automatic on deploy; the GSC request-indexing shortlist goes in the
+   submitted by `/ship`; the GSC request-indexing shortlist goes in the
    cadence report.
 
 ## 7. Every piece carries a figure
@@ -249,6 +249,8 @@ social card. Pick the kind from the argument's shape, not from habit:
 | a magnitude, from facts.json or the entry's own sourced data | `bars` (`fact:` path, or `items` + `source` matching a `sources` label) |
 | a set of things, some present and some missing | `tiles` (states: ok, missing, replaced, neutral) |
 | two things that look alike and are not | `compare` (yes/no/partly cells draw as marks) |
+| a hub and the things around it | `web` (a centre node and its spokes) |
+| the piece's own sections as a path | `outline` (the automatic fallback; declare it only to caption it) |
 
 Rules: labels are short (≤64) and in the reader's words; a number appears only
 through `fact:` or beside a `source` the entry cites (check-source-rules fails

@@ -107,10 +107,10 @@ Refused: publishing Google Docs and Google Sites pages to link to the site — n
 Kind: thread.
 One line: scrape Reddit pain points, generate before/after ad creatives, bulk-upload to Facebook ads, prune losers, let winners seed the next round.
 Transfers → `.claude/skills/write-content` ICP social sweep (already harvests pain points in the ICP's words; noted that a "before / after" pair is a valid post shape for the top layer).
-Refused: the paid-ads pipeline, the Postgres store and the image generation — outside this site's stack and strategy (no paid acquisition in the template; CHECKLIST § 11 forbids unmeasured vendors). Re-argue in `channel-gaps.md` if the strategy adds paid.
+Refused: the paid-ads pipeline, the Postgres store and the image generation — outside this site's stack and strategy (no paid acquisition in the template; AGENTS rules 3–4 gate and measure every vendor). Re-argue in `channel-gaps.md` if the strategy adds paid.
 
 ### "How we generated millions of organic clicks with programmatic SEO" (pasted, eleven patterns)
-Transfers → `page-guidelines.md` § 4 (the eleven patterns with the line an assistant lifts); `.claude/skills/keyword-map` § 2 (pattern candidates in the backlog with the data each needs); `runbook.md` W4.
+Transfers → `page-guidelines.md` § 4 (the eleven patterns with the line an assistant lifts); `.claude/skills/keyword-map` § 1 (pattern candidates in the backlog with the data each needs); `runbook.md` W4.
 Already covered: "built only from real data" → AGENTS § Content (programmatic pages, `sources` min 1); glossary as the linking layer → site-blueprint § 3.
 Refused: the revenue and citation claims as evidence — self-reported; the "5-person team out-ranks 10x headcount" framing — not a move.
 

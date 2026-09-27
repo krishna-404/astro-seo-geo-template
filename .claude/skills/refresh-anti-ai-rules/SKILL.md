@@ -51,15 +51,19 @@ For each candidate change, decide by precision, not volume:
    sweep list, not false alarms.
 2. **The sweep:** for every flagged file, fix the marker the way the voice
    guide says (rewrite the sentence, not synonym-swap the word), preserving
-   meaning. Bump each swept page's `updated` frontmatter — the edit is real.
+   meaning. Do not bump `updated` for a voice-only rewrite — no fact,
+   example or figure changed (content-guidelines § 4).
    Prioritise the most recent posts: they were written closest to the tell's
    era and carry the most of it.
-3. Re-run `npm run check:voice` (green) and `npm run verify`'s fast tier.
+3. Re-run `npm run check:voice` (green) and the pre-commit tier
+   (`.githooks/pre-commit`). Every rewrite in the sweep ends its prompt with
+   the standing line from `src/data/voice.json → prompt.standing`: Remove
+   all mannered prose.
 
 ## 4. Deliver as a PR
 
 One PR: the voice.json diff, the swept content, and a body that lists each
-rule added/retired **with its source** and each page swept. Rules gate CI —
+rule added/retired **with its source** and each page swept. Rules gate the battery —
 they never change silently on a branch that auto-merges. If a candidate rule
 was considered and rejected, say so in the PR body; that judgement is worth
 recording.

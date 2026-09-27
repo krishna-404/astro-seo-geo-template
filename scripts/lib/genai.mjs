@@ -2,7 +2,7 @@
  * genai.mjs — the generative-AI half of the measurement picture, which the
  * Search Console API does not carry.
  *
- * THE CONSTRAINT THIS FILE IS BUILT AROUND. Since June 2026 Search Console has
+ * THE CONSTRAINT THIS FILE IS BUILT AROUND. Since 31 Aug 2026 Search Console has
  * a "Generative AI" performance report (Performance → Generative AI): how often
  * the site's URLs were shown inside AI Overviews and AI Mode, by page, country,
  * device and date. It carries impressions only — no clicks, no queries — and

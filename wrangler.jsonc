@@ -11,7 +11,7 @@
 // route here only if the worker genuinely must see it.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "astro-website-template", // ← rename per site
+  "name": "astro-website-template", // TODO ← rename per site
   "compatibility_date": "2026-08-01",
   "main": "worker/index.ts",
   "assets": {

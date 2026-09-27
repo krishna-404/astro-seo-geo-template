@@ -50,9 +50,10 @@ Three decisions that are cheap now and unrecoverable later:
 ```
 
 There is no server. Static assets serve unmetered from Cloudflare's store;
-exactly five behaviours run in a ~150-line worker (forms proxy, sheet data,
-`/hi` rewrites, markdown-twin negotiation, optional analytics proxy); Google
-Apps Script handles form storage + email off the critical path.
+a handful of behaviours run in one worker (forms proxy, sheet data, `/hi`
+rewrites, markdown-twin negotiation, optional analytics proxy, permanent
+redirects, the posts API in `worker/posts.ts`); Google Apps Script handles
+form storage + email off the critical path.
 
 ## 2. Build-time architecture
 
@@ -77,14 +78,17 @@ OG cards land on the build after they're generated.
 off every surface (pages, sitemap, RSS, llms.txt, twins, lastmod — one filter,
 `src/data/publishing.mjs`) until a build runs on or after that date. A static
 site has no runtime clock: the post appears on the FIRST BUILD after the
-instant passes, so schedule a rebuild for launch-time posts (a
-`workflow_dispatch` run of CI, or a per-site cron trigger on the deploy
-workflow). Date-only YAML (`published: 2026-09-01`) means midnight UTC.
+instant passes and the deploy that follows it. Nothing deploys by itself
+(Actions are opt-in): the daily cadence run builds and opens its PR, and a
+human's `/ship` is what releases the post — so a launch-time post needs a
+`/ship` on or after its date. Date-only YAML (`published: 2026-09-01`)
+means midnight UTC.
 
 ## 3. Serve-time architecture (Workers static assets)
 
 - `astro build.format: 'file'` + `wrangler html_handling:
-  "drop-trailing-slash"` → `/about.html` served at `/about`, `/about/` 301s.
+  "drop-trailing-slash"` → `/about.html` served at `/about`, `/about/`
+  redirects (307 — CHECKLIST §2).
   ⚠ These two settings must change together or every route breaks.
 - Headers in `public/_headers` — rules **merge**, so the nginx trap class
   "one location's header wipes the inherited set" cannot occur. Security
@@ -189,7 +193,7 @@ Lessons encoded (each cost the ancestor site a bug):
   dimension is pulled too, so a title rewrite uses the words the page is
   actually shown for.
 - Before organic traffic exists, the metric that matters is **AI citations**:
-  keep a list of target queries, periodically run each in ChatGPT,
+  keep a list of target queries, run each monthly in ChatGPT,
   Perplexity and Google AI Overviews, and log who got cited. Rankings and
   pageviews say nothing yet; citations move weeks before the traffic
   reports do.

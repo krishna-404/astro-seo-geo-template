@@ -5,6 +5,10 @@ description: Interview the site owner to fill the marketing skeletons — strate
 
 # Onboard the marketing layer
 
+Every prompt this skill writes into STRATEGY.md, VOICE-GUIDE.md or
+writer-brief.md ends with the line in `src/data/voice.json → prompt.standing`:
+Remove all mannered prose.
+
 You are conducting a working interview, not filling a form, and you conduct
 it here: every question below goes to the user in this session through
 `AskUserQuestion` — up to four related questions per call, each with two to
@@ -142,7 +146,7 @@ rules) and ask against them.
 
 ## Finish
 
-Run `npm run check:voice` and `npm run verify`'s fast tier — the site layer
+Run `npm run check:voice` and the pre-commit tier (`.githooks/pre-commit`) — the site layer
 you just wrote must not break the existing corpus without the user agreeing
 to fix it. Summarise what was captured and what remains TODO, and point the
 user at /interview (ongoing fuel) and /content-cadence (the engine).

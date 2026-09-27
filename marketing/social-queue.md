@@ -13,7 +13,7 @@ status: unposted | posted:YYYY-MM-DD | dropped:<reason>
 url: /blog/<slug>
 layer: top | middle | bottom      (the job of the post — content-guidelines § 6)
 channel: LinkedIn | X | Reddit | <where STRATEGY.md says the ICP is>
-metric: saves and replies, not views
+metric: the layer's own signal (content-guidelines § 6) — never views alone
 
 ### <channel>
 <the post, in the founder's voice, no link in the first line on platforms

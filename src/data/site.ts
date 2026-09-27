@@ -15,12 +15,12 @@ export const SITE = {
   name: 'Example Co',
   domain: new URL(SITE_URL).host,
   url: SITE_URL,
-  tagline: 'A one-line description of what this company does',
+  tagline: 'A one-line description of what this company does', // TODO per site
   // 120–165 characters — CI enforces the bounds on every indexable page.
   description:
     'A 120–165 character description used as the default meta description and in the Organization schema. Say what you do, for whom, and what sets you apart.',
   locale: 'en',
-  themeColor: '#0f4c81',
+  themeColor: '#0f4c81', // TODO per site — mirror the --brand token in global.css
   ogImage: '/og/default.png',
 } as const;
 

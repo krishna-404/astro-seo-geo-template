@@ -235,7 +235,7 @@ wins any conflict. The rules below are the enforced subset.
 - **Posts may arrive through the API, and the daily run owns the PR inbox.**
   `POST /api/posts` (`worker/posts.ts`, SETUP Phase 4) validates a post and
   opens a PR. The API does only what is mechanical; there is no publish
-  workflow (GitHub Actions are opt-in — CHECKLIST §3). The daily cadence run lists open PRs,
+  workflow (GitHub Actions are opt-in — CHECKLIST §2). The daily cadence run lists open PRs,
   reviews every API post (tldr, sources, proprietary claim, voice), does the
   judgement half — an in-body link from an indexed page, glossary entries,
   the keyword-map row, the snippet check — and merges where STRATEGY.md's
@@ -332,7 +332,8 @@ wins any conflict. The rules below are the enforced subset.
   converging demand signals and the owner's go-ahead: deterministic code
   over a sourced data file, prefill via query params, the /search JS
   pattern — a model never generates a number a reader can check.
-- Programmatic pages (glossary etc.) auto-publish but must be built from real
+- Programmatic pages (glossary etc.) publish without the blog's author and
+  `proprietary` gates but must be built from real
   data — `sources` min 1 is schema-enforced. A programmatic page with no
   unique data is what scaled-content policies penalise.
 - Every content collection needs a route (CI-enforced): entries with no
