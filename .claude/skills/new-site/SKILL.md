@@ -185,7 +185,12 @@ up only the decisions that actually depend on it.
     the trust pages the markets require (privacy policy, terms, an imprint
     or legal-identity page where the jurisdiction demands one, the about
     page with real people) written from `brief.md § Legal identity`, never
-    from a generic template. *Examples:* the regulator's guidance for each
+    from a generic template. The About page is built to
+    `marketing/page-guidelines.md § 3`: the entity sentence in the first
+    five words, the eight sections in order, the Key Facts table as HTML
+    from `facts.json`, competitors named, six FAQs, the schema block, zero
+    em dashes; every fact confirmed by the owner in writing (ACTIONS
+    A-L13). *Examples:* the regulator's guidance for each
     target market; what two competitor sites actually set (read their
     cookies); what the category's about pages show. *Exit:*
     `/privacy-policy` live and accurate; every required trust page live.
@@ -198,19 +203,26 @@ up only the decisions that actually depend on it.
     `npm run verify` green; no orphan pages; every page traces to a
     keyword-map row; the placeholder grep in SETUP.md is clean.
 
-12. **Launch** (PLAYBOOK §8). The live verification list, request indexing
-    for every URL, the first directory and entity listings from
-    `link-targets.md`, the Search Console and Bing submissions, the owner
-    walking the live site on a phone and signing it off. *Exit:* every
-    PLAYBOOK §8 box ticked against the live site; the sign-off dated in
-    `brief.md`'s Log.
+12. **Launch** (/launch; PLAYBOOK §8; `marketing/launch-playbook.md`). The
+    gate first: every `launch` item in `marketing/ACTIONS.md` verified
+    (`npm run actions -- --phase launch`), the live verification list,
+    request indexing for every URL, the first directory and entity listings
+    from `link-targets.md`, the Search Console and Bing submissions, the
+    owner walking the live site on a phone and signing it off. Then the
+    announcement: the category reframe, the day, the tiers from the
+    founder's own network, the promo kit, the first hour, the one KPI.
+    *Exit:* every launch action ✅; the sign-off dated in `brief.md`'s Log;
+    ACTIONS A-L14 dated with the KPI.
 
 13. **Cadence and the posts API** (SETUP Phase 5; DEPLOY-equivalent docs).
     Schedule /content-cadence as a Routine, one firing a day; decide the
     merge model (PR review, or commit-to-main with verify as the gate) and
     record it in STRATEGY.md; set the report channel; if external automation
     will submit posts, set `POSTS_API_TOKEN` and `GITHUB_POSTS_TOKEN` and run
-    the worker smoke. *Exit:* the first report arrives.
+    the worker smoke. Every key in `marketing/ACTIONS.md § Keys` set in the
+    Routine's environment (`npm run actions` names the missing ones); the
+    owner told which actions are theirs each day and week (`marketing/
+    runbook.md`). *Exit:* the first report arrives, with its Actions section.
 
 ## Finish
 

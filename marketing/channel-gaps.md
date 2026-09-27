@@ -6,6 +6,10 @@
      which are deliberately not worth doing. Headings are the generic shape;
      the content is yours. `STRATEGY.md` wins any conflict. -->
 
+Every outside playbook is first sorted by `/ingest-playbook` and recorded in
+`marketing/playbook-intake.md`; this file is the quarterly re-argument of the
+off-site moves that survive that sort.
+
 Most SEO playbooks are written for a different buyer — a local business found
 from a phone inside one city, or a consumer brand with a review count to grow.
 The mechanics do not transfer. The principles underneath them usually do, once

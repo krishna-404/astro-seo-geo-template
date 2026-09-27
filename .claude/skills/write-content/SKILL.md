@@ -21,10 +21,19 @@ Only when every channel is genuinely dry does the run do updates,
 interlinking and page fixes instead of a new post — and it says so.
 Publishing nothing is a valid outcome; publishing filler never is.
 
+**The standing prompt line.** Every prompt this skill writes to draft,
+rewrite, retitle or summarise ends with the line in `src/data/voice.json →
+prompt.standing`: Remove all mannered prose (`marketing/content-guidelines.md
+§ 0` defines it).
+
 ## 1. Gather (read before writing anything)
 
 - `marketing/STRATEGY.md` (wins all conflicts), `VOICE-GUIDE.md`,
-  `writer-brief.md`, and `marketing/site-blueprint.md` (the page-type taxonomy,
+  `writer-brief.md`, `marketing/content-guidelines.md` (how every piece is
+  written: answer first, islands, extractable passages, write for
+  objections, the ship checklist), `marketing/page-guidelines.md` (what the
+  page TYPE must contain and the citation checklist `npm run audit:pages`
+  scores), and `marketing/site-blueprint.md` (the page-type taxonomy,
   intent→page-type rule, interlinking and AEO/GEO levers this run applies).
 - `marketing/keyword-map.md` — the ranked backlog and the query each planned page
   targets. Pick this run's targets from here (or from a fresh insights finding);
@@ -59,7 +68,13 @@ Publishing nothing is a valid outcome; publishing filler never is.
   3. **Objections and misconceptions** — worth a correcting piece.
   A thread is a DEMAND SIGNAL and an angle — never a source: every claim in
   the resulting piece still traces to a primary source, and no post quotes,
-  screenshots or identifies a private individual without their consent. Log
+  screenshots or identifies a private individual without their consent.
+  A recurring pain-point paired with the outcome the ICP wants is a valid
+  "before / after" post shape for the top layer (content-guidelines § 6).
+- **Objections** (content-guidelines § 3): the objections logged in
+  `marketing/field-notes.md` (the /interview asks for the five heard most
+  on calls) are the highest-priority topics after the high-intent
+  supporting piece; only a buyer has objections. Log
   kept and dropped candidates (with the pain-point/keyword harvested) in the
   news-log entry alongside the news sweep — it dedups social too, so the
   same recurring gripe is not re-litigated every week.
@@ -92,7 +107,14 @@ does not — there is no volume cap; high-intent supporting pieces
 ## 3. Draft
 
 - One primary query per piece; its words in the title, description and at
-  least one heading. Follow the writer-brief spec for the format.
+  least one heading. Follow the writer-brief spec for the format, and the
+  page type's anatomy in `page-guidelines.md § 2` (a comparison page: every
+  cell verified, "who this is for" per option; a guide: question-shaped
+  H2s, three or more FAQ entries in the searcher's words, a number with a
+  source every 150–200 words, the fan-out buckets it can honestly cover).
+- Each H2 stands alone; the first sentence under it is a self-contained
+  answer; no back-references ("as mentioned above"). Semantic triples.
+  Entities by name. Short sentences.
 - `proprietary` names the fuel: which field note, which news event, which
   finding. `sources` carries every claim's origin. Respect `[private]`
   marks in field notes absolutely.
@@ -182,14 +204,29 @@ Rules for building one (the ancestor site's calculator is the precedent):
 A future-dated post publishes when a build runs on/after its date; the daily
 cadence run's build is what releases it. Never backdate.
 
+## 5b. Every piece ships with its social posts
+
+Append one block per new piece to `marketing/social-queue.md` in its
+format: `status: unposted`, the channel STRATEGY.md names for the ICP, the
+layer (top for a new piece: the claim, the number, the enemy), the post in
+the founder's voice. A middle-layer post (the objection and the answer) is
+queued for a week later. The owner posts; `npm run actions` counts what is
+unposted (ACTIONS A-D03). No private individual quoted; every number from
+the piece's sources.
+
 ## 6. Check, then deliver
 
 1. `npm run check:voice`, `npm run check:links`, then the VOICE-GUIDE § 6
    ship checklist by hand on every draft — the judgement half is not
-   optional and not delegable to the scripts.
+   optional and not delegable to the scripts. Then `npm run build` and
+   `npm run audit:pages -- --page <route>` on each new or changed page: fix
+   every `FIX` line it prints that the page can honestly satisfy (a FAQ
+   entry, a table, a question-shaped heading, a sourced number, a missing
+   fan-out bucket), and leave a one-line reason in the PR body for any it
+   cannot. `--min 70` is the bar for a new piece.
 2. `npm run verify` (full battery) before pushing.
-3. One PR: drafts, page updates, news-log and field-notes changes,
-   regenerated inventory. PR body: what ran, what was dropped and why, which
+3. One PR: drafts, page updates, news-log and field-notes changes, the
+   social-queue entries, regenerated inventory. PR body: what ran, what was dropped and why, which
    queries each piece targets. **A human merges. Nothing auto-publishes.**
 4. After merge reaches production: OG cards if titles changed; IndexNow is
    automatic on deploy; the GSC request-indexing shortlist goes in the

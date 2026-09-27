@@ -695,6 +695,43 @@ dilutes the battery.
   (`check-invariants`): Astro escapes `'` to `&#39;` — five characters for
   one — and a 60-character title read as 64 while the SERP clamp had passed
   it.
+- ✅ **Page audit, informational with an opt-in gate** (`npm run
+  audit:pages`, `scripts/page-audit.mjs`, 27 Sep 2026): the AI-search page
+  checklist (`marketing/page-guidelines.md § 1` — answer first, FAQ ≥3, a
+  table or list, a figure, two linked sources, an author, question-shaped
+  headings, self-contained section openers, short paragraphs and sentences,
+  a number per 200 words, 2–8 in-body links, freshness, the fan-out
+  buckets) scored per built content page, worst first, with the first fix
+  named; `--page` prints every check; `--min N` turns it into a draft gate
+  for /write-content. WHY: a checklist in prose is worked once; the pages
+  that drift are the ones nobody re-reads, and the refresh order (lowest
+  score with impressions) is otherwise a guess. Never a build gate — the
+  invariants own the hard rules.
+- ✅ **Owner actions are a parsed ledger, verified every run** (`npm run
+  actions`, `scripts/actions.mjs`, 27 Sep 2026): `marketing/ACTIONS.md`
+  holds every human action (launch, keys, daily, weekly, monthly,
+  quarterly, annual) with a `Check` kind; the script re-verifies each
+  mechanical one (a key in the environment, an export's age, the panel's
+  age, placeholders, security.txt expiry, the IndexNow key file, open
+  questions, listings, the social queue) and `--update` rewrites the marks,
+  while manual items are read from their dated **Done:** line and never
+  ticked by the script. Runs at session start (with `npm run ask`) and as
+  step 0 of every cadence run; the report carries `--markdown`. WHY: "give
+  me the Bing key" said in one email is lost by the next; a key that
+  disappears, an export that goes stale and a panel that lapses have to flip
+  back to open by themselves, and where no API exists the ask has to name
+  the how-to every time.
+- ✅ **Playbook blocks in the Search Console pull** (`scripts/lib/intent.mjs
+  § playbookBlocks`, 27 Sep 2026): `quickWins` (page × query at position ≤5
+  whose phrase the page's SOURCE does not say — `scripts/lib/pageText.mjs`
+  reads the markdown or `.astro` so it needs no build), `bofu` (buyer shapes
+  from `intent.json → bofu` at 4–20, `<competitor>` expanding from
+  `intent.json → competitors`) and `competitorQueries`. Printed first in
+  the Search Console section, stored in the snapshot, worked in
+  content-cadence step 2f–h. WHY: the two cheapest ranking moves there are
+  (say the phrase you already rank for; push a buyer query from 7 to 3) sit
+  in the page × query dimension that a report sorted by impressions never
+  shows.
 - ✅ **Discovery scorecard, informational** (`npm run audit:discovery`,
   `scripts/discovery-audit.mjs`): the Sep 2026 outside-audit frame as code —
   twenty levers scored 0–100 with evidence, on the site from `dist/` and off
@@ -719,6 +756,18 @@ dilutes the battery.
   human runs at publish time (may install a headless browser ad hoc).
 - ✅ **Generate, commit the output, never hand-edit the output** (llms.txt,
   favicons, OG cards, lastmod.json, sheet snapshots).
+- ✅ **What a human has to do is an action, checked every run.**
+  `marketing/ACTIONS.md` (format parsed by `scripts/actions.mjs`; § 9 above)
+  is the ledger of every human action; `marketing/runbook.md` is the
+  daily/weekly/monthly/quarterly checklist the cadence works;
+  `marketing/launch-playbook.md` is the launch; `marketing/page-guidelines.md`
+  and `marketing/content-guidelines.md` are what a page contains and how it
+  is written; `marketing/social-queue.md` holds the social drafts every
+  piece ships with; `marketing/playbook-intake.md` records every outside
+  playbook `/ingest-playbook` sorted (transfers / already covered / refused)
+  so none is re-argued. The standing prompt line "Remove all mannered
+  prose." lives once in `src/data/voice.json → prompt.standing` and every
+  content-producing skill quotes it.
 - ✅ **What the engine cannot find out is a question, not an estimate.**
   `marketing/DATA-SHEET.md` holds the open questions only the owner can
   answer (format is parsed by `scripts/data-sheet.mjs`; it holds no answers

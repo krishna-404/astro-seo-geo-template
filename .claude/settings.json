@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node scripts/data-sheet.mjs"
+            "command": "node scripts/data-sheet.mjs && node scripts/actions.mjs"
           }
         ]
       }

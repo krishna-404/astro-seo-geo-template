@@ -329,8 +329,18 @@ voice) that everything below is an instance of.
    one firing a day: a second scheduled firing on the same date stands
    down by design, and a Routine recreated while the old one still exists
    is the usual cause.
-4. **Answer what the engine asks.** Two report sections ask rather than
-   tell, and both come from files you own. `marketing/DATA-SHEET.md` holds
+3b. **Give the run its keys, and know your half.** `npm run actions`
+   prints every human action the engine depends on — the keys the scripts
+   need (Search Console, Cloudflare, Umami, Bing, the report token, the
+   deploy token), the launch items, and the daily, weekly, monthly and
+   quarterly things a site dies without — and verifies each one that can be
+   verified on every run. `marketing/ACTIONS.md` is the ledger; tick a
+   manual item by dating it; `marketing/runbook.md` is the full list of who
+   does what each day and week. Launch itself is `marketing/launch-playbook.md`
+   (`/launch`): the gate, then the announcement.
+4. **Answer what the engine asks.** Three report sections ask rather than
+   tell, and all come from files you own (the third is **Actions**,
+   above). `marketing/DATA-SHEET.md` holds
    the open questions only you can answer (a rate, a permission, whether an
    account exists) — type under **Answer:**; "don't know" is a real answer.
    The answer then moves to `facts.json` or its data file with a source and
@@ -343,6 +353,8 @@ voice) that everything below is an instance of.
    nobody starts work blind to what is blocked. Replace the sheet's example
    question with your first real one.
 
-From here the rhythm is PLAYBOOK §9 (weekly GSC glance, monthly link-rot
-run, quarterly crawl, annual security.txt/HSTS/domain review) — put the
-annual items in a calendar now, while you still remember they exist.
+From here the rhythm is `marketing/runbook.md` (PLAYBOOK §9 is the short
+version): the daily and weekly runs do the machine half; `npm run actions`
+tells you your half every run. When someone hands you a playbook, a
+thread or a checklist, `/ingest-playbook` sorts it into the repo and
+records what was refused, so it is never re-argued.

@@ -82,7 +82,13 @@ Guides cited: TODO (name, URL, the rule taken).
 12. The read-aloud test: delete any sentence you would not say out loud to the
     reader's face. No false empathy — don't tell them how they feel; let a real
     example carry it.
-13. <!-- TODO: the rule specific to this business that the others miss. -->
+13. Remove all mannered prose. Mannered prose substitutes metaphor and
+    flourish for direct statement ("a dial worth turning" for "a parameter
+    worth varying"); it exists to display the writer, and it is imprecise.
+    When a literal phrase is available, use it. The line is the last line
+    of every prompt that writes for this site (`src/data/voice.json →
+    prompt.standing`; `marketing/content-guidelines.md § 0`).
+14. <!-- TODO: the rule specific to this business that the others miss. -->
 
 ## 4. Words
 
@@ -114,6 +120,9 @@ clichés) and its `keepWords` — vocabulary used on purpose that no rewrite may
 - [ ] Does the title say what the searcher types (check `npm run insights`),
       not what a keyword tool invented?
 - [ ] Every number traced; every `[VERIFY]` resolved or the piece held.
+- [ ] `npm run audit:pages -- --page <route>` read; every FIX the page can
+      honestly satisfy, done (`marketing/page-guidelines.md § 1`).
+- [ ] Mannered prose removed: no metaphor standing in for a literal phrase.
 
 ## Log
 

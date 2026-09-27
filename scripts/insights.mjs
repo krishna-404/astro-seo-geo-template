@@ -111,7 +111,7 @@
 import crypto from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { SITE_URL } from '../src/data/origin.mjs';
-import { highIntentReport } from './lib/intent.mjs';
+import { highIntentReport, playbookBlocks } from './lib/intent.mjs';
 import { readGenAiExports, genAiReport, GENAI_DIR } from './lib/genai.mjs';
 import { classify } from './lib/crawlers.mjs';
 import { aeoReport, aeoMarkdown } from './lib/aeo.mjs';
@@ -274,7 +274,11 @@ async function gsc() {
     // shows it on against the page whose frontmatter claims it. Worked first
     // in every cadence run; the report's own section.
     const highIntent = highIntentReport(queries, pageQueries, SITE);
-    return { startDate, endDate, queries, pages, pageQueries, opportunities, nearPageOne, highIntent };
+    // Three playbook blocks (scripts/lib/intent.mjs § playbookBlocks): the
+    // bottom-of-funnel rows at 4–20, the rows naming a competitor, and the
+    // quick wins — a page at position ≤5 for a phrase its source does not say.
+    const { bofu, winning, competitorQueries, quickWins, competitorsConfigured } = playbookBlocks(queries, pageQueries, SITE);
+    return { startDate, endDate, queries, pages, pageQueries, opportunities, nearPageOne, highIntent, bofu, winning, competitorQueries, quickWins, competitorsConfigured };
   } catch (e) {
     if (e.notOnboarded) return { skipped: e.message };
     throw e;
@@ -696,6 +700,20 @@ else {
     }
     out.push('');
   }
+  out.push('**Quick wins — a page at position ≤5 for words it does not say** (the cheapest ranking move there is: put the phrase in a heading, the description or a FAQ line on that page; `status: words` = every word is present but not the phrase, `missing` = the listed words are absent)\n');
+  if (!g.quickWins?.length) out.push('_None: every page near the top already says the phrases it is shown for._');
+  else table(['Page', 'Query', 'Impressions', 'Position', 'Status', 'Missing words'],
+    g.quickWins.map((r) => [r.page, r.query, r.impressions, r.position.toFixed(1), r.status, r.missing.join(', ') || '—']));
+  out.push('\n**Bottom-of-funnel queries at position 4–20** — the shapes a buyer types when choosing (alternatives, vs, review, best X for Y, X for role, export from, pricing; `src/data/intent.json → bofu`). Leads come from positions 1–5; these are the rows to push there first, one page at a time\n');
+  if (!g.bofu?.length) out.push('_None in this window._' + (g.winning?.length ? ` ${g.winning.length} BOFU row(s) already sit at 1–3.` : ''));
+  else table(['Query', 'Shape', 'Impressions', 'Clicks', 'Position', 'Google shows', 'Claimed by'],
+    g.bofu.map((r) => [r.query, r.label, r.impressions, r.clicks, r.position.toFixed(1), r.shownOn ?? '—', r.intended ?? '—']));
+  out.push('\n**Competitor queries** — rows naming a rival from `intent.json → competitors`: the comparison and alternatives pages the site should own\n');
+  if (!g.competitorsConfigured) out.push('_No competitors configured yet — fill `src/data/intent.json → competitors` from marketing/landscape.md (ACTIONS A-M03)._');
+  else if (!g.competitorQueries?.length) out.push('_No query named a configured competitor in this window._');
+  else table(['Query', 'Competitor', 'Impressions', 'Clicks', 'Position', 'Google shows'],
+    g.competitorQueries.map((r) => [r.query, r.competitor, r.impressions, r.clicks, r.position.toFixed(1), r.shownOn ?? '—']));
+  out.push('');
   out.push(`**Top queries** (${g.queries.length} in the window, top 30 by impressions; every row is in the JSON snapshot)\n`);
   table(['Query', 'Clicks', 'Impressions', 'CTR', 'Position'],
     g.queries.slice(0, 30).map((r) => [r.keys[0], r.clicks, r.impressions, pct(r.clicks, r.impressions), r.position.toFixed(1)]));

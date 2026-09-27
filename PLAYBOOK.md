@@ -390,6 +390,13 @@ header-scoping bugs; the page half is automated, the asset half manual)
 
 ## 9. Recurring cadence — the site is launched, now what
 
+**The full checklists are in `marketing/runbook.md`** (daily, weekly,
+monthly, quarterly: who does each item, which script, which report
+section) and the human half is a ledger in `marketing/ACTIONS.md` that
+`npm run actions` verifies on every run. The launch itself — the technical
+gate and the announcement — is `marketing/launch-playbook.md`. What
+follows is the short version.
+
 Launch verification (§8) is a snapshot; these are the things that only fail
 with the passage of time. Small, boring, and each one is invisible until it
 has already cost something.
@@ -408,7 +415,15 @@ has already cost something.
 - [ ] `npm run insights` (§5): queries at position 4–20 with impressions are
       the work shortlist; position 50+ means links and authority, not a
       better title. Match titles/headings to the query language the report
-      shows — never phrasing a keyword tool invented.
+      shows — never phrasing a keyword tool invented. Three blocks the
+      daily run works first: **quick wins** (a page at position ≤5 for a
+      phrase it does not say — add it), **bottom of funnel** (buyer-shaped
+      rows at 4–20 — one page a day, worked against `npm run audit:pages`)
+      and **competitor queries** (rows naming a rival from
+      `intent.json → competitors`).
+- [ ] `npm run actions` (weekly, and every cadence run): the keys the
+      scripts are missing, the export that went stale, the panel not run —
+      each with its how-to. Tick the manual ones by dating them.
 - [ ] The /content-cadence Routine does most of this section for you when
       scheduled (SETUP Phase 5): daily insights snapshot, the high-intent
       rows worked first, one to three evidence-backed improvements, and an

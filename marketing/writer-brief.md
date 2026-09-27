@@ -2,7 +2,9 @@
 
 The working instructions for anyone — human or agent — producing content for
 this site. Read `STRATEGY.md` first (it wins every disagreement), then
-`VOICE-GUIDE.md`, then this.
+`VOICE-GUIDE.md`, then `content-guidelines.md` (how every piece is written)
+and `page-guidelines.md` (what each page type contains), then this. Every
+prompt that produces content ends with: Remove all mannered prose.
 
 ## What you will write, and to what spec
 
@@ -38,6 +40,9 @@ costs a cycle; a wrong number costs the site's standing.
    ship checklist by hand — a clean script run is not a pass.
 2. `npm run check:links` green — the piece is linked into the site (2+
    in-body outbound, at least one inbound from a related page).
+2b. `npm run audit:pages -- --page <route>` after a build: the citation
+   checklist, with the first fix named. New pieces clear 70.
+2c. The piece's social posts are in `marketing/social-queue.md`.
 3. Dates: never the same `published` date as another piece; batches are
    spread forward across the coming weeks (check-source-rules enforces).
 4. A human reads the PR before merge. Nothing auto-publishes.
