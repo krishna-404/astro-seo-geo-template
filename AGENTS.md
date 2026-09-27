@@ -169,9 +169,13 @@ being checked is not a reason to ignore it here; the prose carries the WHY.
   flips it; the actions check counts what is unposted), an inbound link
   from an indexed page, its glossary entries and its keyword-map row.
 - **An outside playbook goes through /ingest-playbook**, never straight
-  into a file: every move sorted into transfers / already covered /
-  refused, routed to the file that owns it, recorded in
-  `marketing/playbook-intake.md`. A launch is run from
+  into a file, and **nothing is adopted blindly**: every move passes the
+  evidence, policy, fit and works tests (a mechanical move proven on this
+  repo; a judgement move run as a dated trial on one page before it is a
+  rule), is sorted into adopted / trial / refused, routed to the file that
+  owns it, and recorded in `marketing/playbook-intake.md` with the verdict
+  and the reason. A trick that reportedly worked for its author is not
+  evidence; a mechanism and a measurement are. A launch is run from
   `marketing/launch-playbook.md` (/launch) after every launch action in
   ACTIONS.md is verified.
 

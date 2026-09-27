@@ -34,7 +34,16 @@ watch list and the questions the ICP posts. Examples of the SHAPE, not the conte
   What is <core glossary term> and how is it calculated?
 ```
 
-**What the run does with the answers.** A competitor named in an answer we are
+**What the run does with the answers.** For every prompt, record the
+**profile of the cited sources** — format (a "best" listicle, a comparison,
+a forum thread, a vendor page), depth (how many items), publisher type
+(trade blog, review platform, news, a rival) — because a recommendation is
+assembled from its sources and the profile says where a place has to be
+earned: the publishers of that type become outreach targets pitched with a
+real page (disclosed if anything is ever paid), and a roundup of our own is
+modelled on that structure with a #1 we can defend. Never pay a publisher
+to run brand-first copy and never seed variations of one page
+(`playbook-intake.md`, 2026-09-27). A competitor named in an answer we are
 absent from goes to `marketing/keyword-map.md § High-intent` as an angle the
 page does not yet argue. A cited page we could be on (a listicle, a directory, a
 community thread) goes to `marketing/link-targets.md`. A phrasing the assistant

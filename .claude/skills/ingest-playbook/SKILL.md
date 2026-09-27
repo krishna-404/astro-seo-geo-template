@@ -32,9 +32,33 @@ the source's wording where it is specific. A playbook of "eight hacks" is
 eight moves; a case study is the moves that produced the result plus the
 result's provenance.
 
-## 3. Sort each move
+## 3. Verify, then sort each move
 
-Three bins, and every move lands in exactly one:
+**Nothing is adopted blindly.** Before a move is binned it passes four
+tests, and the intake entry records the answer to each:
+
+1. **Evidence.** Does the source show a mechanism (why it would work) or
+   a measured result (with a control, a duration, a denominator)? A
+   self-reported number is recorded as self-reported and never becomes a
+   figure this site states.
+2. **Policy.** Google's spam policies (site-reputation abuse, scaled
+   content, link spam, hidden text), the platforms' disclosure rules for
+   paid or seeded content, and this template's own guardrails (no
+   fabricated proof, no undisclosed amplification, no doorway pages, no
+   self-written ratings, no client JS, no storage). A move that fails
+   here is refused however well it reportedly worked for the author.
+3. **Fit.** This stack (static, one worker, no CMS, no paid channel unless
+   STRATEGY.md adds one), this buyer, this budget, this owner's hours.
+4. **Works.** A mechanical move is proven on this repo before it becomes
+   a rule: run the script, break the check and watch it go red, audit the
+   sample pages. A judgement move (a content shape, a positioning idea) is
+   adopted as a dated **trial** on one page or one narrative, with the
+   metric and the review date written down, and becomes a rule only when
+   the review says so. Never both a trial and a rule in the same PR.
+
+Three bins, and every move lands in exactly one, with its status
+(**adopted** with how it was verified · **trial** with the metric and date
+· **refused** with the reason):
 
 - **Transfers.** The move applies to THIS site's buyer, channel and stack,
   and is not already done. Translate it into our terms (a local-business

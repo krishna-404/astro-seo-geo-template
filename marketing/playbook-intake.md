@@ -11,10 +11,20 @@ sort here, so the same playbook is never re-argued and a later reader can
 see where a rule came from. `channel-gaps.md` holds the quarterly
 re-argument for off-site moves.
 
-**The rule.** A move is adopted only into a file with an owner and, where
-it is a rule class ("every page must…"), a check (AGENTS rule 18). A move
-is refused with a reason. Nothing is adopted from memory of a playbook;
-the source is fetched or pasted and read.
+**The rule.** Nothing is adopted blindly. Every move passes four tests
+before it lands anywhere (the /ingest-playbook § 3 gate): **evidence** (a
+mechanism or a measured result, and whether the number is self-reported),
+**policy** (Google's spam policies on site-reputation abuse, scaled content
+and link spam; platform disclosure rules; this template's own guardrails),
+**fit** (this stack, this buyer, this budget) and **works** (a mechanical
+move is proven on this repo before it becomes a rule; a judgement move is
+adopted as a dated trial on one page, measured four weeks later, and only
+then written as a rule). A move is adopted only into a file with an owner
+and, where it is a rule class ("every page must…"), a check (AGENTS rule
+18). A move is refused with a reason. Nothing is adopted from memory of a
+playbook; the source is fetched or pasted and read in full. Each transfer
+below carries its status: **adopted** (how it was verified), **trial**
+(what is measured, by when) or **refused**.
 
 Format, newest first:
 
@@ -41,17 +51,27 @@ Already covered: "lead with proof, no 'revolutionary'" → `voice.json` bans; "v
 Refused: the rented network (300 coordinated accounts, 10,000 clip pages) — not owned, not needed for the choreography; comment-seeding with prepared takes and agency-written investor posts without disclosure — astroturf; "guaranteed views" — the vendor's own terms disclaim it; the "compounding attention" claim — asserted, not shown.
 Open: which one KPI the owner would pay for (enquiries, demos, sign-ups) → `STRATEGY.md § 8` at launch, asked in `/launch`.
 
-### "The D*ath Of The Influencer" (@WizOfEcom, Mogul Media, x.com/wizofecom/status/2103156728267182470, from screenshots — the link returned 402)
+### "The D*ath Of The Influencer: Trust = MicroAuthority" (@WizOfEcom, Mogul Media, x.com/wizofecom/status/2103156728267182470 — read in full from the owner's paste on 2026-09-27; the link returns 402 to a fetcher)
 Kind: article (eight sections).
-One line: trust replaced attention; founder-led content converts when it is written for a buyer's objections and carries a message, an enemy and a belonging.
-Transfers → `content-guidelines.md` § 3 (write for objections; message / enemy / belonging; the five objections from sales calls are the next five posts), § 6 (three content jobs: top reaches strangers, middle filters, bottom asks; saves over views).
-Transfers → `runbook.md` M7 (label the last twenty posts top/middle/bottom; eighteen top means two layers were never built) and M5 (objections harvested at the monthly interview).
-Transfers → `.claude/skills/onboard-marketing` step 3 (test the thesis as message + enemy + belonging).
-Already covered: "who followed you, not how many" → the country split and the ICP social sweep.
-Refused: the two commercial offers at the end (a guided programme, an agency retainer) — not a move.
+One line: trust replaced attention; founder-led content converts when it is written for a buyer's objections and carries a message, an enemy and a belonging, and each of its three layers is measured on its own signal.
+Evidence: one operator's account (165k followers, 60+ client accounts) and two of their own posts (984k views / 2,276 saves against 156k views / 4,833 saves). Self-reported, no control; the mechanism (only a buyer has objections; a save is a return intent) is sound and costs nothing to run as a trial.
+Transfers (adopted, mechanism-level) → `content-guidelines.md` § 3 (write for objections; the outcome, what they suspect, decisions and what they cost; the five objections from sales calls are the next five posts; message / enemy / belonging), § 6 (three jobs and the signal each is measured on: top on qualified views, profile visits and ICP follows; middle on saves, DMs and who engages; bottom on clicks, applications and booked calls — lowest engagement by design).
+Transfers (trial) → `runbook.md` M7 (the 20-post audit: label top/middle/bottom, count, check who followed last month) and the narrative test (six to eight pieces per message-enemy-belonging until one is an anomaly, then build on it) — measured on saves and replies, not views, reviewed at the first quarterly channel-gaps pass.
+Transfers → `.claude/skills/onboard-marketing` step 3 (the thesis as message + enemy + belonging); `.claude/skills/interview` (objections asked for by name).
+Already covered: "who followed you, not how many" → the ICP social sweep and the country split; "where this breaks" (mass reach, an offer that does not close, wanting to be known, 30-day results) → `launch-playbook.md` § 6.
+Refused: the "$3 to $5 per follower" figure and the follower-value curve — one account's estimate, never a number this site states; the closing offers (a guided programme, an agency retainer).
 
-### GSC → BOFU → checklist loop (@SEOKeval, x.com/SEOKeval/status/2102044017936465937, pasted — the link returned 402)
+### "The AI SEO Playbook" (@SEOKeval, x.com/SEOKeval/status/2102044017936465937 — read from the owner's screenshots on 2026-09-27; the link returns 402 to a fetcher)
+Kind: article (four steps).
+One line: AI has no opinions, only sources; the author analysed what AI Overviews cited for "best toothpaste for plaque removal" (best-listicles, top 5–7 items, dental blogs), wrote ten listicle variations with their brand at #1, paid ten DR30+ dental blogs $100–200 each to publish one variation apiece, waited three weeks for indexing, and reports the brand recommended #1 in AI Overviews, AI Mode and ChatGPT.
+Evidence: one self-reported case, one query, no control, no duration stated beyond "under 30 days".
+Policy: fails. Paid placements without disclosure are sponsored content Google's site-reputation-abuse policy targets and most jurisdictions' advertising rules require labelling; ten near-duplicate listicles are the scaled-content pattern; a "consensus" manufactured by the brand is the fabricated-proof class VOICE-GUIDE § 5 forbids. An assistant that learns the trick delists the sources, and the brand with them.
+Transfers (adopted) → `marketing/ai-panel.md` § What the run does with the answers: for every prompt, record the PROFILE of the cited sources (format, depth, publisher type), because a recommendation is assembled from sources and the profile says where to earn a place; `runbook.md` W11 (outreach targets are the publishers of the type the panel shows being cited, pitched with a real page, disclosed if anything is paid); `page-guidelines.md` § 4 (a "best" roundup of our own, modelled on the cited structure, with a #1 we can defend and the rivals named honestly).
+Refused: paying blogs to publish brand-first listicles; ten variations of one page; placing the brand at #1 in copy the brand wrote and did not disclose.
+
+### GSC → BOFU → checklist loop (pasted by the owner; author not given — attributed to a practitioner serving "7–9 figure tech companies")
 Kind: thread (eleven steps).
+Evidence: the mechanism is Search Console's own data plus a checklist; nothing to take on trust. Adopted as code and proven on this repo (the `bofu` block ran against synthetic rows; the audit against the template's pages).
 One line: export Search Console by position, find the bottom-of-funnel queries at 4–20, work the AI-search checklist on the easiest page, check daily.
 Transfers → `src/data/intent.json → bofu` shapes and `scripts/lib/intent.mjs § playbookBlocks` (`searchConsole.bofu`, printed by `npm run insights`); `runbook.md` § The BOFU loop; content-cadence step 2g.
 Already covered: "positions 4–20 are the shortlist" → `nearPageOne`; "leads only from positions 1–5" → the funnel ladder rung 2.
@@ -59,6 +79,7 @@ Refused: giving the sheet to a chat model by hand — the pull is scripted; the 
 
 ### AI Search Checklist (Contact, pasted checklist: on-page, differentiation, copy, craft, freshness, query fan-out A–H)
 Kind: checklist (81 items).
+Evidence: a vendor's checklist; each item is a mechanism (extractability, freshness, coverage of sub-queries) consistent with the one controlled GEO study the site already cites (Aggarwal et al., KDD 2024). Adopted as an informational scorer, never a build gate, and proven on this repo (`--min 90` goes red on the sample pages).
 Transfers → `page-guidelines.md` § 1 (the six groups and the fan-out table) and `scripts/page-audit.mjs` (`npm run audit:pages`, twenty checks, first fix named, `--min` as a draft gate).
 Transfers → `content-guidelines.md` § 1 (BLUF, islands, extractable passages, semantic triples, entity-rich, short sentences).
 Already covered: `tldr`, FAQ from one array, sources, author `sameAs`, lead figure → the schemas and invariants.

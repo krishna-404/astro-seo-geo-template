@@ -149,9 +149,18 @@ A new article is not done when it is merged. It ships with:
 - **An in-body link from an indexed page** on its target anchor
   (site-blueprint § 3).
 - **Its glossary entries**, its keyword-map row, its social card.
-- **The metric to watch**: saves and replies over views. A save is somebody
+- **The metric per layer**, never one number for all three: top on
+  qualified views, profile visits and follows from the ICP (the only layer
+  where volume is the point); middle on saves, DMs and who is engaging
+  rather than how many; bottom on link clicks, applications and booked
+  calls, the lowest engagement of the three by design. A save is somebody
   deciding the thinking is worth coming back to; the right 5,000 views beat
-  the wrong 500,000.
+  the wrong 500,000. Middle-layer posts are supposed to lose people; judge
+  a filter by who it keeps.
+- **Test the narrative, not the post.** Six to eight pieces per
+  message-enemy-belonging until one is an obvious anomaly, then build on
+  the one that won. Same conviction with a different enemy can outperform
+  a whole campaign (trial, reviewed quarterly — playbook-intake).
 
 ## 7. The ship checklist, in one place
 
