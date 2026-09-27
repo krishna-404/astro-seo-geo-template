@@ -6,7 +6,7 @@
  *
  * WHY THIS EXISTS ALONGSIDE THE OTHER CHECKS. The template already has three
  * a11y layers: the eslint jsx-a11y-strict lint (source-level ARIA misuse),
- * the hand-rolled structural invariants in ci.yml (h1 count, alt presence,
+ * the structural invariants in check-invariants.mjs (h1 count, alt presence,
  * table-scroll semantics, _blank announcements), and the contrast sweep
  * (colour measurement). axe-core covers the classes none of those can see in
  * BUILT output: broken ARIA references (aria-labelledby pointing at nothing),
@@ -16,7 +16,7 @@
  *
  * Fails on `serious` and `critical` violations. `moderate`/`minor` are
  * printed but do not fail the build — review them when they appear; promote
- * any that recur to a structural invariant in ci.yml.
+ * any that recur to a structural invariant in check-invariants.mjs.
  *
  * Mirrors check-contrast.mjs: tiny static server + playwright chromium
  * (installed in CI ad hoc, never a devDependency — see CHECKLIST §6), with

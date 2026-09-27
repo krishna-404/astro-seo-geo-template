@@ -15,7 +15,7 @@
  * Crude on purpose: it answers "does this page say these words", not "how
  * well". Read-only. Nothing here is site copy.
  */
-import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -61,19 +61,6 @@ export function textOf(file) {
   const template = fm ? raw.slice(fm[0].length) : raw;
   const literals = [...script.matchAll(/(['"`])((?:\\.|(?!\1)[^\\])*)\1/g)].map((m) => m[2]).filter((s) => /\s/.test(s)).join('\n');
   return literals + '\n' + template.replace(/<style[\s\S]*?<\/style>/g, ' ').replace(/<script[\s\S]*?<\/script>/g, ' ').replace(/\{[^{}]*\}/g, ' ').replace(/<[^>]+>/g, ' ');
-}
-
-/** Every content route the repo serves (published or not — the caller filters). */
-export function contentRoutes() {
-  const out = [];
-  const dir = join(root, 'src/content');
-  if (!existsSync(dir)) return out;
-  for (const coll of readdirSync(dir)) {
-    const p = join(dir, coll);
-    if (!existsSync(p) || !readdirSync(p)) continue;
-    for (const f of readdirSync(p).filter((n) => /\.mdx?$/.test(n))) out.push(`/${coll}/${f.replace(/\.mdx?$/, '')}`);
-  }
-  return out;
 }
 
 /**

@@ -86,7 +86,7 @@ const lever = (side, name, score, evidence, ref) => levers.push({ side, name, sc
   const want = ['name', 'url', 'logo', 'description', 'contactPoint', 'founder', 'sameAs', 'legalName', 'address', 'foundingDate'];
   const have = org ? want.filter((k) => org[k] && (!Array.isArray(org[k]) || org[k].length)) : [];
   const missing = want.filter((k) => !have.includes(k));
-  lever('on', 'Machine identity (Organization)', pct(have.length, want.length), `${have.length}/${want.length} fields — missing ${missing.join(', ') || 'none'}${missing.length ? ' (owner-supplied: DATA-SHEET Q-B5)' : ''}`, 'ENT-01…05');
+  lever('on', 'Machine identity (Organization)', pct(have.length, want.length), `${have.length}/${want.length} fields — missing ${missing.join(', ') || 'none'}${missing.length ? ' (owner-supplied — a DATA-SHEET question)' : ''}`, 'ENT-01…05');
 }
 
 // Extractable schema — share of indexable pages with a typed main node beyond Organization/WebSite.
@@ -124,7 +124,7 @@ const lever = (side, name, score, evidence, ref) => levers.push({ side, name, sc
 // Commercial coverage — money pages vs high-intent watch list.
 {
   const intent = JSON.parse(readIf('src/data/intent.json') || '{}');
-  const watch = intent.watch ?? intent.watchList ?? [];
+  const watch = intent.watch ?? [];
   const money = pages.filter((p) => /^\/(solutions|vs)\/.+|-calculator$/.test(route(p.f)));
   const claimed = new Set(watch.map((w) => w.page).filter(Boolean));
   const covered = [...claimed].filter((pg) => pages.some((p) => route(p.f) === pg));
@@ -169,7 +169,7 @@ lever('on', 'Rating signals (aggregateRating)', null, 'n/a by default — review
 {
   const withVideo = pages.filter((p) => /youtube\.com\/embed|<video\b/.test(p.h));
   const withVO = pages.filter((p) => ldNodes(p.h).some((n) => n['@type'] === 'VideoObject'));
-  if (!withVideo.length) lever('on', 'Video (VideoObject)', null, 'n/a — the site carries no video. If one is added: YouTube-hosted, click-to-load (<Video />), transcript, VideoObject', 'VID-01…03');
+  if (!withVideo.length) lever('on', 'Video (VideoObject)', null, 'n/a — the site carries no video. If one is added: YouTube-hosted, click-to-load, transcript, VideoObject (no video component ships; build one when the first video exists)', 'VID-01…03');
   else lever('on', 'Video (VideoObject)', pct(withVO.length, withVideo.length), `${withVO.length}/${withVideo.length} pages with video declare VideoObject`, 'VID-01…03');
 }
 

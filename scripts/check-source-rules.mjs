@@ -20,7 +20,7 @@
  *      per-site knobs).
  *
  * Plus the content-level rules that grow back silently as pages are added:
- * the author registry, blog cadence and in-body interlinks, claims the site
+ * the author registry, blog dates and in-body interlinks, claims the site
  * may not make (voice.json → site.bannedClaims), and frontmatter titles the
  * SERP clamp would hard-cut. Each carries its WHY inline.
  *

@@ -11,8 +11,8 @@
  * the branch this route creates: lastmod, inventory and the OG card are
  * regenerated, `npm run verify` is the gate, a green branch is squash-merged
  * and deployed, and the live smoke runs. The caller therefore gets a 202 and
- * a status URL, never "published" — the truthful answer takes three to five
- * minutes and lives in GitHub. AGENTS.md § Content rules: the daily
+ * a status URL, never "published" — the truthful answer arrives with the
+ * next daily run and lives in GitHub. AGENTS.md § Content rules: the daily
  * cadence run then does the judgement half on what landed (interlinks,
  * glossary upkeep, the keyword map) — the API does only what is mechanical.
  *
@@ -49,7 +49,10 @@ export interface PostsEnv {
 
 type Headerize = (h: Headers) => Headers;
 
-const PROPRIETARY = ['proprietary-numbers', 'product-screenshots', 'practitioner-quote', 'hs-code-walkthrough'];
+// Mirrors the `proprietary` z.enum in src/content.config.ts. check-parity
+// fails the commit when the two lists differ — they did once (27 Sep 2026), and
+// every post the API accepted then failed the build.
+const PROPRIETARY = ['original-data', 'first-hand-experience', 'original-analysis', 'expert-interview', 'case-study'];
 const UPSTREAM_TIMEOUT_MS = 15_000;
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;

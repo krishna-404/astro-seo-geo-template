@@ -170,7 +170,9 @@ async function umami() {
   const [stats, paths, referrers, events, countries, faqQuestions] = await Promise.all([
     get(`/api/websites/${id}/stats?${range}`),
     metrics('path', 15),
-    metrics('referrer', 10),
+    // 50, not 10: the AI-assistant join (scripts/lib/genai.mjs) reads this list,
+    // and an assistant below rank 10 was silently lost. The report prints 10.
+    metrics('referrer', 50),
     metrics('event', 15),
     metrics('country', 10),
     // Which FAQ questions visitors actually open — the `faq` event carries the
@@ -585,7 +587,7 @@ async function bing() {
 /**
  * No credentials: it reads files. Runs after Umami and Search Console so it
  * can join their rows. See scripts/lib/genai.mjs for what it can and cannot
- * know, and DEPLOY.md § 7c for how the export gets into the folder.
+ * know, and marketing/insights/genai/README.md for how the export gets into the folder.
  */
 function genai(u, g) {
   const exps = readGenAiExports(GENAI_DIR);
@@ -671,7 +673,7 @@ else {
     table(['Question', 'Toggles'], u.faqQuestions.map((r) => [r.value, r.total]));
   }
   out.push('\n**Referrers**\n');
-  table(['Referrer', 'Visitors'], u.referrers.map((r) => [r.x || '(direct)', r.y]));
+  table(['Referrer', 'Visitors'], u.referrers.slice(0, 10).map((r) => [r.x || '(direct)', r.y]));
   if (ai?.referrals) {
     out.push('\n**Referrals from AI assistants** — a visitor who clicked a citation in ChatGPT, Perplexity, Gemini, Copilot, Claude… The only place a citation that was actually FOLLOWED shows up.\n');
     if (!ai.referrals.length) out.push('_None in this window._');

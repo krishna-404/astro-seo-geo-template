@@ -31,8 +31,8 @@
  *      never had. Empty until a site needs one.
  *   7. POST /api/posts, GET /api/posts/<n> — the posts API (worker/posts.ts):
  *      external automation submits a blog post; the worker validates it,
- *      writes it to a branch and opens a PR; the publish workflow verifies,
- *      merges and deploys. The only route that writes anything, and it writes
+ *      writes it to a branch and opens a PR; the daily cadence run's PR inbox
+ *      verifies, merges and ships. The only route that writes anything, and it writes
  *      to GitHub, never to the site. Off until its two secrets are set.
  *
  * Everything else falls through to the static asset store, where requests are

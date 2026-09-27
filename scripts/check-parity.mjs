@@ -124,7 +124,27 @@ console.log('→ /search is noindex AND excluded from the sitemap (both, always)
 {
   const before = fail;
   if (!/noindex=\{true\}/.test(searchPage)) bad('src/pages/search.astro no longer passes noindex={true} — a client-rendered tool page must not be indexed');
-  if (!/!page\.includes\('\/search'\)/.test(astroConfig)) bad("astro.config.mjs sitemap filter no longer excludes '/search' — noindex and the sitemap must agree");
+  if (!/NOINDEX_ROUTES\s*=\s*\[[^\]]*'\/search'/.test(astroConfig)) bad("astro.config.mjs NOINDEX_ROUTES no longer lists '/search' — noindex and the sitemap must agree");
+  if (fail === before) console.log('   ok');
+}
+
+// ── 4b. the posts API's `proprietary` list mirrors the content schema ─────
+// WHY: worker/posts.ts hand-mirrors the blog schema (a Worker cannot import
+// astro:content). The mirrored enum drifted once (27 Sep 2026): the API
+// accepted four values the schema had never had, so every accepted post
+// failed the build and every schema-valid value got a 400.
+console.log('→ worker/posts.ts PROPRIETARY mirrors the content.config.ts proprietary enum');
+{
+  const before = fail;
+  const schema = readFileSync('src/content.config.ts', 'utf8');
+  const posts = readFileSync('worker/posts.ts', 'utf8');
+  const enumList = schema.match(/proprietary:\s*z\.enum\(\[([\s\S]*?)\]\)/)?.[1];
+  const apiList = posts.match(/const PROPRIETARY\s*=\s*\[([^\]]*)\]/)?.[1];
+  const values = (src) => (src ? [...src.matchAll(/'([^']+)'/g)].map((m) => m[1]) : null);
+  const a = values(enumList);
+  const b = values(apiList);
+  if (!a || !b) bad('could not parse the proprietary enum in src/content.config.ts or PROPRIETARY in worker/posts.ts');
+  else if (a.join('|') !== b.join('|')) bad(`proprietary values differ — schema: ${a.join(', ')} · posts API: ${b.join(', ')}`);
   if (fail === before) console.log('   ok');
 }
 

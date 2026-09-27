@@ -308,10 +308,8 @@ serving pages, which is exactly why they get forgotten)
       Copilot/DuckDuckGo/ChatGPT search): verify via `VERIFICATION.bing`
       meta, submit sitemap.
 - [ ] IndexNow: key file at `public/<key>.txt` containing exactly the key;
-      `/ship` runs `npm run indexnow` after every deploy (`--changed`
-      derives routes from the commit's diff; a layout/style/data change
-      falls back to the full sitemap; `indexnow.yml` exists for manual
-      dispatch and always submits everything). Google does not participate
+      `/ship` runs `npm run indexnow` after every deploy (the full live
+      sitemap; `indexnow.yml` exists for manual dispatch). Google does not participate
       — the sitemap covers Google.
 - [ ] robots.txt is a generated route — the AI-crawler list (with intent
       comments) lives in `src/pages/robots.txt.ts` and the Sitemap URL

@@ -318,7 +318,7 @@ live in the battery (see CHECKLIST § enforcement for the full table):
 
 - **Orphans, dead internal links, junk anchors, anchor-uniqueness** →
   `check-link-graph.mjs`
-- **Blog cadence (spread dates), ≥2 in-body links, registered author** →
+- **Blog dates parse, ≥2 in-body links, registered author** →
   `check-source-rules.mjs`
 - **Front-loaded `tldr`, FAQ single-source, one H1, every collection has a route**
   → the schemas + `check-collection-routes.mjs` + `check-invariants.mjs`

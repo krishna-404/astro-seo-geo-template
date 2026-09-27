@@ -67,6 +67,10 @@ Work top to bottom; later files read earlier ones.
 - [ ] `src/data/origin.mjs` — the domain. One line; every absolute URL on
       every surface (canonicals, sitemap, robots, llms.txt, schema) derives
       from it.
+- [ ] `scripts/generate-llms.mjs` — the `LLMS` block at the top (name,
+      tagline, description): a node script cannot import `site.ts`, so this
+      is the second copy, and `public/llms.txt` says `Example Co` until it is
+      edited (marketing/README § The "EDIT FOR YOUR SITE" convention).
 - [ ] `src/data/site.ts` — the brand contract: `name`, `tagline`,
       `description` (120–165 chars — CI enforces the bounds on every
       indexable page), `locale`, `themeColor`, nav, contact channels,
@@ -287,10 +291,11 @@ FAQ answers only in frontmatter, `toc: true` at 4+ headings, and at least
 are quality gates. Scheduled posts:
 future-date `published` and schedule a build for that day (PLAYBOOK §2).
 
-**The content engine.** Twelve skills in `.claude/skills/` run the whole
+**The content engine.** Fourteen skills in `.claude/skills/` run the whole
 loop (/new-site, /discover, /landscape, /onboard-marketing,
 /design-direction, /keyword-map, /interview, /write-content,
-/refresh-anti-ai-rules, /insights-review, /content-cadence, /ship), and its
+/refresh-anti-ai-rules, /insights-review, /content-cadence, /launch,
+/ingest-playbook, /ship), and its
 memory lives in `marketing/`. Read `marketing/site-blueprint.md`
 first — it is the transferable doctrine (page-type taxonomy, keyword→content
 mapping, interlinking, conversion, AEO/GEO levers, the straightforward house

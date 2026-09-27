@@ -64,6 +64,10 @@ function rehypeWrapTables() {
   };
 }
 
+/** Routes that render noindex and therefore never enter the sitemap (the iron
+ *  rule: noindex ⇔ out of the sitemap). check-parity asserts '/search' is here. */
+const NOINDEX_ROUTES = ['/search', '/contact/thanks'];
+
 export default defineConfig({
   site: SITE_URL,
   output: 'static',
@@ -107,11 +111,12 @@ export default defineConfig({
       // /search is a noindex tool page (client-rendered results have nothing
       // for a crawler; content is indexed at its real URLs) — same iron rule:
       // noindex ⇔ out of the sitemap, always both.
-      filter: (page) =>
-        !page.includes('/draft/') &&
-        !page.includes('/contact/thanks') &&
-        !page.includes('/search') &&
-        !(privacy.status.draft && page.includes('/privacy-policy')),
+      // Exact route matches, never substrings: `includes('/search')` once
+      // also dropped any page whose slug contained "search".
+      filter: (page) => {
+        const route = new URL(page).pathname.replace(/\/$/, '') || '/';
+        return !NOINDEX_ROUTES.includes(route) && !(privacy.status.draft && route === '/privacy-policy');
+      },
 
       // <lastmod> from the commit that last touched each page's source, not
       // from the build clock — see src/lib/lastmod.ts for why that distinction

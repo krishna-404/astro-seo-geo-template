@@ -398,7 +398,7 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   DuckDuckGo and ChatGPT search. Two distribution channels, not one.
 - ✅ **IndexNow**: key file + script that submits only LIVE sitemap URLs
   (never the local build — can't ping a 404), race-guarded by
-  `--min-urls`, auto-run after deploy. Google doesn't participate; the
+  `--min-urls`, run by `/ship` after every deploy. Google doesn't participate; the
   sitemap covers Google.
 
 ## 8. Accessibility & CSS

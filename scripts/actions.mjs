@@ -141,7 +141,9 @@ function evaluate(item) {
       return { done: ok, note: ok ? 'origin set' : 'src/data/origin.mjs still says example.com' };
     }
     case 'placeholders': {
-      const roots = ['src', 'public', 'wrangler.jsonc', 'marketing'];
+      // The SETUP grep's roots, plus the node scripts that carry a second copy
+      // of the brand (marketing/README § EDIT FOR YOUR SITE).
+      const roots = ['src', 'public', 'wrangler.jsonc', 'marketing', 'scripts/generate-llms.mjs', 'marketing/og/render-pages.mjs'];
       const hits = [];
       const walk = (p) => {
         const full = join(ROOT, p);
@@ -153,7 +155,7 @@ function evaluate(item) {
           }
           return;
         }
-        if (/\.(png|jpe?g|ico|woff2?|zip|json)$/.test(p) && !/privacy\.json|facts\.json|authors\.json/.test(p)) return;
+        if (/\.(png|jpe?g|ico|woff2?|zip)$/.test(p) || /lastmod\.json$|sheets\/.*\.json$|csp\.generated\.json$/.test(p)) return;
         if (/privacy\.json$|productSchema\.example\.ts$|ACTIONS\.md$|playbook-intake\.md$/.test(p)) return;
         const text = readFileSync(full, 'utf8');
         if (/TODO|example\.com|Example Co/.test(text)) hits.push(p);

@@ -26,7 +26,6 @@
     "verify": "node scripts/verify.mjs",
     "prepare": "git config core.hooksPath .githooks 2>/dev/null || true",
     "lastmod": "node scripts/lastmod.mjs",
-    "lastmod:check": "node scripts/check-lastmod.mjs",
     "check:contrast": "node scripts/check-contrast.mjs",
     "indexnow": "node scripts/indexnow.mjs",
     "insights": "node scripts/insights.mjs",

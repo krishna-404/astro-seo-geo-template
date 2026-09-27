@@ -56,17 +56,18 @@ const path = cleanPath(Astro.url.pathname);
 const canonicalUrl = canonical ?? new URL(path, SITE.url).href;
 
 /**
- * Card precedence: an explicit prop, then a generated card for this route, then
- * the site default. Collection templates pass their own card as `ogImage`, so
- * this only reaches the pages that have no slug of their own — the marketing
- * pages and the collection indexes.
+ * Card precedence: an explicit prop (a page's own `ogImage`, or the brand card
+ * the homepage passes), then the generated card for this route (`ogCardFor`),
+ * then the site default. Collection templates pass `data.ogImage`, which is
+ * normally undefined, so they fall through to their generated card.
  */
 const ogImageUrl = new URL(ogImage ?? ogCardFor(path) ?? SITE.ogImage, SITE.url).href;
 
 /**
  * The founder is referenced site-wide, so the Person node is site-wide rather
- * than per-page. Blog posts reference this same @id as their author instead of
- * restating the profile.
+ * than per-page. Blog posts deliberately restate their own author node (a
+ * guest post attributes to the guest); the author page and the glossary
+ * reference this @id.
  */
 const founder = {
   '@type': 'Person',
