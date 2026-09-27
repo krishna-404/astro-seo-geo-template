@@ -80,23 +80,12 @@
   ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
 
-# Stable-URL assets: refreshable within a week. These URLs never change, so
-# they must not be immutable — a regenerated favicon has to be able to land.
-/og/*
-  ! Cache-Control
-  Cache-Control: public, max-age=604800
-/favicon.ico
-  ! Cache-Control
-  Cache-Control: public, max-age=604800
-/favicon.svg
-  ! Cache-Control
-  Cache-Control: public, max-age=604800
-/favicon-48.png
-  ! Cache-Control
-  Cache-Control: public, max-age=604800
-/favicon-96.png
-  ! Cache-Control
-  Cache-Control: public, max-age=604800
-/apple-touch-icon.png
-  ! Cache-Control
-  Cache-Control: public, max-age=604800
+# Stable-URL assets — the social cards, the favicons, the apple-touch icon —
+# need exactly the refreshable week the extension rules above already give
+# them (.jpg, .png, .svg, .ico), and they must NOT be immutable: these URLs
+# never change, so a regenerated card or favicon has to be able to land.
+# There were explicit /og/*, /favicon.* and /apple-touch-icon.png blocks here
+# repeating that same value; they are gone. The extension rules are matched
+# before /_astro/*, which re-detaches only its own fingerprinted paths, so
+# every one of these files still gets max-age=604800. Add a block back only
+# for a stable-URL asset whose extension is NOT in the list above.

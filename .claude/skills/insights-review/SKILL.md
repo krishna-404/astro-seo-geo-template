@@ -94,28 +94,35 @@ with one sentence of interpretation each. No number without its comparison.
 ## 3. Plan — apply the funnel ladder
 
 Work out where the site currently sits on the ladder, then propose the
-**three highest-leverage actions**, each tied to a number from the delta:
+**three highest-leverage actions**, each tied to a number from the delta.
+Rank them in the engine's standing priority order
+(`.claude/skills/content-cadence/SKILL.md` § Sequence and priority; the rungs
+themselves are `marketing/STRATEGY.md § 5`):
 
-0a. Generative AI: an `uncited` page with real web impressions is a top-three
-   action (tldr, FAQ in the searcher's words, named sources); a cited page that
-   lost impressions since the previous export gets its links and `updated`
-   checked, never a rewrite; a missing or stale export is the first ask.
-0. High-intent rows first, whatever their volume: a `wrong-page` or
-   `unmapped` row is the top action; an `ok` row off page one gets the
-   phrase-and-link check (content-cadence step 2a–b) and a supporting-piece
-   candidate from `marketing/keyword-map.md § High-intent`.
-0b. Quick-win rows are worked before anything below: they are mechanical
-   and free. A BOFU row at 4–20 whose page can be moved is the month's one
-   page (runbook § The BOFU loop).
-1. Not-indexed pages that matter → internal links to add + the
-   request-indexing list for the user.
-2. Queries at position 4–20 with impressions (`nearPageOne`) → the specific
-   page and the specific query-language change (say what the searcher
-   types — the `pageQueries` block shows the exact words).
-3. Rising impressions at position 50+ → links and freshness, never rewrites.
-4. ≥50 impressions at ≤10 with ~0 clicks → snippet (title/description) work —
-   only then, one page at a time, recorded as a dated test in the keyword
-   map with a check-back date four weeks out.
+1. **A stage-1 edge blocker** — an answering agent getting 401/403/429 at the
+   edge — outranks everything, content included. An engine the edge is
+   refusing will never index the page, however well it is written.
+2. **High-intent rows**, whatever their volume. A `wrong-page` or `unmapped`
+   row is the top action; an `ok` row off page one gets the phrase-and-link
+   check (content-cadence step 2a–b) and a supporting-piece candidate from
+   `marketing/keyword-map.md § High-intent`.
+3. **Quick wins** — a page already at ≤5 for a phrase it does not say.
+   Mechanical and free, so they come before any judgement work.
+4. Then down the ladder:
+   - Generative AI: an `uncited` page with real web impressions takes the
+     three levers; a cited page that lost impressions since the previous
+     export gets its links and `updated` checked, never a rewrite; a missing
+     or stale export is an ask, never an estimate.
+   - Not-indexed pages that matter → internal links to add, plus the
+     request-indexing list for the owner (ACTIONS A-D01).
+   - Queries at position 4–20 with impressions (`nearPageOne`) → the specific
+     page and the specific query-language change; the `pageQueries` block
+     shows the exact words the searcher types.
+   - The snippet test at rung 2b — STRATEGY § 5 states its three numbers and
+     the one-page-at-a-time rule.
+   - Rising impressions at position 50+ → links and freshness, never rewrites.
+   - A BOFU row at 4–20 whose page can be moved is the month's one page, four
+     weeks before another is started (runbook D6).
 
 If the data contradicts STRATEGY.md's current picture (§ Honest state, the
 target markets, the clusters), say so in the review and propose the edit —

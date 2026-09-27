@@ -641,11 +641,19 @@ dispatched), in order:
   `TWIN_PREFIXES` / twins `COLLECTIONS` / `run_worker_first`), static ↔
   worker security-header lockstep, `/search` noindex ↔ sitemap exclusion at
   source level (the built-output invariant sees it after a build; this sees
-  it at commit time), and **every worker `PERMANENT_REDIRECTS` key present
+  it at commit time), **every `src/data/redirects.json` key present
   in `run_worker_first`** (added Sep 2026; WHY: the same silent shape as the
   twin-route rule and worse to review — the redirect and the route list
   each read correctly on their own while the worker never sees the request
-  and the visitor gets the 404 page; proven red against an unlisted path);
+  and the visitor gets the 404 page; proven red against an unlisted path),
+  and **the `--brand` token ↔ the brand colour in the two social-card HTML
+  templates** (27 Sep 2026; WHY: `marketing/og/page.html` and
+  `og/default.html` are painted by a headless browser and cannot import a
+  token, so their copy of the brand colour was hand-kept — a card still in
+  last year's colour is invisible in the repo and visible in every share.
+  `marketing/favicon.mjs` needed no rule: it now reads the token. Proven red
+  by repainting page.html `#c2410c` — "paints cards in #c2410c, global.css
+  says #0f4c81", exit 1);
   plus the repo-wide bans — web storage (AGENTS rule 5) and colour literals
   outside the token files (rule 6) — the two rules statistically most
   likely to be violated by plausible-looking generated code. Two

@@ -68,11 +68,15 @@ retrieval system deciding whether to quote you. Both want the same thing.
     "best-in-class" are banned by `voice.json`; the rule behind the list is
     that every adjective must be provable or cut.
 
-## 2. Say what nobody else can
+## 2. Say what nobody else can — the fuel rule
+
+**This section is the full statement of the fuel rule.** Everything else in the
+repo cites it.
 
 A model has read the other forty versions of the page. Generic pages are not
 cited. Each piece carries at least one of (the blog schema's `proprietary`
-field names which):
+field names WHICH KIND, and `fuel` names the thing itself — the field-note id,
+the news-log date, the insights finding, the social-sweep post):
 
 - first-party or proprietary data, an original survey, a measurement
 - a first-hand review, a case-specific teardown, screenshots of the product
@@ -82,8 +86,15 @@ field names which):
 - a named, coined framework (work the brand name in)
 - an interactive tool or standalone resource
 
-A piece that has none of these is not written this week. Publishing nothing
-is a valid outcome; publishing filler never is.
+A piece that has none of these is not written this week. Publishing nothing is
+a valid outcome; publishing filler never is. A `fuel` line you cannot write in
+one sentence means the piece has none of them.
+
+**Field notes are an add-on, never a gate.** `marketing/field-notes.md` is the
+richest channel, not the only one: news with primary sources, a verified ICP
+social-sweep finding and an insights finding all count, and the engine keeps
+writing from them when the owner has not debriefed in weeks. Only a cycle where
+EVERY channel is dry does updates and interlinking instead — and says so.
 
 ## 3. Write for objections, not for interest
 

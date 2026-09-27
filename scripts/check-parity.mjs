@@ -33,6 +33,12 @@
  *      is what the scripts watch in Search Console. Two lists of the same
  *      companies drift, and the drift is invisible until a report names a rival
  *      the site does not compare itself with.
+ *   7. The `--brand` token in src/styles/global.css matches the brand colour
+ *      typed into the two social-card templates (marketing/og/page.html,
+ *      marketing/og/default.html). Those are plain HTML rendered by a headless
+ *      browser, so they cannot import a token — and a card still painted in
+ *      last year's brand colour is invisible in the repo and visible in every
+ *      share. marketing/favicon.mjs no longer needs a rule: it reads the token.
  */
 
 import { readFileSync } from 'node:fs';
@@ -195,6 +201,24 @@ console.log('→ facts.json competitors match intent.json competitors');
     bad(`competitor lists differ — facts.json: ${a.join(', ') || '(none)'} · intent.json: ${b.join(', ') || '(none)'}. One is what the pages may name, the other what the scripts watch; keep them in step (AGENTS § When you change…)`);
   }
   if (fail === before) console.log(`   ok (${a.length ? a.join(', ') : 'none named yet'})`);
+}
+
+// ── 7. the brand colour, everywhere it cannot be imported ─────────────────
+console.log('→ the brand colour in the card templates matches the --brand token');
+{
+  const before = fail;
+  const token = /--brand:\s*(#[0-9a-fA-F]{3,8})/.exec(readFileSync('src/styles/global.css', 'utf8'))?.[1];
+  if (!token) bad('no --brand token in src/styles/global.css');
+  else {
+    for (const f of ['marketing/og/page.html', 'marketing/og/default.html']) {
+      const got = /--brand:\s*(#[0-9a-fA-F]{3,8})/.exec(readFileSync(f, 'utf8'))?.[1];
+      if (!got) bad(`${f} declares no --brand`);
+      else if (got.toLowerCase() !== token.toLowerCase()) {
+        bad(`${f} paints cards in ${got}, global.css says ${token} — re-render the cards after fixing (AGENTS § When you change… brand colour)`);
+      }
+    }
+  }
+  if (fail === before) console.log(`   ok (${token})`);
 }
 
 process.exit(fail);

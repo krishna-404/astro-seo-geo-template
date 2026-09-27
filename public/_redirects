@@ -1,13 +1,16 @@
-# Redirect rules for Cloudflare's static asset layer.
+# Intentionally empty. Permanent redirects live in ONE place:
+# src/data/redirects.json, which worker/index.ts imports.
 #
-# What does NOT belong here:
+# This file is Cloudflare's static-asset redirect layer. It stays empty and
+# unused because a second redirect mechanism is a second place to look when a
+# URL misbehaves, and only the worker's map is checked: check-parity fails a
+# row that is not also in wrangler.jsonc run_worker_first, smoke-worker asserts
+# every 301 locally, and smoke-live asserts the same rows against production.
+# Nothing verifies a rule written here.
+#
+# What does not belong in EITHER place:
 #  - trailing-slash normalisation — wrangler.jsonc html_handling does it
-#  - www → apex — that is a zone-level Redirect Rule (dashboard), because it
-#    fires before the request reaches this worker's hostname at all
-#  - /hi/<code> — that is a REWRITE (URL must stay in the address bar), which
-#    lives in worker/index.ts, not a redirect
-#
-# What does: legacy paths from previous versions of the site. Always 301
-# (permanent) so link authority transfers. Example kept from the ancestor site
-# — a merged page keeps its old URL working forever:
-# /cookies /privacy-policy 301
+#  - www -> apex — a zone-level Redirect Rule (dashboard), because it fires
+#    before the request reaches this worker's hostname at all
+#  - /hi/<code> — a REWRITE (the URL must stay in the address bar), which
+#    lives in worker/index.ts

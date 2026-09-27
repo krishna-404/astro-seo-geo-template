@@ -84,6 +84,14 @@ const seo = {
   draft: z.boolean().default(false),
   canonical: z.url().optional(),
   ogImage: z.string().optional(),
+  /**
+   * Alt text for a CUSTOM ogImage. The generated cards render the page title
+   * as text, so for them the title IS an accurate description and BaseLayout
+   * falls back to it. An entry that points `ogImage` at something else — a
+   * screenshot, a photo — describes it here, or og:image:alt claims the title
+   * describes a picture it does not.
+   */
+  ogImageAlt: z.string().min(4).max(180).optional(),
   updated: z.coerce.date().optional(),
   /** Renders <Faq /> AND the FAQPage JSON-LD from one array (src/lib/faqSchema.ts). */
   faq: z.array(z.object({ q: z.string(), a: z.string() })).default([]),
@@ -129,6 +137,16 @@ const blog = defineCollection({
       'expert-interview',
       'case-study',
     ]),
+    /**
+     * WHICH piece of fuel, by name. `proprietary` is a closed enum — it says
+     * what KIND of thing backs the post, which is all a check can verify. The
+     * fuel rule (marketing/content-guidelines.md § 2) asks the writer to name
+     * the thing itself: a field-note id, a news-log date, the insights finding
+     * or the social-sweep post. Optional, because a year of entries predates
+     * it; /write-content fills it on everything it drafts, and a post that
+     * cannot fill it has not cleared the fuel rule.
+     */
+    fuel: z.string().min(4).max(200).optional(),
     sources: z.array(source).default([]),
     /**
      * How the post arrived. `posts-api` marks one the posts API opened a PR

@@ -24,46 +24,29 @@ delivering anything at all. Who merges and who deploys is the merge model in
 steps itself (step 9), so the battery is the only gate and the scope rule
 below is load-bearing — small, evidence-backed, in scope.
 
-**High-intent first.** Search Console's transactional rows — "<category>
-software", "<category> tracking system", "<x> vs <y>" — are a handful of
-impressions under hundreds of informational ones, and a run that reads the
-report top-down never reaches them. They are the queries a buyer with budget
-types. So every run works them **before** anything else (step 2), and the
-email carries its own **High-intent queries** section with what was done. The
-detection is mechanical: `npm run insights` prints the block first, from
-`src/data/intent.json` (signal words + the curated watch list, each term tied
-to the page that claims it) and `scripts/lib/intent.mjs`.
+**What this run reads, and what owns each number.** Every block the run works
+is computed by a script whose header states the rule in full; this skill says
+what to DO with the block, never how it is scored. `npm run insights` prints
+them in one report: the **answer-engine funnel** (`scripts/lib/aeo.mjs`), the
+**high-intent queries** (`src/data/intent.json` + `scripts/lib/intent.mjs`),
+**Generative AI** (`scripts/lib/genai.mjs`; the export loop is
+`marketing/insights/genai/README.md`), quick wins, BOFU and competitors
+(`scripts/lib/pageText.mjs`, `scripts/lib/intent.mjs`). Read a header before
+arguing with a number.
 
-**Generative AI is measured, not assumed.** Search Console's **Generative AI**
-report is the only first-party measure of how often Google's AI Overviews and
-AI Mode showed a page of this site. It has no API and no BigQuery export, so
-the loop runs through the one door there is: the owner exports it (Performance
-→ Generative AI → Export), drops the zip in `marketing/insights/genai/`, and
-`npm run insights` reads the newest one and joins it with the web rows
-(`scripts/lib/genai.mjs`). Every run works that block (step 2e), the weekly run
-asks for a fresh export when the newest is older than seven days and for the
-monthly **AI prompt panel** (`marketing/ai-panel.md`) when the last run is
-older than 35 days, and the report carries a **Generative AI** section. Two
-proxies ride along because the report withholds queries and clicks:
-prompt-shaped web queries, and referrals from AI assistants in Umami. The rule
-that binds all of it: a page that is already cited is strengthened and linked,
-never rewritten; a page shown on the web and never in AI gets the three levers
-with evidence behind them — an answer-shaped opening, a FAQ block in the
-searcher's words, named sources.
+**Sequence and priority are different things.** The run executes in step
+order: 0 actions → 1 measure → 1b PR inbox → 2 high-intent → 3 improve. What
+it *works first* when the time runs short is a different ranking, and it is
+this one, for every run and for /insights-review's plan alike:
 
-**AEO and GEO have a number, and most of it needs nobody.** `npm run insights`
-opens with the **answer-engine funnel** (`scripts/lib/aeo.mjs`): reachable →
-ingested → indexed → shown → followed, each stage scored 0–100 and each capped
-by the one above it. Read it top-down and work the stage it names, never the
-lowest number on it — a site whose edge is refusing PerplexityBot does not need
-another post. Four of the five stages run unattended from the Cloudflare,
-Umami, Bing and Search Console credentials; stage 4 (**shown**) is the one that
-still needs a person, because Google withholds AI-feature data from every API
-and no assistant sells a "were we named" endpoint, so it scores from a capped
-proxy until an export lands. Each stage prints whether it was measured
-`auto`, `partial` (and which credential is missing) or `manual`, so a blind
-spot never reads as a pass. `npm run aeo -- --trend` scores every committed
-snapshot and is the only view that shows the funnel MOVING.
+1. **A stage-1 edge blocker** — the edge refusing an answering agent with
+   401/403/429. It outranks everything, content included: it is a rule we
+   wrote, it is invisible in a browser, and it removes the site from an index
+   rather than from a page.
+2. **High-intent rows**, whatever their volume — the words a buyer with
+   budget types.
+3. **Quick wins**, because they are mechanical and free.
+4. Everything else, down the funnel ladder (`marketing/STRATEGY.md § 5`).
 
 **One SCHEDULED firing a day; a second one stands down.** When this skill was
 fired by a Routine rather than typed by a human, read `marketing/news-log.md`
@@ -139,16 +122,16 @@ coverage-layer pages because that is usually where the backlog is.
 2. **High-intent first.** Take the `searchConsole.highIntent` block from the
    snapshot (★ rows are watch-list terms; `notShowing` lists watch terms with
    no impressions yet) and work it in this order, before step 3:
-   - **(a) The right page, saying the words.** Every high-intent row must be
-     `ok`: the page Google shows is the page whose frontmatter claims the
-     query, and that page carries the query's exact words in its title or
+   - **(a) The right page, saying the words.** Every row must be `ok` —
+     `scripts/lib/intent.mjs`'s header defines `ok`, `wrong-page` and
+     `unmapped`. An `ok` page carries the query's exact words in its title or
      description, a heading and a FAQ question. A `wrong-page` row gets the
      phrase on the claiming page plus an in-body link to it from the page
      Google is showing instead, anchored on the query. An `unmapped` row is
      either added to a money page's `secondaryKeywords` (same intent) or
      mapped as a new page in `marketing/keyword-map.md § High-intent`. A new
-     phrasing with impressions goes on the watch list in `intent.json` the
-     day it appears, with its page.
+     phrasing with impressions joins the watch list in `intent.json` the day
+     it appears, with its page.
    - **(b) Links on the exact anchor.** Each high-intent money page gets one
      new in-body link this run from an *indexed*, topically related page,
      anchored on a high-intent phrasing it does not already receive (vary
@@ -168,27 +151,25 @@ coverage-layer pages because that is usually where the backlog is.
      "Nothing today, because X" is a valid line; silence is not.
    - **(e) Generative AI, from the snapshot's `generativeAi` block.** Read it
      every run; it costs nothing when there is no export (the block then
-     carries only the two proxies and a one-line ask). In this order:
-     1. **Cited pages stay cited.** Every page in `topPages` (shown inside AI
-        Overviews or AI Mode) gets a link check — it should link to the money
-        page for its cluster on a high-intent anchor — and its `tldr`,
-        sources and `updated` date stay current. Never retitle or restructure
-        a page an AI feature is already showing; a citation is the hardest
-        thing on the site to earn back.
-     2. **Uncited pages get the three levers.** For each page in `uncited`
-        (web impressions in the window, zero AI impressions in the export),
-        check it opens with the answer (the `tldr` says the thing in one
-        sentence), carries a FAQ block in the searcher's own words, and names
-        its sources by name. Fix one or two per run; record which.
-     3. **Prompt-shaped queries become FAQ lines.** Each row in
-        `promptShaped` is the phrasing a buyer typed as a question; the page
-        Google shows for it should answer it verbatim in a FAQ entry.
-     4. **Country split.** AI impressions by country, read against the Umami
-        split and STRATEGY.md's target markets.
-     5. **Stale export.** When `stale` is true (older than seven days) or
-        there is no export, **What I need from you** opens with the export
-        ask and the four-step how-to from `marketing/insights/genai/README.md`.
-        A run never estimates AI impressions; it says the export is missing.
+     carries only the two proxies and a one-line ask). /insights-review's plan
+     names which pages to work; what binds this run is the pair of rules the
+     plan cannot enforce:
+     1. **A cited page is strengthened and linked, never rewritten.** Every
+        page in `topPages` gets its link to the cluster's money page checked
+        on a high-intent anchor, and its `tldr`, sources and `updated` kept
+        current. Never retitle or restructure a page an AI feature is already
+        showing — a citation is the hardest thing on the site to earn back.
+     2. **A missing or stale export is an ask, never an estimate.** When
+        `stale` is true or there is no export, **What I need from you** opens
+        with the ask and the how-to from
+        `marketing/insights/genai/README.md`. The run says the export is
+        missing; it does not guess AI impressions.
+
+     The rest of the block — `uncited` pages taking the three levers (an
+     answer-shaped `tldr` of one to three sentences, a FAQ block in the
+     searcher's words, named sources), `promptShaped` rows becoming FAQ lines
+     verbatim, the country split read against the Umami split — is worked in
+     whatever order /insights-review ranked it.
    - **(f) Quick wins, from `searchConsole.quickWins`.** Each row is a page
      already shown at position ≤5 for a phrase its source does not say
      (`scripts/lib/pageText.mjs` read the source; `status: words` means every
@@ -197,51 +178,34 @@ coverage-layer pages because that is usually where the backlog is.
      the searcher's words. Work every row; this is the cheapest ranking move
      on the board and it is mechanical. Record each in the report.
    - **(g) Bottom of funnel, one page at a time, from `searchConsole.bofu`.**
-     The rows are the buyer's shapes (alternatives, vs, review, best X for Y,
-     software for role, export from, pricing, with MCP) at position 4–20.
-     Pick the one whose page is easiest to move: read the two or three pages
-     above it in the SERP for answer, depth, proof and freshness, run
-     `npm run audit:pages -- --page <route>` on ours, and implement what it
-     names in priority order (FAQ in the query's words, a comparison table,
-     question-shaped headings, a number with a source, the fan-out buckets).
-     Record the page, the query, the starting position and the date in
-     `marketing/keyword-map.md § High-intent`; check the row daily; do not
-     start a second page until the first has had four weeks. A `<rival>
-     alternatives` or `<rival> vs` row with no page is a comparison page for
-     the backlog (page-guidelines § 2), never built without every cell
-     verified. When `competitorsConfigured` is 0, the report asks for the
-     list once (ACTIONS A-M03).
+     The rows are the buyer's shapes at position 4–20. Pick the one whose page
+     is easiest to move: read the two or three pages above it in the SERP for
+     answer, depth, proof and freshness, run `npm run audit:pages -- --page
+     <route>` on ours, and implement what it names in priority order. Record
+     the page, the query, the starting position and the date in
+     `marketing/keyword-map.md § High-intent`, check the row daily, and **do
+     not start a second page until the first has had four weeks** — one page
+     at a time is what makes the move attributable. A `<rival> alternatives`
+     or `<rival> vs` row with no page is a comparison page for the backlog
+     (`marketing/page-guidelines.md § 2`), never built without every cell
+     verified. When `competitorsConfigured` is 0, the report asks for the list
+     once (ACTIONS A-M03).
    - **(h) Competitor watch, from `searchConsole.competitorQueries`.** Every
      row naming a rival: which page Google shows, whether a comparison page
      claims it. New phrasing → the watch list. The weekly run adds the rival's
      new pages and gained searches (step 15).
 3. **Improve — small, evidence-backed, in scope.** From the delta and
-   `marketing/keyword-map.md`, make **one to three** changes chosen bottom-up
-   on the funnel ladder (STRATEGY.md § Content strategy):
-   - **Rung 1, convert what lands.** A page with visitors whose CTA events
-     are missing or not firing gets its next step fixed.
-   - **Rung 2, CTR where the site ranks.** For every query at position 4–20
-     with impressions (`nearPageOne`), check the page it lands on carries the
-     query's own words in its title, description, a heading or a FAQ
-     question. If not, add them — a FAQ entry in the searcher's words is the
-     cheapest correct fix; retitling a money page is a Decision.
-   - **Rung 2b, the snippet is the only thing a searcher sees.** A page at
-     position ≤10 with ≥50 impressions and **near-zero clicks** is a snippet
-     problem, not a ranking problem. Pick one such page a run, rewrite its
-     `title` and `description` in the searcher's own words, **and record it
-     as a test**: the keyword map's Status column gets "title tested <date>,
-     check <date + 4 weeks>". One page at a time, never a batch, or nothing
-     is attributable. Do not re-test a page inside its four weeks.
-   - **Rung 3, links and freshness.** Pages with rising impressions at
-     position 50+ get an in-body link from an *indexed* page on their target
-     anchor, never a rewrite. Bump `updated` on any page whose substance
-     changed.
-   Each change is recorded in the report with the query or number it
-   targets. When the evidence supports no change, say "no page change today"
-   and why — a valid outcome; padding is not. Anything larger than a
-   confident, small, in-scope change — a new page type, a retitle of a money
-   page, a tool, a positioning change — goes in **Decisions** with its
-   evidence, and is not built until the owner says so.
+   `marketing/keyword-map.md`, make **one to three** changes, chosen bottom-up
+   on the funnel ladder — `marketing/STRATEGY.md § 5` states the rungs, their
+   order and the snippet test's three numbers. Bump `updated` on any page
+   whose substance changed.
+
+   Each change is recorded in the report with the query or number it targets.
+   When the evidence supports no change, say "no page change today" and why —
+   a valid outcome; padding is not. Anything larger than a confident, small,
+   in-scope change — a new page type, a retitle of a money page, a tool, a
+   positioning change — goes in **Decisions** with its evidence, and is not
+   built until the owner says so.
 4. **Shortlist.** The report's "request indexing" list: the 10 URLs from the
    `--inspect` shortlist (never-crawled first). These need the owner's hands
    — the GSC API cannot request indexing.
@@ -310,29 +274,23 @@ coverage-layer pages because that is usually where the backlog is.
 
 10. **Rules refresh.** Run /refresh-anti-ai-rules (its own PR: rule diff +
    sweep of the latest posts for newly landed tells).
-11. **Writing run.** Run /write-content (its own PR: drafts dated the day
-   they go live, page updates, glossary upkeep, interlinks, news-log entry). The
-   step-2c high-intent supporting piece is drafted first. Its weekly ICP social sweep runs here in full — read where the
-   ICP posts, harvest pain-points and the ICP's own keyword phrasing, log
-   them to news-log (the daily scan only notes candidates). The fuel rule
-   holds — field notes are an add-on, never a gate: news, ICP-social and
-   insights fuel keep the engine writing without them, and only a week where
-   every channel is dry produces updates and an honest "wrote nothing new"
-   line instead of filler. If the sweep returns no first-hand material for
-   a second week running, that is a data-sheet question ("where does the
-   ICP actually post?"), not a reason to pad.
+11. **Writing run.** Run /write-content (drafts dated the day they go live,
+   page updates, glossary upkeep, interlinks, news-log entry). The step-2c
+   high-intent supporting piece is drafted first, and the weekly ICP social
+   sweep runs here in full — the daily scan only notes candidates. The fuel
+   rule (`marketing/content-guidelines.md § 2`) decides whether anything gets
+   written: a week where every channel is dry produces updates and an honest
+   "wrote nothing new" line, never filler. A sweep that returns no first-hand
+   material for a second week running is a data-sheet question ("where does
+   the ICP actually post?"), not a reason to pad.
 12. **Tools sweep — tool-shaped queries, not only pages.** Read the snapshot
    for queries that ask for a thing to use rather than a page to read
-   ("calculator", "tracker", "estimate", "checker", anything in
-   `intent.json`'s signal list with that shape) and decide each by which
-   kind of calculator it wants. **Input-driven** — it computes from numbers
-   the reader already has — is buildable now as deterministic code over the
-   reader's inputs (/write-content § 4c), publishes no reference data, and
-   goes in Decisions with the signals so the owner can say go.
-   **Reference-data-driven** — it needs a table the site would have to
-   publish — stays gated until the rows are sourced; record it as a
-   data-sheet question naming the rows. A tool that would change the site's
-   shape (a nav entry, a lead-capture flow, pricing) is always a Decision.
+   ("calculator", "tracker", "estimate", "checker"), and sort each by the
+   input-driven / reference-data-driven split that /write-content § 4c
+   defines. Input-driven goes in Decisions with its signals so the owner can
+   say go; reference-data-driven becomes a data-sheet question naming the rows
+   it needs. A tool that would change the site's shape — a nav entry, a
+   lead-capture flow, pricing — is always a Decision.
 13. **Coverage check.** The writing should be walking down
    `marketing/keyword-map.md`'s coverage layers (site-blueprint § 1), not
    only its Search Console rows — a site that only works the queries it
@@ -340,27 +298,22 @@ coverage-layer pages because that is usually where the backlog is.
    layer has been blocked on data for a month, the weekly run either sources
    the data or puts the layer in Decisions with what would unblock it.
 13b. **Page audit.** `npm run audit:pages` scores every content page on the
-   citation checklist (page-guidelines § 1) and names the first fix. Pages
-   under 70 with impressions are the refresh list; the run refreshes at least
-   one a week (the fix it names, the facts re-checked, `updated` bumped only
-   if something changed) and carries the table in the report's **Page
-   audit** section. A page an AI feature already cites is strengthened,
-   never restructured (step 2e).
+   citation checklist (`marketing/page-guidelines.md § 1` owns it) and names
+   the first fix. Pages under 70 with impressions are the refresh list; the
+   run refreshes at least one a week and carries the table in the report's
+   **Page audit** section. A page an AI feature already cites is
+   strengthened, never restructured (step 2e).
 13c. **Freshness sweep.** From the same table: pages dated more than 90 days
-   ago with impressions (30 for pricing, rankings or availability) get their
-   facts, examples and figures re-checked against their sources; the page
-   says what changed; the About page's Key Facts and any comparison cell
-   touched by something the product shipped are updated first (runbook § The
-   accuracy check after a ship).
-13d. **Internal link plan.** page-guidelines § 5, from the snapshot: group
-   pages by topic, confirm each cluster's pillar and money page, propose
-   contextual links between support posts and up to the pillar and the money
-   page, and boost every page at position 11–20 with an in-body link from an
-   indexed page that already discusses the task. Each proposed link carries
-   source, destination, the existing sentence, the proposed sentence, the
-   anchor and the reader's reason; applied links are recorded with the date
-   and the query's starting position, compared four weeks later. Skip links
-   already present; never the identical anchor to two targets.
+   ago with impressions — 30 days for pricing, rankings or availability — get
+   their facts, examples and figures re-checked against their sources, and say
+   what changed. The About page's Key Facts and any comparison cell touched by
+   something the product shipped come first (runbook § The accuracy check
+   after a ship).
+13d. **Internal link plan.** Run the plan in `marketing/page-guidelines.md
+   § 5` against this week's snapshot — it owns the clustering, the proposal
+   format and the record-and-recheck. The one thing this run adds: every page
+   at position 11–20 gets an in-body link from an indexed page that already
+   discusses the task.
 14. **Site audit (monthly, or when the weekly run has slack).** Run /keyword-map
    steps 1 and 4 to refresh `marketing/keyword-map.md` from the latest
    insights (fold in new Search Console queries with impressions), then work
@@ -368,25 +321,20 @@ coverage-layer pages because that is usually where the backlog is.
    Confident, small, in-scope fixes ride the PR; everything larger goes to
    Decisions. The audit never silently rewrites architecture.
 15. **Data sheet and link targets, maintained.** The daily run only
-   *surfaces* these; the weekly run maintains them. Re-read
-   `marketing/DATA-SHEET.md`: retire a question the site has outgrown,
-   sharpen one that has been open a month without an answer (usually it is
-   too broad — split it), and add every blocker the week hit. Re-read
-   `marketing/link-targets.md`: move rows the owner has claimed to `live`
-   with the URL, add a target the week's competitor reading turned up
-   (`marketing/landscape.md` keeps that reading; a rival that relaunched
-   or a list that changed gets a dated line there). **A
-   directory that now lists the site is a backlink and a page that can
-   rank** — note it in the report so the next run can link to it and watch
-   for referral traffic. Backlinks are tracked in that file, never
-   improvised in a run. **Outreach:** propose up to five sites that write
-   about the space (from `landscape.md`'s lists and the panel's cited
-   sources), each with the page of ours it would link and the one-line
-   pitch, in Decisions; a human sends them. **Competitor pages:** for each
-   rival in `intent.json → competitors`, note new pages since last week
-   (its sitemap or feed, URL recorded in `landscape.md`) and the searches it
-   gained (the SERP shape, the panel); a page type the rival built that we
-   have not is a backlog row.
+   *surfaces* these; the weekly run maintains them — `marketing/runbook.md`
+   W8 and W11 say what each pass covers. In this run that means: re-read
+   `marketing/DATA-SHEET.md` (retire a question the site has outgrown, split
+   one that has been open a month without an answer — it is usually too broad
+   — and add every blocker the week hit); re-read
+   `marketing/link-targets.md` (claimed rows to `live` with the URL, new
+   targets from the week's reading); and re-read `marketing/landscape.md` for
+   each rival in `intent.json → competitors` (new pages from its sitemap or
+   feed, the searches it gained, a page type it built that we have not).
+   Two things this step must not improvise: **a directory that now lists the
+   site is a backlink and a page that can rank** — it is recorded in
+   `link-targets.md`, never invented in a run — and outreach is *proposed*
+   (up to five sites, each with the page of ours it would link and a one-line
+   pitch, in Decisions), never sent.
 16. **High-intent refresh.** Re-read `src/data/intent.json` against the
    week's snapshots: promote any new transactional phrasing with impressions
    to the watch list with its page; retire nothing (a term that stopped
@@ -395,41 +343,34 @@ coverage-layer pages because that is usually where the backlog is.
    pages for the top two high-intent queries for an angle, use-case or
    phrasing the site does not answer — a backlog row when it earns a page.
 
-17. **Generative AI, the weekly half.** (a) If the newest export in
-   `marketing/insights/genai/` is older than seven days, the report asks for a
-   fresh one first. (b) If `marketing/ai-panel.md` has no `## Run` block in the
-   last 35 days, the report asks the owner to run the prompt panel (20 minutes,
-   the how-to is in the file) — the run never fabricates one. When a run
-   exists, read it: a competitor named in an answer this site is absent from
-   becomes an angle in `marketing/keyword-map.md § High-intent`; a cited
-   listicle, directory or thread the site could be on becomes a row in
+17. **Generative AI, the weekly half.** The export loop and its cadence are
+   `marketing/insights/genai/README.md`; the panel and its prompt set are
+   `marketing/ai-panel.md`. What the weekly run does with them:
+
+   (a) **Ask when either is stale** — an export older than seven days, or a
+   panel with no `## Run` block in 35 days (ACTIONS A-W01, A-M01). The run
+   never fabricates either. When the Google Drive connector is attached and
+   the owner has named a folder for the export (a DATA-SHEET answer), look
+   there for a newer `genai-*.zip` and copy it in before asking.
+
+   (b) **Read the panel when a run exists.** A competitor named in an answer
+   the site is absent from becomes an angle in `marketing/keyword-map.md
+   § High-intent`; a cited listicle, directory or thread becomes a row in
    `marketing/link-targets.md`; a phrasing the assistant used and the page
-   does not say becomes a FAQ line. (c) Add to the panel's prompt set any new
-   high-intent phrasing that earned impressions this week. (d) Print
-   `npm run aeo` and read the **Levers** table under the funnel — listings,
-   the prompt panel, the data sheet, Bing verification, Organization
-   completeness, commercial coverage — and carry its CRITICAL rows into
-   Decisions when they are the owner's to fix (profiles, the entity record,
-   exports) and into this run's PR when they are the site's (a missing
-   claiming page, an incomplete Organization node). (e) Read the
-   **Bing** block when `BING_WEBMASTER_API_KEY` is set: Bing's index feeds
-   Copilot and ChatGPT search, so a query Bing shows the site for and Google
-   does not is a phrasing to say on the page too, and a page with Bing
-   impressions is a page those two assistants can reach for. When the key is
-   NOT set, say so once in **What I need from you** with what it would unblock
-   (the funnel's INDEXED stage, currently Google-only) — and do not repeat the
-   ask in later runs once it has been declined. (f) Print
-   `npm run aeo -- --trend` and carry its **focus** stage into Decisions. A
-   stage-1 blocker — the edge refusing an answering agent with 401/403/429 —
-   outranks every other item in the run, content included: it is a rule we
-   wrote, it is invisible in a browser, and it removes the site from an index
-   rather than from a page. (g) When the Google Drive connector is attached
-   to the session and the owner has named a folder for the export (a
-   DATA-SHEET answer), look there for a `genai-*.zip` newer than the newest
-   in `marketing/insights/genai/` and copy it in before reading; otherwise
-   the ask stands. The reader extracts a zip with the system `unzip` into a
-   folder of the same name — no zip parsing of its own — so on a machine
-   without `unzip` it prints the one-line ask instead of an empty report.
+   does not say becomes a FAQ line. Add this week's new high-intent phrasings
+   to the prompt set.
+
+   (c) **Work `npm run aeo`'s Levers table.** A CRITICAL row that is the
+   owner's — profiles, the entity record, an export — goes in Decisions; one
+   that is the site's — a missing claiming page, an incomplete Organization
+   node — is fixed in this run. Then `npm run aeo -- --trend`, and its
+   **focus** stage goes in Decisions.
+
+   (d) **Read the Bing block** when `BING_WEBMASTER_API_KEY` is set: a query
+   Bing shows the site for and Google does not is a phrasing to say on the
+   page too. When the key is not set, say so once in **What I need from you**
+   with what it unblocks (the funnel's INDEXED stage, Google-only without it),
+   and do not repeat the ask once it has been declined.
 
 ## Changing the engine
 
@@ -512,16 +453,15 @@ words, the action first, the tables last. Compose markdown in this order:
    `marketing/social-queue.md`; then any pull request the run **declined**,
    with the reason; then anything else that needs the owner's hands. A run
    that deployed itself does not ask for a merge.
-5b. **Actions** — the output of `node scripts/actions.mjs --markdown`: how many
+5b. **Actions** — the second half of `npm run ask -- --markdown`: how many
    done, the keys the scripts are missing (each with where it comes from and
    what stays dark without it), and the open items by phase with the how-to.
    Mandatory every run; when an item was ticked since the last run, say so.
    Where no API exists for an item, this is where the owner is asked to do
    it by hand; where a key exists, this is where it is asked for by name.
-6. **What I need from you** — the output of `node scripts/data-sheet.mjs
-   --markdown` (the `ask` npm script chains two scripts, so a flag after
-   `--` reaches only the second), in
-   the owner's words: the top open questions from `marketing/DATA-SHEET.md`,
+6. **What I need from you** — the first half of `npm run ask -- --markdown`
+   (one script, both halves, the flag forwarded to each), in the owner's
+   words: the top open questions from `marketing/DATA-SHEET.md`,
    each with the ask itself and what it unblocks, answerable from the email
    without opening the repo. **Mandatory while anything is open** — the one
    part of the report that asks rather than tells. A blocker hit today was

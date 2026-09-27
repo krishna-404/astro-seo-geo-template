@@ -157,7 +157,7 @@ is the mechanism by which a new page becomes a ranking page.
 - **Refresh old pages with links to new ones on publish**, and keep the graph
   clean: no dead internal links, no junk anchors (all enforced by
   `check-link-graph`).
-- **Respect link saturation.** 3–5 in-body links is the working band; past ~8 a
+- **Respect link saturation.** 2–5 in-body links is the working band; past 8 a
   page reads as a link farm and each link passes less value.
 
 ---
@@ -207,11 +207,12 @@ content the models pull from is far smaller than the pool competing for rank. Th
 levers with *measured* lift (Aggarwal et al., KDD 2024) are **cited sources,
 quotations from authorities, and statistics**; keyword stuffing measurably hurts.
 
-- **Front-load the answer.** A direct answer in the first 40–60 words of the page,
-  and again in 2–4 self-contained sentences immediately under each heading. The
-  `tldr` field enforces the page-level version; write the per-heading version by
-  hand.
-- **A TL;DR block (2–4 bullets, under ~100 words) before the first H2.**
+- **Front-load the answer.** The `tldr` answers the primary query outright, in
+  the one band this repo uses — one to three sentences, 40–400 characters
+  (`marketing/page-guidelines.md § 1` states it; the schema enforces it).
+  Repeat the move under every heading: 2–4 self-contained sentences that
+  answer the heading before anything elaborates on it. The `tldr` field
+  enforces the page-level version; the per-heading version is written by hand.
 - **Question-shaped headings.** H2/H3 phrased as the actual query — "What is X?",
   "How do I…?" — with the answer directly beneath.
 - **Inverted pyramid, one idea per paragraph, 2–4 sentence chunks.** Dense blocks

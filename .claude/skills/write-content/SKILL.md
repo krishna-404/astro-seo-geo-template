@@ -134,9 +134,12 @@ does not — there is no volume cap; high-intent supporting pieces
 - Each H2 stands alone; the first sentence under it is a self-contained
   answer; no back-references ("as mentioned above"). Semantic triples.
   Entities by name. Short sentences.
-- `proprietary` names the fuel: which field note, which news event, which
-  finding. `sources` carries every claim's origin. Respect `[private]`
-  marks in field notes absolutely.
+- **Two fields, not one.** `proprietary` is the KIND of fuel (the enum);
+  **`fuel` names the thing itself** and this run always fills it — the
+  field-note id, the news-log date, the insights finding, the social-sweep
+  post. A piece whose `fuel` you cannot write in one line has not cleared the
+  fuel rule (`marketing/content-guidelines.md § 2`). `sources` carries every
+  claim's origin. Respect `[private]` marks in field notes absolutely.
 - The `author` block matches an entry in `src/data/authors.json` (enforced)
   so the byline links to the author page. Never attribute a piece to someone
   who did not supply its substance.

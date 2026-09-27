@@ -90,7 +90,7 @@ export const barsFigure = z
   .object({
     ...common,
     kind: z.literal('bars'),
-    /** Dotted path into facts.json, e.g. "time.deskHoursPerContainerBreakdown". */
+    /** Dotted path into facts.json, e.g. "company.teamSize" or "pricing.tiers". */
     fact: z.string().regex(/^[a-zA-Z0-9_.$-]+$/).optional(),
     items: z
       .array(

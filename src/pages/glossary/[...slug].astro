@@ -136,6 +136,7 @@ const schema = [
   description={data.description}
   ogType="article"
   ogImage={data.ogImage}
+  ogImageAlt={data.ogImageAlt}
   canonical={data.canonical}
   modifiedTime={data.updated}
   schema={schema}
@@ -162,6 +163,18 @@ const schema = [
     <dl class="term__def">
       <dt>{data.term}</dt>
       <dd>{data.shortDefinition}</dd>
+      {
+        /* The aliases also go into the Article node's `alternateName`. Rendering
+           them here is what keeps that honest: schema must not claim a name the
+           page never shows a visitor — and a searcher who types the alias needs
+           to see it to know they are on the right page. */
+        data.aliases.length > 0 && (
+          <>
+            <dt class="term__aliases-label">Also called</dt>
+            <dd class="term__aliases">{data.aliases.join(' · ')}</dd>
+          </>
+        )
+      }
     </dl>
 
     {lead && <Figure figure={lead} lead />}
@@ -260,6 +273,14 @@ const schema = [
   }
   .term__def dd {
     margin: 0;
+  }
+  .term__aliases-label {
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--ink-2);
+  }
+  .term__aliases {
+    color: var(--ink-2);
   }
   .term__sources {
     margin-top: 2.5rem;

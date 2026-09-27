@@ -1,7 +1,6 @@
 import authors from './authors.json';
 import brand from './brand.json';
 import facts from './facts.json';
-import sheetsConfig from './sheets.config.json';
 import { SITE_URL } from './origin.mjs';
 
 /**
@@ -26,7 +25,7 @@ export const SITE = {
   description: brand.description,
   locale: 'en',
   themeColor: '#0f4c81', // TODO per site — mirror the --brand token in global.css
-  ogImage: '/og/default.png',
+  ogImage: brand.defaultCard,
 } as const;
 
 /**
@@ -158,24 +157,5 @@ export const FOOTER_NAV = [
     ],
   },
 ] as const;
-
-/**
- * Google Sheets data sources — the build-time half of the data layer.
- *
- * The map itself lives in sheets.config.json (plain Node scripts cannot
- * import TypeScript, and scripts/fetch-sheets.mjs needs the same map), and is
- * re-exported here so components have one import for all site config. Each
- * entry maps a name to a PUBLISHED-to-the-web CSV URL (File → Share →
- * Publish to web → select the tab → CSV). `scripts/fetch-sheets.mjs` pulls
- * every entry into src/data/sheets/<name>.json before each build; the worker
- * serves the same URLs live at /api/data/<name> for the client-side silent
- * refresh (see LiveData.astro).
- *
- * PRIVACY RULE (two-tab pattern): only ever publish a `public` tab that
- * SELECTS the public columns of approved rows via a QUERY formula. The
- * `master` tab with emails/phones stays unpublished — then the site cannot
- * leak contact fields even by mistake, because it can never see them.
- */
-export const SHEETS: Record<string, { url: string }> = sheetsConfig.tabs;
 
 export const FACTS = facts;

@@ -50,11 +50,22 @@ worth nothing; every cycle's work is ordered bottom-up:
 2. **Then CTR where the site already ranks.** Position ≤20 — above all
    ≤10 — with impressions and few clicks is the highest-probability work on
    the board: titles and descriptions in the searcher's own words. (Getting
-   indexed and to page one is this rung's precondition.)
+   indexed and to page one is this rung's precondition.) A FAQ entry in the
+   searcher's words is the cheapest correct fix; retitling a money page is a
+   Decision.
+2b. **The snippet test.** A page at position **≤10 with ≥50 impressions and
+   near-zero clicks** is a snippet problem, not a ranking problem. Rewrite its
+   `title` and `description` in the searcher's own words and **record it as a
+   test**: the keyword map's Status column gets "title tested <date>, check
+   <date + 4 weeks>". One page at a time, never a batch, or nothing is
+   attributable; never re-test a page inside its four weeks. Those three
+   numbers are this rung's definition — every file that mentions the snippet
+   test cites them from here.
 3. **Impressions last.** New content targets the highest-search keywords
    within a winnable cluster — consistent work, but only after rungs 1–2
    hold on what exists; new pages then enter rung 2's CTR loop as they
-   rank.
+   rank. A page with rising impressions at position 50+ gets an in-body link
+   from an *indexed* page on its target anchor, never a rewrite.
 
 - The cadence: <!-- TODO: e.g. 1–3 pieces/week, weekly news run, monthly
   refresh — set the interval the /content-cadence Routine runs on. -->
@@ -64,7 +75,7 @@ worth nothing; every cycle's work is ordered bottom-up:
 - The queries: picked from evidence (`npm run insights`), never invented.
   Impressions at position 4–20 are the shortlist; position 50+ means the
   page needs links and authority, not a better title.
-- The fuel rule (AGENTS § Content rules; /write-content): a new post
+- The fuel rule (`marketing/content-guidelines.md § 2` states it in full): a new post
   exists only when it can name something real — a field note
   (marketing/field-notes.md), a news-log event with primary sources
   (marketing/news-log.md), a verified ICP social-sweep finding, or an
