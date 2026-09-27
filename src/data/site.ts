@@ -1,3 +1,4 @@
+import brand from './brand.json';
 import facts from './facts.json';
 import sheetsConfig from './sheets.config.json';
 import { SITE_URL } from './origin.mjs';
@@ -5,20 +6,23 @@ import { SITE_URL } from './origin.mjs';
 /**
  * ─── THE ONE FILE TO EDIT FOR A NEW SITE ─────────────────────────────────────
  * Everything brand- or deployment-specific lives here (plus origin.mjs for the
- * domain, facts.json for published numbers, and the tokens in global.css).
+ * domain, brand.json for the name/tagline/description the node scripts also
+ * need, facts.json for published numbers, and the tokens in global.css).
  * Nothing below is typed into markup anywhere — pages import from here.
  */
 
 export { SITE_URL };
 
 export const SITE = {
-  name: 'Example Co',
+  // name, tagline and description come from brand.json so the node scripts
+  // (llms.txt, the OG cards) read the same strings — they cannot import this
+  // file. The description band is 120–165 characters; CI enforces it on every
+  // indexable page.
+  name: brand.name,
   domain: new URL(SITE_URL).host,
   url: SITE_URL,
-  tagline: 'A one-line description of what this company does', // TODO per site
-  // 120–165 characters — CI enforces the bounds on every indexable page.
-  description:
-    'A 120–165 character description used as the default meta description and in the Organization schema. Say what you do, for whom, and what sets you apart.',
+  tagline: brand.tagline,
+  description: brand.description,
   locale: 'en',
   themeColor: '#0f4c81', // TODO per site — mirror the --brand token in global.css
   ogImage: '/og/default.png',

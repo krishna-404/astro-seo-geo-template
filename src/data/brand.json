@@ -1,0 +1,7 @@
+{
+  "$comment": "The brand strings, in the one place every reader can reach. src/data/site.ts spreads name, tagline and description into SITE (the Astro side); the plain-node scripts that cannot import TypeScript — scripts/generate-llms.mjs and marketing/og/render-pages.mjs — read this file instead of keeping their own copies. Until 27 Sep 2026 the name and tagline were typed in all three, and marketing/README.md had to tell a new site to edit each one. Change them here and nowhere else. The domain lives in src/data/origin.mjs; published numbers in src/data/facts.json; colour in src/styles/global.css.",
+  "name": "Example Co",
+  "tagline": "A one-line description of what this company does",
+  "description": "A 120–165 character description used as the default meta description and in the Organization schema. Say what you do, for whom, and what sets you apart.",
+  "brief": "Two or three sentences an answer engine can quote verbatim: what the company does, for whom, and the one thing that makes it different. Longer than the meta description on purpose — this one is written to be lifted whole into an answer, not clamped into a SERP."
+}

@@ -9,7 +9,7 @@ it cites recommends. The only way to know is to ask the assistants the buyer's
 questions and write down what came back. That is this panel. Run it **monthly**
 (the Monday cadence run asks for it when the last run is older than 35 days);
 each run is a `## Run YYYY-MM-DD` block below, oldest first, so the trend reads
-top to bottom. `npm run audit:discovery` scores the panel's recency.
+top to bottom. `npm run aeo` scores the panel's recency as one of its levers.
 
 **How to run it (20 minutes).** Logged out where possible, target-market
 location if the assistant allows one. Ask each prompt in

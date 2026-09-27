@@ -1,6 +1,6 @@
 # Example Co — full corpus
 
-> A one-line description of what this company does This file concatenates every blog and glossary page
+> A one-line description of what this company does This file concatenates every content page
 > published on example.com, tldr and full body, for a reader
 > that wants the content in one fetch rather than a crawl per page. It is
 > generated at build time from the same MDX source the pages render from —

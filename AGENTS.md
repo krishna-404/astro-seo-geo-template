@@ -214,7 +214,8 @@ wins any conflict. The rules below are the enforced subset.
   a cited page is strengthened and linked, never rewritten; an uncited page
   gets an answer-shaped `tldr`, a FAQ block in the searcher's words and named
   sources. The monthly AI prompt panel lives in `marketing/ai-panel.md` and is
-  never fabricated. `npm run audit:discovery` scores the discovery levers.
+  never fabricated. The off-funnel discovery levers are scored beside the
+  funnel by `npm run aeo`.
 - **AEO and GEO have one number, and it says what it does not know.**
   `npm run aeo` (also the first section of `npm run insights`) scores the
   funnel that getting cited actually is — reachable → ingested → indexed →

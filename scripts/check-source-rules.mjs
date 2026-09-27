@@ -29,6 +29,8 @@
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { CLAMP_MAX, survivesClamp } from '../src/lib/clamp.mjs';
+import { readCollection, readAll, entryFiles } from './lib/content.mjs';
 
 let fail = 0;
 const bad = (msg) => {
@@ -83,15 +85,15 @@ console.log('→ every blog author is in the registry (src/data/authors.json →
 // author is missing from the registry would silently render an unlinked name.
 const REG = JSON.parse(readFileSync('src/data/authors.json', 'utf8')).authors;
 found = 0;
-for (const f of readdirSync('src/content/blog').filter((n) => /\.mdx?$/.test(n))) {
-  const p = join('src/content/blog', f);
-  const text = readFileSync(p, 'utf8');
-  if (/^draft:\s*true$/m.test(text)) continue;
-  const name = text.match(/^author:\s*\n\s+name:\s*['"]?([^'"\n]+?)['"]?\s*$/m)?.[1];
-  const sameAs = [...text.matchAll(/^\s+-\s+['"]?(https?:\/\/[^'"\s]+)['"]?\s*$/gm)].map((m) => m[1]);
+// Published AND scheduled: a queued post goes live on a build with no author
+// in the room, so it has to be right now (scripts/lib/content.mjs § who wants
+// what). Drafts are excluded — they render nowhere.
+for (const entry of readCollection('blog', { include: ['published', 'scheduled'] })) {
+  const name = entry.data.author?.name;
+  const sameAs = entry.data.author?.sameAs ?? [];
   const hit = REG.find((a) => a.sameAs.some((s) => sameAs.includes(s)) || a.name === name);
   if (!hit) {
-    bad(`${p} author "${name ?? '(unparsed)'}" matches no entry in src/data/authors.json — add the author (real profile, real bio) so the byline links to /author/<slug>`);
+    bad(`${entry.file} author "${name ?? '(unparsed)'}" matches no entry in src/data/authors.json — add the author (real profile, real bio) so the byline links to /author/<slug>`);
     found = 1;
   }
 }
@@ -106,20 +108,16 @@ console.log('→ blog dates parse and in-body interlinks (AGENTS § Content rule
 // generated related-posts footer does not count, which is why this reads the
 // markdown body, not the built page.
 found = 0;
-for (const f of readdirSync('src/content/blog').filter((n) => /\.mdx?$/.test(n))) {
-  const p = join('src/content/blog', f);
-  const text = readFileSync(p, 'utf8');
-  if (/^draft:\s*true$/m.test(text)) continue;
-  const date = text.match(/^published:\s*['"]?(\d{4}-\d{2}-\d{2})['"]?\s*$/m)?.[1];
-  if (!date) {
-    bad(`${p} has no parseable "published: YYYY-MM-DD" line`);
+for (const entry of readCollection('blog', { include: ['published', 'scheduled'] })) {
+  const published = entry.data.published;
+  if (!published || Number.isNaN(new Date(published).getTime())) {
+    bad(`${entry.file} has no parseable "published: YYYY-MM-DD" line`);
     found = 1;
     continue;
   }
-  const body = text.replace(/^---\n[\s\S]*?\n---\n/, '');
-  const links = [...body.matchAll(/\]\(\/[a-z]/g)].length;
+  const links = [...entry.body.matchAll(/\]\(\/[a-z]/g)].length;
   if (links < 2) {
-    bad(`${p} has ${links} in-body internal link(s) — minimum 2, anchored on the phrase a searcher types (AGENTS § Content rules)`);
+    bad(`${entry.file} has ${links} in-body internal link(s) — minimum 2, anchored on the phrase a searcher types (AGENTS § Content rules)`);
     found = 1;
   }
 }
@@ -169,7 +167,7 @@ console.log('→ an inline `bars` figure cites one of the entry’s own sources 
 // otherwise a chart carries a figure the page never cites (AGENTS rule 1
 // failing in a picture instead of a sentence).
 found = 0;
-for (const p of walkContent('src/content')) {
+for (const p of entryFiles()) {
   const text = readFileSync(p, 'utf8');
   const fm = text.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? '';
   if (!/^figures:/m.test(fm)) continue;
@@ -202,28 +200,20 @@ console.log('→ frontmatter titles survive the SERP clamp without a mid-phrase 
 // So: a title is fine at 60 characters or fewer, or if it carries an em-dash or
 // pipe clause that starts inside the budget (the clamp drops it whole).
 // Anything else would be hard-cut, and fails here rather than in the SERP.
-const CLAMP_MAX = 60; // keep in step with clampTitle's `max` default
+// CLAMP_MAX and survivesClamp come from src/lib/clamp.mjs — the same function
+// BaseLayout renders through and the posts API refuses on, so the three cannot
+// disagree about what 60 means. The YAML value is read by the shared parser,
+// which handles a single-quoted scalar's doubled apostrophes for free.
 found = 0;
-for (const f of walkContent('src/content')) {
-  if (!/\.mdx?$/.test(f)) continue;
-  const text = readFileSync(f, 'utf8');
-  if (/^draft:\s*true$/m.test(text)) continue;
-  // Measure the VALUE, not the YAML: a single-quoted scalar doubles its
-  // apostrophes ('' → '), a double-quoted one backslash-escapes.
-  const tm = text.match(/^title:\s*(['"])(.+)\1\s*$/m);
-  const title = tm ? (tm[1] === "'" ? tm[2].replace(/''/g, "'") : tm[2].replace(/\\(["\\])/g, '$1')) : null;
-  if (!title || title.length <= CLAMP_MAX) continue;
-  const emDash = title.lastIndexOf(' — ');
-  const pipe = title.lastIndexOf(' | ');
-  const clean = (emDash > 0 && emDash <= CLAMP_MAX) || (pipe > 0 && pipe <= CLAMP_MAX);
-  if (!clean) {
-    const cut = title.slice(0, CLAMP_MAX);
-    bad(
-      `${f} title is ${title.length} chars and would be hard-cut to "${cut.slice(0, cut.lastIndexOf(' '))}" — ` +
-        `keep it to ${CLAMP_MAX}, or put the sacrificial half after " — " (src/lib/clampTitle.ts)`
-    );
-    found = 1;
-  }
+for (const entry of readAll({ include: ['published', 'scheduled'] })) {
+  const title = typeof entry.data.title === 'string' ? entry.data.title : null;
+  if (!title || survivesClamp(title)) continue;
+  const cut = title.slice(0, CLAMP_MAX);
+  bad(
+    `${entry.file} title is ${title.length} chars and would be hard-cut to "${cut.slice(0, cut.lastIndexOf(' '))}" — ` +
+      `keep it to ${CLAMP_MAX}, or put the sacrificial half after " — " (src/lib/clamp.mjs)`
+  );
+  found = 1;
 }
 if (!found) console.log('   ok');
 

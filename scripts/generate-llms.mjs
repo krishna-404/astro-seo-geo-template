@@ -14,7 +14,7 @@
  * WHY GENERATED. On the site this template came from, llms.txt was
  * hand-maintained: every claim in it was retyped by a person, with nothing
  * checking it stayed in step with the site, and the page list had no
- * mechanism to notice a new glossary term or blog post. Generating both from
+ * mechanism to notice a new collection entry. Generating both from
  * source is the same discipline the sitemap and lastmod.json already get.
  *
  * llms.txt stays an INDEX — title, link, one line each — per the llmstxt.org
@@ -25,9 +25,11 @@
 import { writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readCollection, bodyAsText, leadFigureLine } from './lib/readContent.mjs';
+import { readCollection, bodyAsText, leadFigureLine } from './lib/content.mjs';
+import { collections } from './lib/routes.mjs';
 import { SITE_URL } from '../src/data/origin.mjs';
 import facts from '../src/data/facts.json' with { type: 'json' };
+import brand from '../src/data/brand.json' with { type: 'json' };
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const url = (path) => `${SITE_URL}${path}`;
@@ -39,17 +41,36 @@ const url = (path) => `${SITE_URL}${path}`;
  * tagline and description should read identically in both places. The domain
  * itself comes from origin.mjs, the one shared constant.
  */
+// The brand strings from src/data/brand.json — the same file site.ts reads, so
+// llms.txt cannot introduce a second name for the company. `brief` rather than
+// `description`: this paragraph is written to be lifted whole into an answer,
+// where the meta description is written to survive the SERP clamp.
 const LLMS = {
-  name: 'Example Co',
-  tagline: 'A one-line description of what this company does',
-  description:
-    'Two or three sentences an answer engine can quote verbatim: what the ' +
-    'company does, for whom, and the one thing that makes it different.',
+  name: brand.name,
+  tagline: brand.tagline,
+  description: brand.brief,
 };
 
-const COLLECTIONS = {
-  blog: { route: '/blog', label: 'Blog' },
-  glossary: { route: '/glossary', label: 'Glossary' },
+// Collections, routes and labels from src/data/collections.json — the one
+// config. A new collection appears in llms.txt the build after its entry
+// lands there, with no edit here.
+const COLLECTIONS = Object.fromEntries(
+  Object.entries(collections()).map(([c, cfg]) => [c, { route: cfg.route, label: cfg.eyebrow }])
+);
+
+/**
+ * The one or two sentences that tell a machine reader what a collection IS.
+ * A collection with no blurb still gets its section and its list — the blurb
+ * is the editorial half, and its absence is not a reason to omit the pages.
+ */
+const BLURB = {
+  glossary:
+    'Reference definitions. Each entry carries a short definition written to be\n' +
+    'quoted, its authorities by name, and a `retrieved` date where a URL was\n' +
+    'checked. Where a figure is jurisdiction-specific or unverified, the entry says\n' +
+    'so rather than publishing a number.',
+  solutions: 'What this company sells, one page per offering: what the customer gets, how it is delivered, and what it costs where a price is published.',
+  comparison: 'Head-to-head comparisons. Every cell in every table names its source and the date it was checked.',
 };
 
 const entries = Object.fromEntries(
@@ -64,6 +85,30 @@ const listSection = (key) =>
   entries[key]
     .map((e) => `- [${e.data.title}](${url(`${COLLECTIONS[key].route}/${e.slug}`)})${e.data.description ? `: ${e.data.description}` : ''}`)
     .join('\n');
+
+/**
+ * One `## <Label>` section per collection: its blurb where it has one, then
+ * its entries. A glossary-shaped collection (entries carry `term`) lists the
+ * terms inline — an agent wants the vocabulary, not a link per word; every
+ * other collection lists title, URL and description, one per line.
+ */
+function collectionSections() {
+  return Object.keys(COLLECTIONS)
+    .map((key) => {
+      const cfg = COLLECTIONS[key];
+      const list = entries[key];
+      const isTerms = list.length > 0 && list.every((e) => e.data.term);
+      const body = isTerms
+        ? list.map((e) => e.data.term ?? e.data.title).join(' · ')
+        : listSection(key);
+      const lines = [`## ${cfg.label}`, ''];
+      if (BLURB[key]) lines.push(BLURB[key], '');
+      lines.push(body || `(no entries published yet)`, '');
+      lines.push(`Index: <${url(cfg.route)}>${key === 'blog' ? ` · Feed: <${url('/rss.xml')}>` : ''}`);
+      return lines.join('\n');
+    })
+    .join('\n\n');
+}
 
 const llmsTxt = `# ${LLMS.name}
 
@@ -84,26 +129,11 @@ sourced is not published.
 - [About](${url('/about')})
 - [Contact](${url('/contact')})
 - [For LLMs](${url('/for-llms')}): a brand brief for automated readers
-- [Full corpus](${url('/llms-full.txt')}): every blog and glossary page in one file
+- [Full corpus](${url('/llms-full.txt')}): every content page in one file
 - [RSS](${url('/rss.xml')})
 - [Sitemap](${url('/sitemap-index.xml')})
 
-## ${COLLECTIONS.blog.label}
-
-${listSection('blog') || '(no posts published yet)'}
-
-Index: <${url('/blog')}> · Feed: <${url('/rss.xml')}>
-
-## ${COLLECTIONS.glossary.label}
-
-Reference definitions. Each entry carries a short definition written to be
-quoted, its authorities by name, and a \`retrieved\` date where a URL was
-checked. Where a figure is jurisdiction-specific or unverified, the entry says
-so rather than publishing a number.
-
-${entries.glossary.map((e) => e.data.term ?? e.data.title).join(' · ') || '(no entries published yet)'}
-
-Index: <${url('/glossary')}>
+${collectionSections()}
 
 ## Contact
 
@@ -140,7 +170,7 @@ const corpusSections = Object.keys(COLLECTIONS).flatMap((key) =>
 
 const llmsFullTxt = `# ${LLMS.name} — full corpus
 
-> ${LLMS.tagline} This file concatenates every blog and glossary page
+> ${LLMS.tagline} This file concatenates every content page
 > published on ${new URL(SITE_URL).host}, tldr and full body, for a reader
 > that wants the content in one fetch rather than a crawl per page. It is
 > generated at build time from the same MDX source the pages render from —

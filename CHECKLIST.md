@@ -337,13 +337,22 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   Zero requests and zero font-swap shift out of the box; a site that chooses
   a display face (§8, `--font-display`) self-hosts one woff2 family in
   `public/fonts/` under `font-src 'self'` — never a hosted font service.
-- ✅ **Playwright and sharp are NOT dependencies** — installed in CI/at
-  publish time, keeping a 300MB browser out of `npm ci`. **`pagefind` IS a
-  devDependency** — the documented exception: it runs on every build (the
-  search index must exist wherever dist/ does), it's a ~4MB native binary
-  not a browser, and every `npm ci` needs it. Policy:
-  devDependencies are acceptable; the live site ships no new runtime
-  dependency without a CHECKLIST entry.
+- ✅ **THE DEPENDENCY POLICY, stated once.** Dev-time dependencies are
+  acceptable; the LIVE SITE ships no new runtime dependency without a
+  CHECKLIST entry. Within dev-time there are two classes:
+  - **Declared devDependencies** — anything a plain `npm ci` then a command
+    must resolve. `pagefind` (the search index must exist wherever dist/ does;
+    a ~4MB native binary, not a browser), `eslint-plugin-astro`, `yaml`, and
+    the five `unified`/`remark`/`rehype` packages `report-html.mjs` imports.
+    Those five were UNDECLARED until 27 Sep 2026 and resolved transitively
+    through Astro's own tree, which works until Astro reorganises its
+    dependencies and the cadence report breaks for a reason nothing in the
+    repo explains. They are pinned at the versions that tree already carries.
+  - **Installed ad hoc with `--no-save`** — Playwright, sharp, html-validate,
+    axe-core: publish-time or sweep-time tools that keep a 300MB browser out
+    of `npm ci`. `scripts/verify.mjs → ensureAll()` installs them in ONE call,
+    because sequential `--no-save` installs prune each other (this took down
+    the first real CI run).
 - ⬜ **Structured-data types beyond the defaults** (Product/Offer, Service,
   LocalBusiness…) — per site. Pattern to follow: one shared node module so
   two pages can never disagree; never add `review`/`aggregateRating` you
@@ -399,10 +408,19 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   (schema-enforced `sameAs`). Non-negotiable.
 - ✅ **Bing Webmaster verification slot** — Bing's index feeds Copilot,
   DuckDuckGo and ChatGPT search. Two distribution channels, not one.
-- ✅ **IndexNow**: key file + script that submits only LIVE sitemap URLs
-  (never the local build — can't ping a 404), race-guarded by
-  `--min-urls`, run by `/ship` after every deploy. Google doesn't participate; the
-  sitemap covers Google.
+- ✅ **IndexNow, plus Bing URL Submission**: key file + a script that submits
+  only LIVE sitemap URLs (never the local build — it cannot ping a 404),
+  following the sitemap index to its children, with `--min-urls` as a sanity
+  floor. Run by `/ship` and by the daily cadence run after every deploy.
+  Where `BING_WEBMASTER_API_KEY` is set it also posts the last two days'
+  changed URLs (newest first, capped at 100) to Bing's own URL Submission
+  API — belt and braces on the one index Copilot and ChatGPT search answer
+  from; a quota refusal there is logged, never fatal. Google does not
+  participate in IndexNow; the sitemap covers Google. WHY THE WAIT LOOPS WENT
+  (27 Sep 2026): they existed for a pipeline where CI fired on a push and
+  raced the deploy. The deploy calls this script itself now, so production is
+  already the new production — a hundred lines of race handling for a race
+  that cannot happen is a hundred lines that can be wrong.
 
 ## 8. Accessibility & CSS
 
@@ -423,8 +441,7 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
 - ✅ **Source-level a11y lint**: `eslint-plugin-astro` `flat/jsx-a11y-strict`
   (`eslint.config.js`, `npm run lint`, CI step) — catches malformed ARIA in
   templates, which the built-HTML checks structurally cannot. devDependency
-  only. Policy: dev-time dependencies are acceptable; the LIVE SITE ships no
-  new dependency without a CHECKLIST entry.
+  only — see § 6's dependency policy, stated once there.
 - ✅ **Motion is opt-in via media query** (AGENTS rule 14): disclosure/entry
   animation uses `@starting-style` / `allow-discrete` / `interpolate-size` /
   `::details-content`, always inside `prefers-reduced-motion:
@@ -740,12 +757,80 @@ dispatched), in order:
   (say the phrase you already rank for; push a buyer query from 7 to 3) sit
   in the page × query dimension that a report sorted by impressions never
   shows.
-- ✅ **Discovery scorecard, informational** (`npm run audit:discovery`,
-  `scripts/discovery-audit.mjs`): the Sep 2026 outside-audit frame as code —
-  twenty levers scored 0–100 with evidence, on the site from `dist/` and off
-  it from the newest snapshot, `link-targets.md`, `DATA-SHEET.md` and
-  `ai-panel.md`. Never a gate; n/a levers print their reason so nobody
-  invents a thing to lift a number. The weekly cadence run prints it.
+- ✅ **One scorer per question: the discovery levers live inside the AEO
+  report** (`aeoLevers()` in `scripts/lib/aeo.mjs`, printed by `npm run aeo`
+  and by `npm run insights`). There was a second script, `audit:discovery`,
+  scoring twenty levers; six of them were the funnel's own stages computed a
+  different way, so one question had two numbers and a reader had to guess
+  which. WHY THE FOLD: the nine levers the invariant battery already FAILS on
+  (crawler access, extractable schema, author E-E-A-T, content shape, citation
+  density, ItemList, image alt, the machine brief, social cards) do not also
+  need a grade — scoring an enforced rule invites "the lever says 92" as an
+  argument against a red check. What survives is the six things nothing else
+  measures: listings, the prompt panel, the data sheet, Bing verification,
+  Organization completeness, commercial coverage. Informational, excluded from
+  the funnel's mean by construction, and a lever with no data scores `null`
+  with its reason so nobody invents a thing to lift a number.
+- ✅ **One list of collections** (`src/data/collections.json`, 27 Sep 2026):
+  folder name → route, `twins`, social-card eyebrow, schema type. Eleven
+  scripts, the worker and the OG renderer read it; `check-collection-routes`
+  fails a content folder that is not declared there, and a route file that is
+  missing for one that is. WHY: the same list was hand-kept in eleven places in
+  five different shapes, and they had drifted — the twin-presence check, the
+  orphan check and the lead-figure check each carried their own
+  `['blog','glossary']`. Only `wrangler.jsonc → run_worker_first` stays
+  hand-kept, because JSONC config cannot import anything, so exactly ONE parity
+  rule survives (`check-parity` rule 2) where there were three.
+- ✅ **One publish status, chosen explicitly per check**
+  (`scripts/lib/content.mjs`, 27 Sep 2026): `statusOf()` returns
+  `draft | scheduled | published`, and every reader states which it wants. WHY:
+  three answers to "is this live" coexisted — `isPublished()`, a bare
+  `/^draft:\s*true$/m` regex, and `!data.draft` — so a SCHEDULED post counted as
+  live in four checks and not in three. A link to one read as dead in the link
+  graph while the voice check skipped it, which means a post could go live
+  unattended having never been checked. Now: link graph, voice and source rules
+  take published + scheduled; the inventory lists all three with a status
+  column; twins, llms.txt, lastmod, the sitemap and RSS stay published-only.
+- ✅ **Permanent redirects are data, not code** (`src/data/redirects.json`,
+  27 Sep 2026): each row carries `to` and a one-line `reason`. `check-parity`
+  rule 5 fails a row that is missing from `run_worker_first` or that has no
+  reason. WHY: three scripts regex-parsed a TypeScript map out of
+  `worker/index.ts` to check it, and a regex over source is a parser nobody
+  maintains.
+- ✅ **Unit tests, zero dependencies, at the fast tier** (`npm test` →
+  `node --test`, 27 Sep 2026): the pure functions behind the judgement calls —
+  the SERP clamp (one implementation in `src/lib/clamp.mjs`, shared by
+  BaseLayout, the posts API and `check-source-rules`), the posts API's shape
+  rules, the BOFU and high-intent classifiers, the AEO funnel's scoring, the
+  crawler registry, the CSV reader, the ACTIONS check kinds, the content reader
+  and the marketing-file parsers. Wired into `.githooks/pre-commit` and
+  `npm run verify`. WHY: the enum drift that broke every API post (§ 1) would
+  have been a ten-line test — and writing these found two more defects the same
+  day: `classify()` reported the robots OPT-OUT token `Applebot-Extended` as an
+  Apple crawler visit (traffic that cannot exist), and the data-sheet field
+  reader treated an EMPTY `**Answer:**` as answered, so every open question read
+  as closed in the JSON output. Neither was visible in any report.
+- ✅ **One brand record for the node scripts** (`src/data/brand.json`,
+  27 Sep 2026): name, tagline, meta description and the quotable `brief`.
+  `site.ts` spreads it; `generate-llms.mjs` and `og/render-pages.mjs` read the
+  same file. WHY: the name and tagline were typed into all three, and
+  `marketing/README` had to tell a new site to edit each one — two of the three
+  "EDIT FOR YOUR SITE" knobs are gone.
+- ✅ **IndexNow submits, and does not wait** (`scripts/indexnow.mjs`,
+  27 Sep 2026): reads the live sitemap through its index, submits once to the
+  shared IndexNow endpoint, and — where `BING_WEBMASTER_API_KEY` is set — posts
+  the last two days' changed URLs (newest first, capped at 100) to Bing's own
+  URL Submission API, never fatally. `--changed`, `--expect` and two polling
+  loops are gone. WHY: they guarded a race between a push-triggered CI run and
+  a deploy. The deploy calls this script itself now, so the race cannot happen,
+  and the sitemap read follows the index rather than stopping at
+  `sitemap-0.xml` — which silently capped submissions at the first file.
+- ✅ **The GenAI export is unzipped by `unzip`, not by a hand-rolled reader**
+  (`scripts/lib/genai.mjs`, 27 Sep 2026). WHY: seventy lines walked local file
+  headers, inflated deflate entries and scanned forward for a data descriptor —
+  every line a guess about a format the runtime already understands, whose
+  failure mode is a silently empty report. Where `unzip` is missing the script
+  prints the one-line ask instead.
 - ✅ **External link rot is checked monthly, never in CI**
   (`.github/workflows/linkrot.yml`, lychee over built HTML, external URLs
   only). Citations rot on someone else's schedule and a flaky third-party

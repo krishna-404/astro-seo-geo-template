@@ -112,9 +112,10 @@ import crypto from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { SITE_URL } from '../src/data/origin.mjs';
 import { highIntentReport, playbookBlocks } from './lib/intent.mjs';
+import { sitePath } from './lib/html.mjs';
 import { readGenAiExports, genAiReport, GENAI_DIR } from './lib/genai.mjs';
 import { classify } from './lib/crawlers.mjs';
-import { aeoReport, aeoMarkdown } from './lib/aeo.mjs';
+import { aeoReport, aeoLevers, aeoMarkdown } from './lib/aeo.mjs';
 
 const SITE = new URL(SITE_URL).host;
 if (/example\.com$/.test(SITE)) {
@@ -519,7 +520,7 @@ async function cloudflare() {
 
 /**
  * Why Bing at all: Bing's index is what Copilot answers from and what ChatGPT
- * search leans on for web results (the Sep 2026 discovery-audit frame — "classic SEO and Bing indexing are prerequisites for GEO, not
+ * search leans on for web results (the Sep 2026 outside discovery audit — "classic SEO and Bing indexing are prerequisites for GEO, not
  * alternatives"). Verify the site there (site.ts → VERIFICATION.bing); IndexNow already
  * pings it; this reads the numbers back. The JSON API's
  * response shape is `{ d: [...] }` on the classic endpoint; guarded either way.
@@ -563,7 +564,7 @@ async function bing() {
   const last = crawlRows.at(-1) ?? {};
   const pages = (Array.isArray(pageStats) ? pageStats : [])
     .map((r) => ({
-      page: String(r.Query ?? r.Url ?? r.query ?? '').replace(`https://${SITE}`, '') || '/',
+      page: sitePath(SITE, r.Query ?? r.Url ?? r.query ?? ''),
       impressions: Number(r.Impressions ?? 0),
       clicks: Number(r.Clicks ?? 0),
     }))
@@ -624,6 +625,12 @@ try {
     site: SITE, windowDays: DAYS, cloudflare: c, bing: b, searchConsole: g,
     generativeAi: ai, indexing: ins, sitemapCount: sitemap?.length ?? null,
     panel: existsSync(AI_PANEL) ? readFileSync(AI_PANEL, 'utf8') : '', now,
+    // The off-funnel levers — listings, the prompt panel, the data sheet, Bing
+    // verification, the Organization node, commercial coverage. Read from the
+    // repo and dist/, informational, never in the funnel's mean. They were a
+    // second script (audit:discovery) until 27 Sep 2026; two formulas for one
+    // stage gave two numbers.
+    levers: aeoLevers(),
   });
 } catch (e) { aeo = { error: e.message }; }
 
@@ -721,7 +728,7 @@ else {
     g.queries.slice(0, 30).map((r) => [r.keys[0], r.clicks, r.impressions, pct(r.clicks, r.impressions), r.position.toFixed(1)]));
   out.push('\n**Top pages**\n');
   table(['Page', 'Clicks', 'Impressions', 'CTR', 'Position'],
-    g.pages.map((r) => [r.keys[0].replace(`https://${SITE}`, '') || '/', r.clicks, r.impressions, pct(r.clicks, r.impressions), r.position.toFixed(1)]));
+    g.pages.map((r) => [sitePath(SITE, r.keys[0]), r.clicks, r.impressions, pct(r.clicks, r.impressions), r.position.toFixed(1)]));
   out.push('\n**Opportunities** — ≥20 impressions at position 4–20: demand we rank for but do not win\n');
   if (g.opportunities.length === 0) out.push('_None in this window._');
   else table(['Query', 'Impressions', 'Clicks', 'Position'],
@@ -735,7 +742,7 @@ else {
     for (const [page, rows] of Object.entries(g.pageQueries)) {
       const total = rows.reduce((n, r) => n + r.impressions, 0);
       if (total < 3) continue;
-      out.push(`- \`${page.replace(`https://${SITE}`, '') || '/'}\` (${total} impr): ` +
+      out.push(`- \`${sitePath(SITE, page)}\` (${total} impr): ` +
         rows.slice(0, 5).map((r) => `"${r.query}" ${r.impressions}@${r.position.toFixed(0)}`).join(' · '));
     }
     out.push('');
@@ -802,7 +809,7 @@ if (ins) {
     for (const [state, rows] of Object.entries(ins.byState).sort((a, b) => b[1].length - a[1].length)) {
       out.push(`**${state}** — ${rows.length}\n`);
       table(['URL', 'Last crawl', 'Google chose different canonical'],
-        rows.map((r) => [r.url.replace(`https://${SITE}`, '') || '/', r.lastCrawl ?? '—', r.canonicalMismatch ?? '']));
+        rows.map((r) => [sitePath(SITE, r.url), r.lastCrawl ?? '—', r.canonicalMismatch ?? '']));
       out.push('');
     }
   }

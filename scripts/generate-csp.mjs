@@ -39,20 +39,14 @@
  */
 
 import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { walkHtml } from './lib/html.mjs';
 import { join } from 'node:path';
 
 const DIST = 'dist';
 const HEADERS_FILE = join(DIST, '_headers');
 const WORKER_JSON = join('worker', 'csp.generated.json');
 const MARKER = '# @generated-csp';
-
-function walk(dir) {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
-    const p = join(dir, e.name);
-    return e.isDirectory() ? walk(p) : p.endsWith('.html') ? [p] : [];
-  });
-}
 
 if (!existsSync(DIST)) {
   console.error('generate-csp: no dist/ — run the build first');
@@ -68,7 +62,7 @@ let fail = 0;
 const SCRIPT_RE = /<script\b([^>]*)>([\s\S]*?)<\/script>/g;
 const JS_TYPES = /^(module|text\/javascript|application\/javascript)$/i;
 
-for (const file of walk(DIST)) {
+for (const file of walkHtml(DIST)) {
   const html = readFileSync(file, 'utf8');
 
   for (const m of html.matchAll(SCRIPT_RE)) {

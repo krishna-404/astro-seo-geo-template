@@ -13,6 +13,12 @@ echo "pre-commit: fast source checks (full battery runs at push via npm run veri
 
 node scripts/check-parity.mjs
 node scripts/check-source-rules.mjs
+
+# The unit tests. Zero dependencies, sub-second, and the one tier that can see
+# a pure function's behaviour rather than a file's shape — the enum drift that
+# broke every API post would have been a ten-line test.
+npm test --silent
+
 node scripts/check-voice.mjs
 node scripts/check-link-graph.mjs
 node scripts/content-inventory.mjs --check

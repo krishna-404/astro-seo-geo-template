@@ -81,6 +81,48 @@ check red once.
 
 ## 3. Stream A — scripts: shared libraries, one config, one scorer, tests
 
+> **✅ LANDED 27 Sep 2026**, on branch `claude/funny-ramanujan-tu03it` (a new
+> branch off `main`, because PR #14 is merged and a merged pull request cannot
+> track new work). A1–A9 are done, `npm run verify` is green in 16 steps, and
+> every new check was proven red once before it was left green. Two defects the
+> plan did not know about were found by A7's tests and fixed: `classify()`
+> reported the `Applebot-Extended` robots OPT-OUT token as an Apple crawler
+> visit, and the data-sheet reader treated an empty `**Answer:**` as answered,
+> so every open question read as closed in its JSON output. Both are recorded
+> in CHECKLIST § 9. What changed against the plan, and why:
+>
+> - **A2/A8 — the clamp.** The plan said to tighten the schema's `title` to
+>   `max(60)`. That would reject a title AGENTS explicitly allows (over 60 with
+>   a sacrificial " — " clause the clamp drops whole). Instead `src/lib/clamp.mjs`
+>   is now the one implementation — `CLAMP_MAX`, `clampTitle`, `survivesClamp` —
+>   and the schema refines `title` against `survivesClamp` while
+>   `check-source-rules`, `BaseLayout` and the posts API call the same function.
+>   One number, one place, and the allowance survives. `description` IS tightened
+>   to 70–165, the invariant battery's band.
+> - **A7 — the posts rules take the registry as an argument.** `worker/posts-rules.mjs`
+>   is plain ESM as planned, but `validatePost(raw, authors)` receives the author
+>   registry rather than importing `authors.json`: a JSON import needs a
+>   different spelling in each of node, tsc and esbuild, and a pure function is
+>   the better test surface anyway.
+> - **A3 — two extras the scan asked for, both cheap.** `src/data/brand.json`
+>   (the name/tagline/description/brief the node scripts could not import from
+>   `site.ts`) and `html.mjs → sitePath()` plus `sitemapUrls()`, which also fixed
+>   a real cap: `indexnow` and three other readers only ever read
+>   `sitemap-0.xml`, so a site with a sitemap index submitted its first file
+>   only.
+> - **A4 — `npm run aeo` no longer exits 2 with no snapshot.** It scores an
+>   empty one, so every stage reads "not measured" and the levers, which come
+>   from the repo, still print. Exiting would make a fresh clone answer a fair
+>   question with an error.
+> - **`check-parity` gained rule 6** (the `facts.json` ↔ `intent.json`
+>   competitor lists must match), which B3 needs and which the plan named as
+>   "cheap" in B3's own text.
+> - **Not done, deliberately:** `check-contrast` and `check-a11y` still serve
+>   `dist/` twice. The plan marked that optional; sharing `html.mjs`'s walker did
+>   not make merging them a small change, and two browser passes at 5s each is
+>   not worth a rewrite of two working sweeps.
+
+
 ### A1. `src/data/collections.json` — the one collections config
 
 Create it (plain JSON, imported by the worker and every script; Astro

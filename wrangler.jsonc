@@ -29,7 +29,7 @@
     // Serves dist/404.html with a 404 status for unknown paths.
     "not_found_handling": "404-page",
     // Routes the worker must intercept:
-    //   /api/*             form proxy + sheet data + (optional) analytics collector
+    //   /api/*             form proxy + sheet data + the posts API + (optional) analytics collector
     //   /hi, /hi/*         cookieless attribution rewrite to /contact
     //   /blog/*, /glossary/*  markdown-twin content negotiation (Accept header)
     //   /s.js              (optional) same-origin analytics script proxy

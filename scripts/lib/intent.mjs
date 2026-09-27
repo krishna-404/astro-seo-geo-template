@@ -36,13 +36,13 @@
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readCollection } from './readContent.mjs';
+import { readCollection } from './content.mjs';
 import { saysPhrase } from './pageText.mjs';
+import { norm, sitePath } from './html.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const INTENT = JSON.parse(readFileSync(resolve(root, 'src/data/intent.json'), 'utf8'));
 
-const norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
 const alternation = (list) => list.map((s) => norm(s).replace(/ /g, '\\s+')).filter(Boolean).join('|');
 
 const signalRe = INTENT.signals?.length ? new RegExp(`\\b(?:${alternation(INTENT.signals)})\\b`) : null;
@@ -98,6 +98,30 @@ export function claimingPage(query, claims = claimedKeywords()) {
 }
 
 /**
+ * query (normalised) → the page Google actually shows for it, by impressions.
+ * Both report builders need it and both built it, with one of the two
+ * forgetting to strip the site prefix consistently.
+ *
+ * @param {Record<string, Array<{query:string, impressions:number}>>} pageQueries
+ * @param {string} site the bare host
+ * @returns {Record<string, {page: string, impressions: number}>}
+ */
+export function shownOnMap(pageQueries, site) {
+  /** @type {Record<string, {page: string, impressions: number}>} */
+  const shownOn = {};
+  for (const [page, rows] of Object.entries(pageQueries ?? {})) {
+    const path = sitePath(site, page);
+    for (const r of rows) {
+      const q = norm(r.query);
+      if (!shownOn[q] || shownOn[q].impressions < r.impressions) {
+        shownOn[q] = { page: path, impressions: r.impressions };
+      }
+    }
+  }
+  return shownOn;
+}
+
+/**
  * Build the high-intent block from a Search Console pull.
  *
  * @param {Array<{keys:string[], clicks:number, impressions:number, position:number}>} queries
@@ -107,14 +131,7 @@ export function claimingPage(query, claims = claimedKeywords()) {
  */
 export function highIntentReport(queries, pageQueries, site) {
   const claims = claimedKeywords();
-  const shownOn = {};
-  for (const [page, rows] of Object.entries(pageQueries ?? {})) {
-    const path = page.replace(`https://${site}`, '') || '/';
-    for (const r of rows) {
-      const q = norm(r.query);
-      if (!shownOn[q] || shownOn[q].impressions < r.impressions) shownOn[q] = { page: path, impressions: r.impressions };
-    }
-  }
+  const shownOn = shownOnMap(pageQueries, site);
 
   const rows = [];
   for (const r of queries) {
@@ -189,14 +206,7 @@ export function competitorIn(query) {
  */
 export function playbookBlocks(queries, pageQueries, site) {
   const claims = claimedKeywords();
-  const strip = (page) => page.replace(`https://${site}`, '') || '/';
-  const shownOn = {};
-  for (const [page, rows] of Object.entries(pageQueries ?? {})) {
-    for (const r of rows) {
-      const q = norm(r.query);
-      if (!shownOn[q] || shownOn[q].impressions < r.impressions) shownOn[q] = { page: strip(page), impressions: r.impressions };
-    }
-  }
+  const shownOn = shownOnMap(pageQueries, site);
 
   const bofu = [];
   const winning = [];
@@ -225,7 +235,7 @@ export function playbookBlocks(queries, pageQueries, site) {
   const minImpr = qw.minImpressions ?? 1;
   const quickWins = [];
   for (const [page, rows] of Object.entries(pageQueries ?? {})) {
-    const path = strip(page);
+    const path = sitePath(site, page);
     for (const r of rows) {
       if (r.position > maxPos || r.impressions < minImpr) continue;
       if (navRe && navRe.test(norm(r.query))) continue;

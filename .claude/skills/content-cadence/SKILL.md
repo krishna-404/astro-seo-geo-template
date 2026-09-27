@@ -381,10 +381,12 @@ coverage-layer pages because that is usually where the backlog is.
    `marketing/link-targets.md`; a phrasing the assistant used and the page
    does not say becomes a FAQ line. (c) Add to the panel's prompt set any new
    high-intent phrasing that earned impressions this week. (d) Print
-   `npm run audit:discovery` — the twenty-lever discovery scorecard — and
-   carry its CRITICAL rows into Decisions when they are the owner's to fix
-   (profiles, the entity record, exports) and into this run's PR when they
-   are the site's (a missing ItemList, an unsourced page). (e) Read the
+   `npm run aeo` and read the **Levers** table under the funnel — listings,
+   the prompt panel, the data sheet, Bing verification, Organization
+   completeness, commercial coverage — and carry its CRITICAL rows into
+   Decisions when they are the owner's to fix (profiles, the entity record,
+   exports) and into this run's PR when they are the site's (a missing
+   claiming page, an incomplete Organization node). (e) Read the
    **Bing** block when `BING_WEBMASTER_API_KEY` is set: Bing's index feeds
    Copilot and ChatGPT search, so a query Bing shows the site for and Google
    does not is a phrasing to say on the page too, and a page with Bing
@@ -400,7 +402,9 @@ coverage-layer pages because that is usually where the backlog is.
    to the session and the owner has named a folder for the export (a
    DATA-SHEET answer), look there for a `genai-*.zip` newer than the newest
    in `marketing/insights/genai/` and copy it in before reading; otherwise
-   the ask stands.
+   the ask stands. The reader extracts a zip with the system `unzip` into a
+   folder of the same name — no zip parsing of its own — so on a machine
+   without `unzip` it prints the one-line ask instead of an empty report.
 
 ## Changing the engine
 

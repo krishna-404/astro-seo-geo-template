@@ -1,25 +1,48 @@
 #!/usr/bin/env node
 /**
- * indexnow.mjs — tell Bing, Yandex and Seznam that URLs changed, instead of
- * waiting to be crawled. Google does not participate.
+ * indexnow.mjs — tell the answer-engine indexes that URLs changed, instead of
+ * waiting to be crawled.
  *
- *   node scripts/indexnow.mjs                       # submit everything in the live sitemap
- *   node scripts/indexnow.mjs --expect /new-page    # wait for /new-page to be live first
- *   node scripts/indexnow.mjs --min-urls 44         # wait until the deploy has landed
- *   node scripts/indexnow.mjs --dry-run             # show what would be sent
+ *   node scripts/indexnow.mjs                  # submit everything in the live sitemap
+ *   node scripts/indexnow.mjs --min-urls 44    # refuse to submit a suspiciously short list
+ *   node scripts/indexnow.mjs --dry-run        # show what would be sent, send nothing
  *
- * The design point that matters: the URL list comes from the LIVE sitemap, not
- * from the local build. Submitting a URL that 404s is worse than not submitting
- * — it wastes the ping and erodes the host's standing with the endpoint. Reading
- * production means we can only ever submit pages that actually exist right now.
+ * TWO ENDPOINTS, ONE RUN:
+ *
+ *   IndexNow (https://api.indexnow.org/indexnow) — one POST, fanned out by the
+ *   shared endpoint to Bing, Yandex, Seznam and Naver. Google does not
+ *   participate. Needs a key file served from the site's own root.
+ *
+ *   Bing URL Submission (ssl.bing.com/webmaster/api.svc) — when
+ *   BING_WEBMASTER_API_KEY is set. IndexNow already reaches Bing, so this is
+ *   belt and braces on the ONE index that decides whether Copilot and ChatGPT
+ *   search can cite the site at all: Bing's quota is per site and small for a
+ *   new one, so only URLs whose sitemap <lastmod> is within the last two days
+ *   go, newest first, capped at 100. A non-2xx prints the body and the run
+ *   still succeeds — IndexNow got there.
+ *
+ * THE DESIGN POINT THAT MATTERS. The URL list comes from the LIVE sitemap, not
+ * from the local build. Submitting a URL that 404s is worse than not
+ * submitting: it wastes the ping and erodes the host's standing with the
+ * endpoint. Reading production means we can only ever submit pages that exist
+ * right now.
+ *
+ * WHAT THIS USED TO DO AND NO LONGER DOES. It had `--changed <git-range>` (a
+ * diff-to-routes mapper), `--expect <path>`, and two polling loops that waited
+ * for a deploy to land — machinery for a pipeline where CI fired on a push and
+ * raced the deploy. There is no such race now: `/ship` and the daily cadence
+ * run call this AFTER `wrangler deploy` returns, so production is already the
+ * new production. A hundred lines of race handling for a race that cannot
+ * happen is a hundred lines that can be wrong. `--min-urls` stays, because a
+ * short list still means something went wrong upstream.
  *
  * Zero dependencies, so it runs from a clean checkout with nothing installed.
  */
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
-import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { SITE_URL } from '../src/data/origin.mjs';
+import { sitemapUrls, sitemapEntries } from './lib/html.mjs';
 
 const ORIGIN = SITE_URL;
 const HOST = new URL(ORIGIN).host;
@@ -27,10 +50,10 @@ const HOST = new URL(ORIGIN).host;
 /**
  * The IndexNow key. Two sources, tried in order:
  *
- *   1. The INDEXNOW_KEY env var (what CI sets — see .github/workflows/indexnow.yml).
+ *   1. The INDEXNOW_KEY env var.
  *   2. Discovery: a `public/<key>.txt` whose content is exactly its own
  *      basename — the shape IndexNow requires the key file to have anyway,
- *      so committing the key file once makes local runs need no setup.
+ *      so committing the key file once makes every run need no setup.
  *
  * To generate one (any 8–128 chars of a–z, A–Z, 0–9 and hyphen work; hex is
  * the convention):
@@ -38,7 +61,8 @@ const HOST = new URL(ORIGIN).host;
  *   k=$(openssl rand -hex 16); printf %s "$k" > "public/$k.txt"
  *
  * The key is not a secret (it is served publicly by design — its only job is
- * proving you control the host), so committing it is fine.
+ * proving you control the host), so committing it is fine. ACTIONS A-L09
+ * checks for it with this same rule.
  */
 function discoverKey() {
   if (process.env.INDEXNOW_KEY) return process.env.INDEXNOW_KEY.trim();
@@ -54,195 +78,115 @@ function discoverKey() {
   return null;
 }
 
-const KEY = discoverKey();
-if (!KEY) {
-  // A skip, not a failure: a fresh clone of the template has no key yet, and
-  // a permanently red IndexNow workflow teaches people to ignore red. The
-  // loud message is the safeguard against this skip hiding a real misconfig.
-  console.log(
-    'indexnow: no key configured — skipping submission.\n' +
-      '  To enable: k=$(openssl rand -hex 16); printf %s "$k" > "public/$k.txt"\n' +
-      '  and commit it (or set the INDEXNOW_KEY secret for CI). See PLAYBOOK.'
-  );
-  process.exit(0);
-}
-const KEY_LOCATION = `${ORIGIN}/${KEY}.txt`;
-
-// The shared endpoint forwards to every participating engine, so one POST
-// covers Bing, Yandex and Seznam rather than three.
-const ENDPOINT = 'https://api.indexnow.org/indexnow';
-
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
-const expectIdx = args.indexOf('--expect');
-const expectPath = expectIdx !== -1 ? args[expectIdx + 1] : null;
 const minIdx = args.indexOf('--min-urls');
-const minUrls = minIdx !== -1 ? Number(args[minIdx + 1]) : 0;
-const changedIdx = args.indexOf('--changed');
-const changedRange = changedIdx !== -1 ? args[changedIdx + 1] : null;
-
-/**
- * --changed <git-range>: submit only the URLs this deploy actually changed,
- * not the whole sitemap. IndexNow is for URLs that changed; re-submitting an
- * unchanged corpus on every deploy wastes the ping and erodes the host's
- * standing with the endpoint. Routes are derived from the diff:
- *
- *   src/content/<coll>/<slug>.md → /<coll>/<slug>
- *   src/pages/foo.astro          → /foo   (index.astro → the directory route)
- *
- * A change anywhere that rewrites every page (layouts, components, styles,
- * shared data, astro config, public/) falls back to the full sitemap — the
- * honest answer when everything changed. Deleted pages drop out naturally:
- * only URLs still present in the LIVE sitemap are ever submitted.
- */
-function changedRoutes(range) {
-  let names;
-  try {
-    names = execSync(`git diff --name-only ${range}`, { encoding: 'utf8' }).trim().split('\n').filter(Boolean);
-  } catch (e) {
-    console.log(`  git diff ${range} failed (${e.message.split('\n')[0]}) — falling back to full sitemap`);
-    return null;
-  }
-  const routes = new Set();
-  for (const f of names) {
-    let m;
-    if ((m = /^src\/content\/([^/]+)\/(.+)\.mdx?$/.exec(f))) routes.add(`/${m[1]}/${m[2]}`);
-    else if ((m = /^src\/pages\/(.+)\.astro$/.exec(f))) {
-      if (m[1].includes('[')) return null; // a template change touches every page it renders
-      const base = m[1].replace(/\/index$/, '');
-      routes.add(base === 'index' ? '/' : `/${base}`);
-    } else if (/^(src\/(layouts|components|styles|data|content\.config)|astro\.config|public\/)/.test(f)) {
-      return null; // site-wide change — everything may have new markup
-    }
-    // scripts/, worker/, docs, workflows: no rendered-page effect; ignored.
-  }
-  return routes;
-}
+const minUrls = minIdx !== -1 ? Number(args[minIdx + 1]) || 0 : 0;
 
 const fail = (msg) => {
   console.error(`indexnow: ${msg}`);
   process.exit(1);
 };
 
-/**
- * Poll a URL until it is 200, or give up. Cloudflare Workers deploys land in
- * seconds, so ~6 × 10s is generous headroom — the long window this had under a
- * container-rebuild deploy pipeline (20 × 15s) would just hide a real failure
- * for five minutes.
- */
-async function waitForLive(url, { tries = 6, delayMs = 10000 } = {}) {
-  for (let i = 1; i <= tries; i++) {
-    try {
-      const r = await fetch(url, { method: 'HEAD', redirect: 'manual' });
-      if (r.status === 200) return true;
-      console.log(`  ${url} -> ${r.status} (try ${i}/${tries})`);
-    } catch (e) {
-      console.log(`  ${url} -> ${e.message} (try ${i}/${tries})`);
-    }
-    if (i < tries) await new Promise((r) => setTimeout(r, delayMs));
-  }
-  return false;
+const KEY = discoverKey();
+if (!KEY) {
+  // A skip, not a failure: a fresh clone of the template has no key yet, and a
+  // permanently red IndexNow step teaches people to ignore red. The loud
+  // message is the safeguard against this skip hiding a real misconfiguration.
+  console.log(
+    'indexnow: no key configured — skipping submission.\n' +
+      '  To enable: k=$(openssl rand -hex 16); printf %s "$k" > "public/$k.txt"\n' +
+      '  and commit it (or set INDEXNOW_KEY in the environment). See PLAYBOOK §7.'
+  );
+  process.exit(0);
 }
+const KEY_LOCATION = `${ORIGIN}/${KEY}.txt`;
 
-// 1. The key file has to be live and contain exactly the key, or every
-//    submission is rejected with 403. Check it before sending anything.
-//
-//    Polled, not fetched once. The very first run after this lands on main
-//    starts while the deploy that ADDS the key file may still be in flight,
-//    so a single fetch would 404 and fail the run that is supposed to work.
-//    Only waits when we are already waiting on a deploy. Run by hand, it checks
-//    once and tells you immediately rather than sitting there polling.
-const waitingOnDeploy = Boolean(minUrls || expectPath);
+/* ------------------------------------------------------------ 1. key file */
+// Every submission is rejected with 403 unless the key file is live and
+// contains exactly the key. One fetch: the deploy has already landed.
 console.log(`Verifying key file at ${KEY_LOCATION}`);
-if (!(await waitForLive(KEY_LOCATION, { tries: waitingOnDeploy ? 6 : 1 }))) {
-  fail('key file never returned 200 — deploy it before submitting');
-}
-const keyRes = await fetch(KEY_LOCATION).catch((e) => fail(`key file unreachable: ${e.message}`));
-if (!keyRes.ok) fail(`key file returned ${keyRes.status} — it must be 200`);
+const keyRes = await fetch(KEY_LOCATION, { cache: 'no-store' }).catch((e) => fail(`key file unreachable: ${e.message}`));
+if (!keyRes.ok) fail(`key file returned ${keyRes.status} — deploy it before submitting`);
 const keyBody = (await keyRes.text()).trim();
-if (keyBody !== KEY) {
-  fail(`key file contains ${JSON.stringify(keyBody.slice(0, 40))}, expected the key itself`);
-}
+if (keyBody !== KEY) fail(`key file contains ${JSON.stringify(keyBody.slice(0, 40))}, expected the key itself`);
 console.log('  ok');
 
-// 2. Optionally wait for a specific new page before submitting, so a deploy
-//    that has not landed yet does not get a stale URL list sent for it.
-if (expectPath) {
-  const target = new URL(expectPath, ORIGIN).href;
-  console.log(`Waiting for ${target}`);
-  if (!(await waitForLive(target))) fail(`${target} never became available — not submitting`);
-  console.log('  live');
-}
-
-// 3. Read the live sitemap. Production is the source of truth for what exists.
-//
-//    --min-urls closes the deploy race: CI fires on push, but the deploy takes
-//    a moment to go live, so without this a run right after adding a page would
-//    read the OLD sitemap and never ping the new page at all. Workers deploys
-//    land in seconds, hence the short 6 × 10s window below.
-async function readLiveSitemap() {
-  const r = await fetch(`${ORIGIN}/sitemap-0.xml`, { cache: 'no-store' });
-  if (!r.ok) throw new Error(`sitemap returned ${r.status}`);
-  const x = await r.text();
-  return [...x.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
-}
-
-console.log(`Reading ${ORIGIN}/sitemap-0.xml${minUrls ? ` (waiting for >= ${minUrls} URLs)` : ''}`);
-let urlList = [];
-const sitemapTries = minUrls ? 6 : 1;
-for (let i = 1; i <= sitemapTries; i++) {
+/* ------------------------------------------------------- 2. live sitemap */
+// Follows the sitemap INDEX to its children, so a site that outgrows one
+// sitemap file keeps submitting all of its pages (this read only sitemap-0.xml
+// before, silently capping submissions at the first 50,000 URLs).
+const fetchText = async (url) => {
   try {
-    urlList = await readLiveSitemap();
-  } catch (e) {
-    console.log(`  ${e.message} (try ${i})`);
+    const r = await fetch(url, { cache: 'no-store' });
+    return r.ok ? await r.text() : null;
+  } catch {
+    return null;
   }
-  if (urlList.length >= minUrls) break;
-  console.log(`  ${urlList.length} URLs live, want ${minUrls} (try ${i}/${sitemapTries})`);
-  // No sleep after the last attempt — nothing follows it but the failure.
-  if (i < sitemapTries) await new Promise((r) => setTimeout(r, 10000));
-}
-if (minUrls && urlList.length < minUrls) {
-  fail(`live sitemap still has ${urlList.length} URLs, expected ${minUrls} — deploy has not landed, not submitting`);
-}
+};
 
+console.log(`Reading ${ORIGIN}/sitemap-index.xml`);
+let urlList = await sitemapUrls(`${ORIGIN}/sitemap-index.xml`, fetchText);
+// A site with a single sitemap and no index still answers on sitemap-0.xml.
+if (!urlList.length) urlList = await sitemapUrls(`${ORIGIN}/sitemap-0.xml`, fetchText);
 if (!urlList.length) fail('sitemap contained no URLs');
 
-// Narrow to this deploy's changes when asked. null = site-wide change or an
-// unreadable diff, both of which honestly mean "everything": keep the full list.
-if (changedRange) {
-  const routes = changedRoutes(changedRange);
-  if (routes === null) {
-    console.log(`  --changed ${changedRange}: site-wide change — submitting the full sitemap`);
-  } else {
-    const narrowed = urlList.filter((u) => {
-      const p = new URL(u).pathname.replace(/\/$/, '') || '/';
-      return routes.has(p);
-    });
-    console.log(`  --changed ${changedRange}: ${routes.size} changed route(s), ${narrowed.length} live in the sitemap`);
-    if (!narrowed.length) {
-      console.log('  nothing this deploy changed is in the live sitemap — nothing to submit.');
-      process.exit(0);
-    }
-    urlList = narrowed;
-  }
+if (minUrls && urlList.length < minUrls) {
+  fail(`live sitemap has ${urlList.length} URLs, expected at least ${minUrls} — something upstream is wrong, not submitting`);
 }
+
 // IndexNow rejects the whole batch if any URL is off-host.
 const offHost = urlList.filter((u) => new URL(u).host !== HOST);
 if (offHost.length) fail(`off-host URLs would fail the batch: ${offHost.join(', ')}`);
 console.log(`  ${urlList.length} URLs`);
 
+/* -------------------------------------------- 3. recent URLs, for Bing */
+// Bing's per-site daily quota is small for a new site, so the second submission
+// is narrowed to what actually changed. <lastmod> is the sitemap's own answer to
+// that question and it is already derived from git (src/lib/lastmod.ts).
+const RECENT_DAYS = 2;
+const BING_CAP = 100;
+async function recentUrls() {
+  const docs = [`${ORIGIN}/sitemap-0.xml`];
+  const index = await fetchText(`${ORIGIN}/sitemap-index.xml`);
+  if (index && /<sitemapindex/.test(index)) {
+    docs.length = 0;
+    for (const m of index.matchAll(/<loc>([^<]+)<\/loc>/g)) docs.push(m[1].trim());
+  }
+  const rows = [];
+  for (const doc of docs) {
+    const xml = await fetchText(doc);
+    if (xml) rows.push(...sitemapEntries(xml));
+  }
+  const cutoff = Date.now() - RECENT_DAYS * 864e5;
+  return rows
+    .filter((r) => r.lastmod && new Date(r.lastmod).getTime() >= cutoff)
+    .sort((a, b) => new Date(b.lastmod).getTime() - new Date(a.lastmod).getTime())
+    .slice(0, BING_CAP)
+    .map((r) => r.loc);
+}
+
+const bingKey = process.env.BING_WEBMASTER_API_KEY;
+const bingList = bingKey ? await recentUrls() : [];
+
 if (dryRun) {
-  console.log('\n--dry-run, not submitting:');
+  console.log(`\n--dry-run, not submitting.\n\nIndexNow (${urlList.length} URLs):`);
   urlList.forEach((u) => console.log(`  ${u}`));
+  console.log(
+    bingKey
+      ? `\nBing URL Submission (${bingList.length} URLs changed in the last ${RECENT_DAYS} days, cap ${BING_CAP}):`
+      : '\nBing URL Submission: skipped — BING_WEBMASTER_API_KEY is not set (ACTIONS A-K04).'
+  );
+  bingList.forEach((u) => console.log(`  ${u}`));
   process.exit(0);
 }
 
-// 4. Submit. 200 = accepted, 202 = accepted with the key still being validated.
-const body = { host: HOST, key: KEY, keyLocation: KEY_LOCATION, urlList };
-const res = await fetch(ENDPOINT, {
+/* ------------------------------------------------------- 4. submit: IndexNow */
+// 200 = accepted, 202 = accepted with the key still being validated.
+const res = await fetch('https://api.indexnow.org/indexnow', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json; charset=utf-8' },
-  body: JSON.stringify(body),
+  body: JSON.stringify({ host: HOST, key: KEY, keyLocation: KEY_LOCATION, urlList }),
 }).catch((e) => fail(`submit: ${e.message}`));
 
 const text = await res.text().catch(() => '');
@@ -255,6 +199,32 @@ const meaning = {
   429: 'rate limited — too many submissions',
 }[res.status];
 
-console.log(`\n${res.status} ${meaning ?? 'unexpected'}${text ? ` — ${text.slice(0, 200)}` : ''}`);
+console.log(`\nIndexNow: ${res.status} ${meaning ?? 'unexpected'}${text ? ` — ${text.slice(0, 200)}` : ''}`);
 if (res.status !== 200 && res.status !== 202) process.exit(1);
-console.log(`Submitted ${urlList.length} URLs to Bing, Yandex and Seznam.`);
+console.log(`  ${urlList.length} URLs submitted to Bing, Yandex, Seznam and Naver.`);
+
+/* --------------------------------------------- 5. submit: Bing URL Submission */
+if (!bingKey) {
+  console.log('\nBing URL Submission: skipped — BING_WEBMASTER_API_KEY is not set (ACTIONS A-K04).');
+} else if (!bingList.length) {
+  console.log(`\nBing URL Submission: nothing changed in the last ${RECENT_DAYS} days — nothing to submit.`);
+} else {
+  const bingRes = await fetch(
+    `https://ssl.bing.com/webmaster/api.svc/json/SubmitUrlBatch?apikey=${encodeURIComponent(bingKey)}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      body: JSON.stringify({ siteUrl: ORIGIN, urlList: bingList }),
+    }
+  ).catch((e) => ({ ok: false, status: 0, text: async () => e.message }));
+  const bingText = await bingRes.text().catch(() => '');
+  if (bingRes.ok) {
+    console.log(`\nBing URL Submission: ${bingRes.status} — ${bingList.length} URL(s) changed in the last ${RECENT_DAYS} days.`);
+  } else {
+    // Never fatal: IndexNow already reached Bing's index, and the most common
+    // failure here is the per-site daily quota, which is information rather
+    // than a defect.
+    console.log(`\nBing URL Submission: ${bingRes.status} — not submitted. ${bingText.slice(0, 300)}`);
+    console.log('  (IndexNow already reached Bing; a quota refusal here costs nothing.)');
+  }
+}

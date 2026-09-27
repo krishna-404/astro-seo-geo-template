@@ -15,10 +15,11 @@
 import { existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readCollection } from './lib/readContent.mjs';
+import { readCollection } from './lib/content.mjs';
+import { collectionNames } from './lib/routes.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const COLLECTIONS = ['blog', 'glossary'];
+const COLLECTIONS = collectionNames();
 
 /** A root-relative ref must exist in public/ (served byte-for-byte). */
 function existsInPublic(ref) {

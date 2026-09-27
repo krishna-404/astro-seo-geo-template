@@ -203,6 +203,9 @@ p {
 }
 .band--white { background: var(--white); }
 .band--cream { background: var(--cream); }
+/* Unused by the template's own pages, kept on purpose: the expressive layer
+   /design-direction draws on (AGENTS rule 6). Every token it names is swept by
+   check:contrast, so a site can reach for it without re-measuring. */
 .band--blue { background: var(--blue-pale); }
 .band--tint { background: var(--blue-tint); }
 .band--ink {
@@ -360,6 +363,7 @@ p {
   grid-template-columns: 1fr;
 }
 
+/* .grid--2: unused by the template's own pages, kept for /design-direction. */
 @media (min-width: 40rem) {
   .grid--2 { grid-template-columns: repeat(2, 1fr); }
 }
@@ -398,7 +402,11 @@ p {
   --tick: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M13.5 4.5 6.5 12 2.5 8' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
-/* ---------- Stat / figure ---------- */
+/* ---------- Stat / figure ----------
+   Unused by the template's own pages, kept on purpose: this is how a site
+   states a sourced number large (AGENTS rule 1 — the number comes from
+   facts.json, never typed into markup), and /design-direction reaches for it.
+   The colour variants are swept by check:contrast like every other token. */
 
 .stat {
   font-family: var(--font-mono);
@@ -576,7 +584,8 @@ table.cmp tr.is-self td {
   .hero--editorial .lede { font-size: var(--step-0); }
 }
 
-/* Bento: an asymmetric card grid. Children span 2 of 6 columns by default;
+/* Bento: an asymmetric card grid, unused by the template's own pages and kept
+   for /design-direction. Children span 2 of 6 columns by default;
    .bento__wide takes 4, .bento__full takes 6 — so one card can carry the
    lead and the rest support it, instead of three identical boxes. Falls back
    to a single column on phones without any override. */

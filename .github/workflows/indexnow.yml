@@ -1,48 +1,33 @@
 name: IndexNow
 
-# Ping Bing, Yandex and Seznam the moment new pages are live, instead of waiting
-# days to be crawled. Google does not participate in IndexNow — it still finds
-# pages through the sitemap, which is why this is a supplement, not a
-# replacement.
+# Tell the answer-engine indexes that pages changed, instead of waiting days to
+# be crawled. One POST to the shared IndexNow endpoint reaches Bing, Yandex,
+# Seznam and Naver; with BING_WEBMASTER_API_KEY set the script also submits the
+# last two days' URLs to Bing's own URL Submission API. Google does not
+# participate in IndexNow — it still finds pages through the sitemap, which is
+# why this is a supplement, not a replacement.
 #
-# When enabled, triggers after the CI workflow (which contains the deploy job) has finished
-# successfully on main — NOT on push. On push it would race the deploy and read
-# the OLD live sitemap, submitting a URL list that misses exactly the page the
-# commit added. The workflow_run trigger plus the script's own live-sitemap
-# poll closes that race from both ends.
-# OPT-IN, NOT AUTOMATIC (20 Sep 2026). Dispatch by hand, or — the normal
-# path — run `npm run indexnow` from the /ship step after a deploy. The
-# automatic trigger (after CI on main) is commented out for the same reason
-# ci.yml's is: metered minutes, and a wait-for-deploy loop burns them.
+# OPT-IN, NOT AUTOMATIC (20 Sep 2026, reaffirmed 27 Sep 2026). GitHub Actions
+# are opt-in in this repo (CHECKLIST §2): dispatch this by hand, or — the normal
+# path — let the deploy call `npm run indexnow` itself. Both `/ship` and the
+# daily cadence run do that AFTER `wrangler deploy` returns, which is also why
+# the script no longer has a wait-for-deploy loop: production is already the new
+# production by the time it reads the sitemap.
 on:
   workflow_dispatch:
-  # workflow_run:
-  #   workflows: [CI]
-  #   types: [completed]
-  #   branches: [main]
 
-# A newer run supersedes an older one: the sitemap it submits is a superset,
-# so cancelling the in-flight wait loses nothing and saves the runner minutes.
+# A newer run supersedes an older one: the sitemap it submits is a superset, so
+# cancelling the in-flight one loses nothing and saves runner minutes.
 concurrency:
   group: indexnow
   cancel-in-progress: true
 
 jobs:
   submit:
-    # workflow_run fires on failure too — only proceed after a green CI.
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    # Cloudflare deploys land in seconds, so the script's poll window is short;
-    # 10 minutes is generous headroom for the build step here.
     timeout-minutes: 10
     steps:
-      # Depth 2 so `git diff HEAD^..HEAD` can derive the changed routes for
-      # --changed below (a multi-commit push under-narrows to its last commit;
-      # the site-wide fallback and the next push both self-correct that).
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-          fetch-depth: 2
 
       - uses: actions/setup-node@v7
         with:
@@ -51,47 +36,34 @@ jobs:
 
       - run: npm ci
 
-      # Built here purely to learn how many URLs this commit *should* produce.
-      # Nothing from dist/ is submitted — the script reads the live sitemap.
+      # Built here purely to learn how many URLs this commit SHOULD produce.
+      # Nothing from dist/ is submitted — the script reads the live sitemap, so
+      # it can never ping a URL that 404s.
       - run: npm run build:ci
 
-      # This count is the second half of the deploy-race guard: the script
-      # waits until the LIVE sitemap carries at least this many URLs before
-      # submitting, so it can never ping a list that predates this commit.
+      # --min-urls is a sanity floor, not a race guard: if the live sitemap has
+      # fewer URLs than this commit builds, something upstream is wrong and
+      # submitting a short list would waste the ping.
       #
-      # Known gap: a commit that REMOVES pages lowers this count, so a stale
-      # sitemap already satisfies it. Rare, self-correcting on the next push,
-      # and workflow_dispatch fixes it immediately. Not worth a second
-      # heuristic.
+      # Known gap, accepted: a commit that REMOVES pages lowers this count, so a
+      # stale sitemap satisfies it. Rare, and harmless — the list is still read
+      # from production.
       - name: Count URLs in the built sitemap
         id: expected
         run: |
           set -uo pipefail
           n=$(grep -o '<loc>' dist/sitemap-0.xml | wc -l) || n=0
           echo "count=$n" >> "$GITHUB_OUTPUT"
-          echo "This commit builds $n URLs; waiting for the live sitemap to match."
+          echo "This commit builds $n URLs."
 
-      # Waits for the key file to be live, then for the live sitemap to reach
-      # that count, then submits. Every URL it sends came from production, so it
-      # can never submit a 404.
-      #
-      # The key reaches the script two ways and either is enough: a committed
-      # public/<key>.txt (the zero-setup path), or the INDEXNOW_KEY repo secret
-      # wired here. With neither, the script logs a loud skip and exits green —
-      # a fresh template clone must not have a permanently red workflow.
-      # After a deploy, submit only what the deploy changed (--changed derives
-      # routes from the commit's diff; layout/style/data changes fall back to
-      # the full sitemap since every page's markup moved). A manual dispatch
-      # submits everything — that is what dispatch is for. Known gap, accepted:
-      # a multi-commit push narrows to its last commit's diff, so a page added
-      # earlier in the same push may miss this ping; the sitemap still carries
-      # it and a dispatch covers it immediately.
-      - name: Submit to IndexNow
+      # The IndexNow key reaches the script two ways and either is enough: a
+      # committed public/<key>.txt (the zero-setup path), or the INDEXNOW_KEY
+      # repo secret wired here. With neither, the script logs a loud skip and
+      # exits green — a fresh template clone must not carry a permanently red
+      # workflow. BING_WEBMASTER_API_KEY is optional: without it the Bing URL
+      # Submission half is skipped and says so.
+      - name: Submit to IndexNow (and Bing, where the key is set)
         env:
           INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_run" ]; then
-            node scripts/indexnow.mjs --min-urls "${{ steps.expected.outputs.count }}" --changed 'HEAD^..HEAD'
-          else
-            node scripts/indexnow.mjs --min-urls "${{ steps.expected.outputs.count }}"
-          fi
+          BING_WEBMASTER_API_KEY: ${{ secrets.BING_WEBMASTER_API_KEY }}
+        run: node scripts/indexnow.mjs --min-urls "${{ steps.expected.outputs.count }}"

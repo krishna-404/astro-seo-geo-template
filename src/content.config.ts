@@ -4,6 +4,7 @@ import { glob } from 'astro/loaders';
 import { z } from 'zod';
 import { figuresField } from './data/figureSchema';
 import { GLOSSARY_CATEGORY_KEYS } from './data/taxonomy';
+import { survivesClamp, CLAMP_MAX } from './lib/clamp.mjs';
 
 /**
  * Content collections for the template.
@@ -35,10 +36,32 @@ const author = z.object({
   sameAs: z.array(z.url()).min(1),
 });
 
-/** Fields every page type shares, mapped onto <head> and JSON-LD. */
+/**
+ * Fields every page type shares, mapped onto <head> and JSON-LD.
+ *
+ * The bands here are the SAME numbers the rest of the battery uses, on purpose
+ * — they were looser (title 70, description 50–200) while check-source-rules
+ * enforced the clamp rule and check-invariants enforced 70–165, so the schema
+ * accepted a page two other checks would reject and the failure arrived later
+ * than it had to. One number, one place.
+ */
 const seo = {
-  title: z.string().max(70),
-  description: z.string().min(50).max(200),
+  /**
+   * BaseLayout renders this through the SERP clamp (src/lib/clamp.mjs). It may
+   * exceed 60 characters only when it carries a trailing " — clause" or
+   * " | clause" that STARTS inside 60, which the clamp drops whole; anything
+   * else would be hard-cut mid-phrase on the one line a searcher reads.
+   * check-source-rules enforces the same rule at commit time, from the same
+   * function.
+   */
+  title: z
+    .string()
+    .max(70)
+    .refine(survivesClamp, {
+      message: `over ${CLAMP_MAX} characters with no " — " or " | " clause the SERP clamp can drop — it would be hard-cut mid-phrase`,
+    }),
+  /** The SERP snippet band, the same one check-invariants measures on the built page. */
+  description: z.string().min(70).max(165),
   /** Front-loaded answer. GEO evidence says put it in the first 30% of the page. */
   tldr: z.string().min(40).max(400),
   draft: z.boolean().default(false),
@@ -90,6 +113,13 @@ const blog = defineCollection({
       'case-study',
     ]),
     sources: z.array(source).default([]),
+    /**
+     * How the post arrived. `posts-api` marks one the posts API opened a PR
+     * for — the daily run's PR inbox identifies API posts by this key, and
+     * without the field zod would reject the frontmatter the worker writes.
+     * Absent means a human or a skill wrote it in the repo.
+     */
+    via: z.string().optional(),
   }),
 });
 

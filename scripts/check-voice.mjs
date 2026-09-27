@@ -23,8 +23,8 @@
  * also in npm run verify and CI, always via this one script.
  */
 
-import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { readAll, readEntry, prose as prose_ } from './lib/content.mjs';
 
 const V = JSON.parse(readFileSync('src/data/voice.json', 'utf8'));
 const base = V.base;
@@ -41,40 +41,28 @@ const failPhrases = [...base.bannedPhrases, ...(site.bannedPhrases ?? [])].filte
   (p) => !allowed.has(p.toLowerCase())
 );
 
-function walk(dir, out = []) {
-  for (const name of readdirSync(dir)) {
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) walk(p, out);
-    else if (/\.mdx?$/.test(name)) out.push(p);
-  }
-  return out;
-}
-const files = process.argv.length > 2 ? process.argv.slice(2) : walk('src/content');
+/**
+ * Files to check: named on the command line, else every content entry whose
+ * status is published or scheduled. A SCHEDULED entry is checked because it
+ * goes live on a build with nobody in the room — the drift the shared reader
+ * exists to end (scripts/lib/content.mjs § who wants what). Drafts are
+ * excluded: they render nowhere.
+ */
+const files = process.argv.length > 2
+  ? process.argv.slice(2)
+  : readAll({ include: ['published', 'scheduled'] }).map((e) => e.file);
 
 let fail = 0;
 let warned = 0;
 
-/** Prose only: frontmatter's prose fields kept, code and URLs stripped. */
-function prosify(raw) {
-  const fm = raw.match(/^---\n([\s\S]*?)\n---\n/);
-  let body = fm ? raw.slice(fm[0].length) : raw;
-  // Frontmatter title/description/tldr are prose a reader (and a SERP) sees.
-  let fmProse = '';
-  if (fm) {
-    for (const key of ['title', 'description', 'tldr']) {
-      const m = fm[1].match(new RegExp(`^${key}:\\s*(['"]?)([\\s\\S]*?)\\1\\s*$`, 'm'));
-      if (m) fmProse += m[2] + '\n';
-    }
-  }
-  const noCode = body.replace(/```[\s\S]*?```/g, ' ').replace(/`[^`\n]*`/g, ' ');
-  const noUrls = noCode.replace(/\(https?:\/\/[^)]*\)/g, '()').replace(/https?:\/\/\S+/g, ' ');
-  return { body, prose: fmProse + noUrls };
-}
-
 for (const f of files) {
-  const raw = readFileSync(f, 'utf8');
-  if (/^draft:\s*true$/m.test(raw)) continue;
-  const { body, prose } = prosify(raw);
+  const entry = readEntry(f);
+  if (entry.status === 'draft') continue;
+  const raw = entry.raw;
+  // Frontmatter title/description/tldr are prose a reader (and a SERP) sees;
+  // the parsed value, not the YAML, so a doubled apostrophe in a single-quoted
+  // scalar is not read as two characters.
+  const { body, prose } = prose_(entry);
   const lower = prose.toLowerCase();
   const words = (prose.match(/[A-Za-z’']+/g) ?? []).length;
   const problems = [];

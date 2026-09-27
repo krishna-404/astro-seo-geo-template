@@ -26,10 +26,11 @@
  * it cannot drift silently — the same treatment the other site invariants get.
  */
 import { execFileSync } from 'node:child_process';
-import { writeFileSync, readFileSync, readdirSync, existsSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join } from 'node:path';
-import { readCollection } from './lib/readContent.mjs';
+import { readCollection } from './lib/content.mjs';
+import { collectionNames, routeOfCollection, staticRoutes } from './lib/routes.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -63,11 +64,8 @@ const map = {};
 // check-lastmod flags the committed map as stale on every verify run until the
 // entry publishes. (This walk previously read the directory raw and leaked
 // draft entries into the map.)
-const COLLECTIONS = {
-  blog: 'blog',
-  glossary: 'glossary',
-};
-for (const [route, folder] of Object.entries(COLLECTIONS)) {
+for (const folder of collectionNames()) {
+  const route = routeOfCollection(folder);
   for (const entry of readCollection(folder)) {
     // The reader strips the extension; resolve the real filename for git.
     const file = ['md', 'mdx']
@@ -75,7 +73,7 @@ for (const [route, folder] of Object.entries(COLLECTIONS)) {
       .find((f) => existsSync(resolve(root, f)));
     if (!file) continue;
     const date = newestCommit([file]);
-    if (date) map[`/${route}/${entry.slug}`] = date;
+    if (date) map[`${route}/${entry.slug}`] = date;
   }
 }
 
@@ -111,43 +109,18 @@ const EXTRA_SOURCES = {
   '/about': ['src/data/site.ts'],
   '/contact': ['src/data/site.ts'],
   '/privacy-policy': ['src/data/privacy.json'],
-  '/for-llms': ['src/data/site.ts', 'src/content/blog', 'src/content/glossary'],
+  // /for-llms summarises the collections, so a new entry changes what it says.
+  '/for-llms': ['src/data/site.ts', ...collectionNames().map((c) => `src/content/${c}`)],
 };
 
 /** Routes deliberately outside the sitemap need no lastmod row: 404, and the
  *  noindex /search tool page (client-rendered results carry no date claim). */
 const SKIP = new Set(['/404', '/search']);
 
-/** route → the .astro file that renders it, for every static page. */
-function discoverPages() {
-  const found = {};
-  const pagesDir = resolve(root, 'src/pages');
-  for (const entry of readdirSync(pagesDir, { withFileTypes: true })) {
-    if (entry.isFile() && entry.name.endsWith('.astro')) {
-      const base = entry.name.replace(/\.astro$/, '');
-      // A bracketed filename is a dynamic route; its slugs come from the
-      // content collections and are handled by the walk above, not from the
-      // filename.
-      if (base.includes('[')) continue;
-      found[base === 'index' ? '/' : `/${base}`] = `src/pages/${entry.name}`;
-    } else if (entry.isDirectory()) {
-      // A directory contributes its index as the section route, and every
-      // other non-bracketed .astro file as a static child route — this loop
-      // originally only looked for index.astro, so a page like
-      // /contact/thanks carried no lastmod until check-lastmod caught it.
-      for (const name of readdirSync(resolve(pagesDir, entry.name)).filter(
-        (n) => n.endsWith('.astro') && !n.includes('[')
-      )) {
-        const base = name.replace(/\.astro$/, '');
-        const route = base === 'index' ? `/${entry.name}` : `/${entry.name}/${base}`;
-        found[route] = join('src/pages', entry.name, name);
-      }
-    }
-  }
-  return found;
-}
-
-for (const [route, file] of Object.entries(discoverPages())) {
+/* Static pages are DISCOVERED, not listed — routes.mjs walks src/pages
+ * recursively. This walk was one directory deep until 10 Aug 2026 and
+ * /contact/thanks carried no lastmod because of it. */
+for (const [route, file] of Object.entries(staticRoutes())) {
   if (SKIP.has(route)) continue;
   const date = newestCommit([file, ...(EXTRA_SOURCES[route] ?? [])]);
   if (date) map[route] = date;

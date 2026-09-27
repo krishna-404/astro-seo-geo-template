@@ -178,10 +178,10 @@ up only the decisions that actually depend on it.
 9. **Measurement** (SETUP Phase 4; PLAYBOOK §5). Umami, Search Console and
    Bing verification, IndexNow, the insights credentials, the weekly
    Generative AI export routine, the AI prompt panel's first prompt set, the
-   discovery scorecard baseline. *Examples:* what the Generative AI report
+   AEO funnel baseline. *Examples:* what the Generative AI report
    and the prompt panel look like for a site in the category that is being
-   cited. *Exit:* `npm run insights` prints every section; `npm run
-   audit:discovery` baseline recorded in STRATEGY.md § Honest state.
+   cited. *Exit:* `npm run insights` prints every section; the `npm run aeo`
+   funnel-and-levers baseline recorded in STRATEGY.md § Honest state.
 
 10. **Privacy, consent and the trust pages** (CHECKLIST §5). Cookieless by
     default; every vendor that sets a cookie gated by the banner;

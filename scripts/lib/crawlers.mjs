@@ -39,9 +39,14 @@
  * robots.txt opens with `User-agent: * / Allow: /`, so an agent it does not
  * name is already allowed — the named groups are emphasis and documentation,
  * and which engines earn that emphasis is the site owner's call, not a
- * consequence of adding a row here. scripts/smoke-live.mjs likewise keeps a
- * short hand-written set of real user-agent STRINGS, which is a different kind
- * of data from these tokens.
+ * consequence of adding a row here.
+ *
+ * scripts/smoke-live.mjs needs something these tokens are not: a REAL
+ * user-agent string, because it is asking the live edge whether it would serve
+ * that agent. It used to keep its own list of six, which is how an engine added
+ * here could go untested at the edge — the one place a refusal is visible at
+ * all. SMOKE_AGENTS below derives that list from these rows, so a new answering
+ * engine gets its live check on the same commit.
  */
 
 /**
@@ -100,6 +105,24 @@ export const CRAWLERS = [
 export const ANSWERING_ROLES = new Set(['index', 'live']);
 
 /**
+ * The version-and-URL tail each vendor publishes for its agent, keyed by token.
+ * An agent with no tail here gets no live check: inventing a plausible-looking
+ * user-agent would test the edge against a string no vendor sends.
+ */
+const SMOKE_TAIL = {
+  'OAI-SearchBot': 'OAI-SearchBot/1.0; +https://openai.com/searchbot',
+  'ChatGPT-User': 'ChatGPT-User/1.0; +https://openai.com/bot',
+  'Claude-SearchBot': 'Claude-SearchBot/1.0; +https://www.anthropic.com/searchbot',
+  'Claude-User': 'Claude-User/1.0; +Claude-User@anthropic.com',
+  PerplexityBot: 'PerplexityBot/1.0; +https://perplexity.ai/perplexitybot',
+  'Perplexity-User': 'Perplexity-User/1.0; +https://perplexity.ai/perplexity-user',
+  Bingbot: 'bingbot/2.0; +http://www.bing.com/bingbot.htm',
+  Googlebot: 'Googlebot/2.1; +http://www.google.com/bot.html',
+  Applebot: 'Applebot/0.1; +http://www.apple.com/go/applebot',
+  DuckAssistBot: 'DuckAssistBot/1.0; +https://duckduckgo.com/duckassistbot.html',
+};
+
+/**
  * Classify one user-agent string.
  * Order matters: Claude-SearchBot and Claude-User must be tested before
  * ClaudeBot, ChatGPT-User before GPTBot — the shorter token is a substring of
@@ -112,8 +135,33 @@ export const ANSWERING_ROLES = new Set(['index', 'live']);
  */
 export function classify(ua) {
   if (!ua) return null;
+  // A token is checked FIRST and answers null. Skipping the token rows and then
+  // matching the crawler rows is not the same thing: "Applebot-Extended"
+  // CONTAINS "Applebot", so /Applebot/i matched it and the opt-out token was
+  // reported as an Apple crawler visit — traffic that cannot exist, since the
+  // token never appears as a user-agent at all. Found by
+  // scripts/lib/crawlers.test.mjs on 27 Sep 2026, which is the case the test
+  // was written for.
+  if (CRAWLERS.some((c) => c.token && c.re.test(ua))) return null;
   return CRAWLERS.find((c) => !c.token && c.re.test(ua)) ?? null;
 }
 
 /** Every agent that should be named in robots.txt, tokens included. */
 export const ROBOTS_AGENTS = CRAWLERS.map((c) => c.agent);
+
+/**
+ * Realistic user-agent strings for the live edge check, built from the rows
+ * above. Only the agents whose refusal costs a citation are worth a live
+ * request (a `train` agent affects no answer today — crawlers.mjs § roles), and
+ * only the ones a small site actually sees: the five engines whose indexes the
+ * mainstream assistants answer from, plus the browsing agents. Each string is
+ * shaped like the vendor's published one — token, version, and the +URL that
+ * makes it identifiable — because a WAF matches on the whole string, not the
+ * token.
+ *
+ * @type {Record<string, string>}
+ */
+export const SMOKE_AGENTS = Object.fromEntries(
+  CRAWLERS.filter((c) => !c.token && ANSWERING_ROLES.has(c.role) && SMOKE_TAIL[c.agent])
+    .map((c) => [c.agent, `Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; ${SMOKE_TAIL[c.agent]})`])
+);

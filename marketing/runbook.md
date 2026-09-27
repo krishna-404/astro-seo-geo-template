@@ -71,7 +71,7 @@ that delivered less is visible (ingested from a published monthly scope,
 | W7 | Internal link plan: pillars, money pages, support posts, the 11–20 boost, footer, anchors (page-guidelines § 5) | machine | step 13d | What changed |
 | W8 | Data sheet and link targets maintained; landscape line for a rival that changed | machine | step 15 | What I need from you |
 | W9 | High-intent refresh; competitor list reviewed against the snapshots and the panel | machine | step 16; `intent.json → competitors` | High-intent queries |
-| W10 | Generative AI weekly: export freshness, panel age, discovery scorecard, Bing block, funnel trend | machine asks, human exports | step 17; ACTIONS A-W01 | Generative AI |
+| W10 | Generative AI weekly: export freshness, panel age, the AEO levers, Bing block, funnel trend | machine asks, human exports | step 17; ACTIONS A-W01 | Generative AI |
 | W11 | Directory and outreach: the next three listings; up to five outreach targets (sites that write about the space, from the landscape's lists) proposed with the page each would link | machine proposes, human sends | step 15; `link-targets.md` | Where to list next · Decisions |
 | W12 | Generative AI export, GSC manual-actions check, report read and Decisions answered | human | ACTIONS A-W01, A-W05, A-W06 | — |
 

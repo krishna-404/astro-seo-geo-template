@@ -25,8 +25,9 @@
  * prints its reason and never counts. Nothing here is site copy.
  */
 
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
-import { join, sep } from 'node:path';
+import { existsSync } from 'node:fs';
+import { readPages, decode, strip, norm } from './lib/html.mjs';
+import { newestSnapshot } from './lib/snapshots.mjs';
 
 const DIST = 'dist';
 const args = process.argv.slice(2);
@@ -38,18 +39,6 @@ if (!existsSync(DIST)) {
   process.exit(2);
 }
 
-function walk(dir, out = []) {
-  for (const name of readdirSync(dir)) {
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) walk(p, out);
-    else if (name.endsWith('.html')) out.push(p);
-  }
-  return out;
-}
-const route = (f) => '/' + f.slice(DIST.length + 1).replace(/\.html$/, '').split(sep).join('/').replace(/^index$/, '');
-const decode = (t) => t.replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(n)).replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
-  .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ');
-const strip = (h) => decode(h.replace(/<script[\s\S]*?<\/script>/g, ' ').replace(/<style[\s\S]*?<\/style>/g, ' ').replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
 const DAY = 864e5;
 
 function ldTypes(h) {
@@ -65,15 +54,15 @@ function ldTypes(h) {
 
 /** Impressions per page from the newest snapshot, to rank the refresh list. */
 function impressions() {
-  const dir = 'marketing/insights';
-  const snaps = existsSync(dir) ? readdirSync(dir).filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f)).sort() : [];
-  if (!snaps.length) return {};
-  try {
-    const s = JSON.parse(readFileSync(join(dir, snaps.at(-1)), 'utf8'));
-    const out = {};
-    for (const r of s.searchConsole?.pages ?? []) out[new URL(r.keys[0]).pathname.replace(/\/$/, '') || '/'] = r.impressions;
-    return out;
-  } catch { return {}; }
+  const snap = newestSnapshot();
+  if (!snap) return {};
+  const out = {};
+  for (const r of snap.data.searchConsole?.pages ?? []) {
+    try {
+      out[new URL(r.keys[0]).pathname.replace(/\/$/, '') || '/'] = r.impressions;
+    } catch { /* a malformed row in a snapshot is not this script's to fail on */ }
+  }
+  return out;
 }
 
 const BUCKETS = [
@@ -86,8 +75,7 @@ const BUCKETS = [
   ['define', 'B · what it is, how it works', /\b(what is|what are|how (?:does|do) .{0,40} work|how it works|means|definition|defined as)\b/i],
 ];
 
-function audit(f, h) {
-  const r = route(f);
+function audit(r, h) {
   const art = h.match(/<article\b[^>]*data-pagefind-body[^>]*>([\s\S]*?)<\/article>/)?.[1];
   if (!art) return null;
   const kind = /class="post\b/.test(h) ? 'post' : /class="term\b/.test(h) ? 'term' : 'page';
@@ -162,14 +150,11 @@ function audit(f, h) {
   const firstFix = checks.find((c) => c.ok === false)?.fix ?? '—';
   return { route: r, kind, score, pass, of: scored.length, words, ageDays, firstFix, checks, buckets: hit };
 }
-const norm = (s) => s.toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
-
 const impr = impressions();
-const pages = walk(DIST)
-  .map((f) => ({ f, h: readFileSync(f, 'utf8') }))
-  .filter((p) => !/name="robots" content="noindex/.test(p.h))
-  .filter((p) => !ONE || route(p.f) === ONE)
-  .map((p) => audit(p.f, p.h))
+const pages = readPages(DIST)
+  .filter((p) => !/name="robots" content="noindex/.test(p.html))
+  .filter((p) => !ONE || p.route === ONE)
+  .map((p) => audit(p.route, p.html))
   .filter(Boolean)
   .map((p) => ({ ...p, impressions: impr[p.route] ?? 0 }))
   .sort((a, b) => a.score - b.score || b.impressions - a.impressions);

@@ -1,0 +1,7 @@
+{
+  "$comment": "The one list of content collections. Every script that needs the collection list, its route directory, whether a markdown twin is served, or the eyebrow on its social card reads THIS file; worker/index.ts derives TWIN_PREFIXES from it. Adding a collection: one entry here + the zod schema in src/content.config.ts + a route file (check-collection-routes fails without it). A folder under src/content/ with no entry here is a finding, not a collection.",
+  "collections": {
+    "blog": { "route": "/blog", "twins": true, "eyebrow": "Blog", "schema": "BlogPosting" },
+    "glossary": { "route": "/glossary", "twins": true, "eyebrow": "Glossary", "schema": "DefinedTerm" }
+  }
+}

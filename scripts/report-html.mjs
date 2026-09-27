@@ -3,7 +3,6 @@
  * Render the cadence report (markdown) as an email-safe HTML body.
  *
  *   node scripts/report-html.mjs report.md > report.html
- *   node scripts/report-html.mjs --text report.md > report.txt
  *
  * Why this exists: the Apps Script report channel (SETUP § Services,
  * marketing/apps-script/contact-form.gs → handleReport) mails whatever `body`
@@ -12,14 +11,24 @@
  * field; the script uses it as the HTML body and keeps the markdown as the
  * plain-text fallback.
  *
+ * There was a `--text` mode here that rendered the markdown into aligned
+ * plain text, for the window before the Apps Script took `htmlBody`. It takes
+ * it (marketing/apps-script/contact-form.gs → handleReport), so the markdown
+ * itself is the plain-text half and the mode was dead code with a comment
+ * saying "until". Removed 27 Sep 2026.
+ *
  * Email clients run no JavaScript, so a "copy" button is impossible. What IS
  * possible is a link that opens Search Console's URL inspection with the URL
  * already filled in — one click, then "Request indexing". Every list item
  * that is a bare URL on this site gets that link.
  *
- * Uses the unified/remark/rehype packages Astro already installs; nothing is
- * added to package.json. Colour literals here are email-only chrome, outside
- * the contrast sweep's scope (check-source-rules scans src/ and worker/).
+ * The unified/remark/rehype packages are declared devDependencies at the
+ * versions Astro's own tree already carries — they used to resolve only
+ * transitively through Astro, which works until Astro reorganises its
+ * dependencies and this script breaks for a reason nothing here explains
+ * (CHECKLIST § 10, the dev-dependency policy). Colour literals here are
+ * email-only chrome, outside the contrast sweep's scope (check-source-rules
+ * scans src/ and worker/).
  */
 
 import { readFileSync } from 'node:fs';
@@ -34,53 +43,12 @@ const ORIGIN = SITE_URL.replace(/\/$/, '');
 const SITE = new URL(ORIGIN).host;
 const GSC_PROPERTY = `sc-domain:${SITE}`;
 
-const args = process.argv.slice(2);
-const textMode = args.includes('--text');
-const src = args.find((a) => !a.startsWith('--'));
+const src = process.argv.slice(2).find((a) => !a.startsWith('--'));
 if (!src) {
-  console.error('usage: node scripts/report-html.mjs [--text] <report.md>');
+  console.error('usage: node scripts/report-html.mjs <report.md>');
   process.exit(2);
 }
 const markdown = readFileSync(src, 'utf8');
-
-/**
- * --text: the plain-text twin for the `body` field. Until the Apps Script is
- * deployed with htmlBody support the mail shows `body` verbatim, and raw
- * markdown (`#`, `**`, `|---|`) is what the owner reads. This strips the
- * syntax into something a mail client renders decently: headings as
- * upper-case lines, tables as aligned columns, links as "text (url)".
- */
-if (textMode) {
-  const lines = markdown.split('\n');
-  const out = [];
-  let table = [];
-  const flushTable = () => {
-    if (!table.length) return;
-    const rows = table.filter((r) => !/^\|?\s*:?-{2,}/.test(r)).map((r) =>
-      r.replace(/^\||\|$/g, '').split('|').map((c) => c.trim()));
-    const width = rows[0].map((_, i) => Math.max(...rows.map((r) => (r[i] ?? '').length)));
-    for (const r of rows) out.push('  ' + r.map((c, i) => c.padEnd(width[i])).join('   ').trimEnd());
-    out.push('');
-    table = [];
-  };
-  const inline = (t) =>
-    t.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/`([^`]+)`/g, '$1')
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)');
-  for (const line of lines) {
-    if (/^\s*\|/.test(line)) { table.push(line.trim()); continue; }
-    flushTable();
-    const h = /^(#{1,3})\s+(.*)$/.exec(line);
-    if (h) {
-      const text = inline(h[2]);
-      out.push('', h[1].length === 1 ? text.toUpperCase() : text, h[1].length === 1 ? '='.repeat(text.length) : '-'.repeat(text.length));
-      continue;
-    }
-    out.push(inline(line));
-  }
-  flushTable();
-  process.stdout.write(out.join('\n').replace(/\n{3,}/g, '\n\n') + '\n');
-  process.exit(0);
-}
 
 const html = String(
   await unified()

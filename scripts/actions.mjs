@@ -27,6 +27,7 @@
  *   manual            owner ticks once (a date under Done)
  *   manual:N          owner re-ticks every N days; the Done date decides
  *   env:VAR[+VAR2]    every named variable is set in THIS environment
+ *   env:A+B|C         A and B, or C — for an item a key OR a login pair unlocks
  *   origin            src/data/origin.mjs is not example.com
  *   placeholders      the SETUP placeholder grep is clean
  *   grep:<file>:<re>  the regex matches the file (case-insensitive)
@@ -45,7 +46,8 @@
 
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { snapshotDates, panelRuns, dataSheet, linkTargets } from './lib/snapshots.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const FILE = join(ROOT, 'marketing/ACTIONS.md');
@@ -64,7 +66,7 @@ const PHASES = ['launch', 'keys', 'daily', 'weekly', 'monthly', 'quarterly', 'an
 
 /* ------------------------------------------------------------------ parse */
 
-function parse(md) {
+export function parse(md) {
   const items = [];
   const parts = md.split(/^(?=### A-)/m).slice(1);
   for (const part of parts) {
@@ -104,16 +106,18 @@ function newestDated(dir) {
   }
   return best;
 }
-const newestHeading = (file, re) => {
-  const dates = [...read(file).matchAll(re)].map((m) => m[1]).sort();
-  return dates.at(-1) ?? null;
-};
+
 
 /**
  * Returns { done: boolean|null, note: string }. `null` = the script cannot
  * tell (manual items) and the Done date decides.
+ *
+ * Exported so the test suite can run every check kind against a fixture — the
+ * CLI body below is guarded on being the entry point for the same reason.
+ *
+ * @param {{check: string, done: string}} item
  */
-function evaluate(item) {
+export function evaluate(item) {
   const c = item.check;
   const [kind, ...rest] = c.split(':');
   const arg = rest.join(':');
@@ -131,9 +135,16 @@ function evaluate(item) {
       return fresh(doneDate, days, 'last done');
     }
     case 'env': {
-      const vars = arg.split('+').map((v) => v.trim()).filter(Boolean);
-      const missing = vars.filter((v) => !process.env[v]);
-      return { done: missing.length === 0, note: missing.length ? `not set in this environment: ${missing.join(', ')}` : `set: ${vars.join(', ')}` };
+      // `+` is AND, `|` is OR over the whole alternatives: `A+B|C` passes on
+      // (A and B) or on C. Umami reads back with a bearer token OR a username
+      // and password, and an item that demanded all three read as open on a
+      // perfectly configured environment.
+      const groups = arg.split('|').map((g) => g.split('+').map((v) => v.trim()).filter(Boolean)).filter((g) => g.length);
+      const satisfied = groups.find((g) => g.every((v) => process.env[v]));
+      if (satisfied) return { done: true, note: `set: ${satisfied.join(', ')}` };
+      const describe = groups.map((g) => g.join(' + ')).join(' or ');
+      const missing = [...new Set(groups.flat().filter((v) => !process.env[v]))];
+      return { done: false, note: `not set in this environment: ${missing.join(', ')} (needs ${describe})` };
     }
     case 'origin': {
       const src = read('src/data/origin.mjs');
@@ -141,9 +152,10 @@ function evaluate(item) {
       return { done: ok, note: ok ? 'origin set' : 'src/data/origin.mjs still says example.com' };
     }
     case 'placeholders': {
-      // The SETUP grep's roots, plus the node scripts that carry a second copy
-      // of the brand (marketing/README § EDIT FOR YOUR SITE).
-      const roots = ['src', 'public', 'wrangler.jsonc', 'marketing', 'scripts/generate-llms.mjs', 'marketing/og/render-pages.mjs'];
+      // The SETUP grep's roots. The brand strings used to be typed into two
+      // node scripts as well and both were listed here; they read
+      // src/data/brand.json now, which `src` already covers.
+      const roots = ['src', 'public', 'wrangler.jsonc', 'marketing'];
       const hits = [];
       const walk = (p) => {
         const full = join(ROOT, p);
@@ -179,14 +191,12 @@ function evaluate(item) {
     }
     case 'entries': {
       const i = arg.lastIndexOf(':');
-      return fresh(newestHeading(arg.slice(0, i), /^## (\d{4}-\d{2}-\d{2})/gm), Number(arg.slice(i + 1)), `newest entry in ${arg.slice(0, i)}`);
+      const file = arg.slice(0, i);
+      const dates = [...read(file).matchAll(/^## (\d{4}-\d{2}-\d{2})/gm)].map((m) => m[1]).sort();
+      return fresh(dates.at(-1) ?? null, Number(arg.slice(i + 1)), `newest entry in ${file}`);
     }
-    case 'snapshot': {
-      const dir = join(ROOT, 'marketing/insights');
-      const snaps = existsSync(dir) ? readdirSync(dir).filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f)).sort() : [];
-      return fresh(snaps.at(-1)?.slice(0, 10) ?? null, Number(arg), 'newest snapshot');
-    }
-    case 'panel': return fresh(newestHeading('marketing/ai-panel.md', /^## Run (\d{4}-\d{2}-\d{2})/gm), Number(arg), 'last panel run');
+    case 'snapshot': return fresh(snapshotDates().at(-1) ?? null, Number(arg), 'newest snapshot');
+    case 'panel': return fresh(panelRuns().at(-1) ?? null, Number(arg), 'last panel run');
     case 'securitytxt': {
       const exp = read('public/.well-known/security.txt').match(/^Expires:\s*(\S+)/m)?.[1];
       if (!exp) return { done: false, note: 'no Expires line' };
@@ -194,17 +204,24 @@ function evaluate(item) {
       return { done: left > 30, note: `expires ${exp.slice(0, 10)} (${left} days left)` };
     }
     case 'indexnow': {
+      // The SAME rule scripts/indexnow.mjs applies when it looks for a key:
+      // 8–128 hex characters, body equal to the filename. This check demanded
+      // exactly 32, so a valid 16- or 64-character key read as absent here and
+      // worked in the submitter.
       const pub = join(ROOT, 'public');
-      const keys = readdirSync(pub).filter((f) => /^[0-9a-f]{32}\.txt$/i.test(f) && readFileSync(join(pub, f), 'utf8').trim().toLowerCase() === f.slice(0, 32).toLowerCase());
+      const keys = readdirSync(pub).filter((f) => {
+        const m = /^([0-9a-f]{8,128})\.txt$/i.exec(f);
+        return m && readFileSync(join(pub, f), 'utf8').trim().toLowerCase() === m[1].toLowerCase();
+      });
       return { done: keys.length > 0, note: keys.length ? `key file ${keys[0]}` : 'no public/<key>.txt whose body equals its name' };
     }
     case 'datasheet': {
-      const open = (read('marketing/DATA-SHEET.md').match(/^### Q-[^\n]*⬜/gm) ?? []).length;
-      return { done: open === 0, note: open ? `${open} open question(s) — npm run ask` : 'no open questions' };
+      const { open } = dataSheet();
+      return { done: open.length === 0, note: open.length ? `${open.length} open question(s) — npm run ask` : 'no open questions' };
     }
     case 'linktargets': {
-      const todo = (read('marketing/link-targets.md').match(/^\|[^\n]*\|\s*todo\s*\|[^\n]*$/gim) ?? []).length;
-      return { done: todo === 0, note: todo ? `${todo} listing(s) still todo` : 'every listing claimed or skipped' };
+      const { todo } = linkTargets();
+      return { done: todo.length === 0, note: todo.length ? `${todo.length} listing(s) still todo` : 'every listing claimed or skipped' };
     }
     case 'social': {
       const n = (read('marketing/social-queue.md').match(/^status:\s*unposted/gim) ?? []).length;
@@ -216,6 +233,10 @@ function evaluate(item) {
 }
 
 /* ------------------------------------------------------------------- run */
+
+// Importing this module (the tests do) must not run the CLI: parse() and
+// evaluate() are the exported surface, and everything below is the command.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
 
 const md = read('marketing/ACTIONS.md');
 if (!md) {
@@ -304,4 +325,6 @@ if (AS_JSON) {
   }
   if (!open.length) console.log('\n  Nothing open.');
   console.log(`\n${bar}\n`);
+}
+
 }

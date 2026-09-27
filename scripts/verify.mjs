@@ -68,12 +68,17 @@ function ensureAll(pkgs) {
 
 // ── fast source tier (same as the pre-commit hook) ─────────────────────────
 run('config parity + source rules', 'node scripts/check-parity.mjs && node scripts/check-source-rules.mjs');
+run('unit tests (node --test)', 'npm test');
 run('mechanical voice check (anti-AI rules)', 'node scripts/check-voice.mjs');
 run('site-wide link graph (orphans, dead links, junk anchors)', 'node scripts/check-link-graph.mjs');
 run('content inventory is current', 'node scripts/content-inventory.mjs --check');
 run('collection routes exist', 'node scripts/check-collection-routes.mjs');
 run('content image references', 'node scripts/check-content-images.mjs');
-run('types + worker + lint', 'npm run check');
+// `npm run build` below runs `astro check` and `check:worker` as its first two
+// steps, so calling `npm run check` here would type-check the whole tree twice
+// for no extra coverage. Lint is NOT part of the build, so it stays its own
+// step — and it stays before the build, where a failure costs seconds.
+run('lint', 'npm run lint');
 
 // ── build ──────────────────────────────────────────────────────────────────
 run('full build (includes CSP generation)', 'npm run build');
