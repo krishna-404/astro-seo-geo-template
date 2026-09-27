@@ -12,7 +12,7 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
 import { ROBOTS_AGENTS } from './lib/crawlers.mjs';
-import { walkHtml, routeOf, decode, ldNodes } from './lib/html.mjs';
+import { walkHtml, routeOf, decode, strip, ldNodes } from './lib/html.mjs';
 import { collections, twinCollections, routeOfCollection } from './lib/routes.mjs';
 
 const DIST = 'dist';
@@ -433,6 +433,26 @@ check('every content page carries a lead figure (data-og-figure)', (bad) => {
     if (!content.test(f)) continue;
     const leads = (h.match(/data-og-figure/g) ?? []).length;
     if (leads !== 1) bad(`${f} has ${leads} lead figures (expected exactly one — declare \`figures:\` in frontmatter or let the collection's auto figure render)`);
+  }
+});
+
+// THE ABOUT PAGE CARRIES NO EM DASH (marketing/page-guidelines.md § 3). It is
+// the entity source document an engine resolves the brand from, read in the
+// third person by a machine as often as by a person, and the em dash is the
+// loudest machine tell in the voice standard (src/data/voice.json). Measured on
+// the BUILT page's visible text, not the source: the text arrives from three
+// places at once (about.json's prose, facts.json's values, the template's own
+// markup), a code comment is not the page saying anything, and `&mdash;` in the
+// source would pass a grep and fail a reader. The voice check caps em-dash
+// DENSITY in content; this one page is zero.
+check('the About page carries no em dash (entity source document)', (bad) => {
+  const about = [...html.entries()].find(([f]) => routeOf(f, DIST) === '/about');
+  if (!about) return;
+  const text = strip(about[1]);
+  const n = (text.match(/—/g) ?? []).length;
+  if (n) {
+    const where = text.split('—').slice(0, 2).map((p, i) => (i === 0 ? p.slice(-40) : p.slice(0, 40)));
+    bad(`dist/about.html says "${where.join('—')}" — ${n} em dash(es) on the About page; use a full stop or a comma (marketing/page-guidelines.md § 3)`);
   }
 });
 

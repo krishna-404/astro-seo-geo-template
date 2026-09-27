@@ -148,21 +148,61 @@ converging demand signals and the owner's go-ahead (write-content § 4c).
 Name, title, a bio of checkable facts, real `sameAs` profiles, everything
 they wrote. The Person node other pages reference by `@id`.
 
+### Money page (`solutions` collection, `/solutions/<slug>`)
+
+**BUILT, as of 27 Sep 2026.** `src/pages/solutions/[...slug].astro` renders
+each of the six things a buyer needs from a schema field, so a page cannot ship
+without one: `offering` (what you get), `outcomes` (what changes), `process`
+(how it is delivered, also the auto lead figure), `pricing` (published, on
+request, or free — `offers` in the JSON-LD only when a price is published and
+shown), optional `compare` rows, and one `cta`. `primaryKeyword` is REQUIRED,
+so every money page claims exactly one query and `npm run insights` can hold it
+to that. A page that states a number needs `sources`
+(`check-source-rules`). No index page: money pages are linked from the nav, the
+homepage and the About page's services section, each on the anchor a searcher
+types. It sits on the 30-day refresh clock in `npm run audit:pages`.
+
+### Comparison page (`comparison` collection, `/vs/<slug>`)
+
+**BUILT, as of 27 Sep 2026.** `src/pages/vs/[...slug].astro`. The one page
+class that generates a letter when it is wrong, so honesty is structural rather
+than editorial: EVERY ROW carries its own `source` and `retrieved` date and
+renders that date beside the cell (a table with one date at the top claims
+every cell was read that day, and none ever was); at least three rows; at least
+two `bestFor` entries, so the page names a case where the rival wins; a written
+`verdict` that may not be "best for everyone"; `updated` required.
+`check-source-rules` fails a row read more than 90 days ago, and
+`npm run audit:pages` holds the page to 30. The table is a `.table-scroll`
+region naming both sides.
+
 ### Pricing page (when the strategy publishes prices)
 
 A real HTML table: plan, price, what is included, contract terms. `Offer`
 schema matching the visible table. Stale pricing is the fastest way to lose
-a citation already earned; it sits on the 30-day refresh clock.
+a citation already earned; it sits on the 30-day refresh clock. A site whose
+pricing belongs to one offering puts it on that `solutions` page instead of
+building a second page that has to agree with it.
 
 ## 3. The About page — human-readable, machine-readable entity source
 
 (Source: Contact.so, "About Us page SOP", ingested Sep 2026.)
 
+**BUILT, as of 27 Sep 2026.** `src/pages/about.astro` renders every rule below
+from two data files and needs no editing per site: `src/data/facts.json →
+company` holds the values (each with its source — the Key Facts table and the
+`Organization` node's `legalName`, `foundingDate`, `address` and `sameAs` read
+from there) and `src/data/about.json` holds the prose. A value still reading
+TODO is OMITTED from the page and from the schema rather than rendered, which
+is the "omitted, never estimated" rule below made structural. Two checks hold
+the rest: `check-invariants` fails an em dash in the built page's visible text,
+and `check-parity` fails a commit where `company.competitors` and
+`intent.json → competitors` disagree.
+
 Two jobs at once: a normal About page for a person, and the one first-party
 document Google's knowledge graph and the assistants parse when someone
 asks "what is <Company>". Without it they stitch third-party snippets.
 
-**Routing.** `/about`, 200, server-rendered (it is). Linked from the global
+**Routing.** `/about`, 200, statically rendered (it is). Linked from the global
 footer of every page, in the sitemap, in the main nav. Internal links to
 the homepage, pricing, the main product or service pages, case studies and
 the primary conversion page. No noindex, no canonical elsewhere.

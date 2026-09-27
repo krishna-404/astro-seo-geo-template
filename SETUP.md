@@ -107,9 +107,25 @@ Work top to bottom; later files read earlier ones.
       renewal in your calendar now (ACTIONS A-Y01 — an expired file reads as
       an unmaintained site to exactly the audience it exists for).
 - [ ] `wrangler.jsonc` — rename the worker (`"name"`).
-- [ ] Page copy: `src/pages/index.astro`, `about.astro`, `contact.astro` —
-      rewrite the template's self-describing copy (including the homepage
-      FAQ array, which feeds both the accordion and the FAQPage schema).
+- [ ] Page copy: `src/pages/index.astro`, `contact.astro` — rewrite the
+      template's self-describing copy (including the homepage FAQ array,
+      which feeds both the accordion and the FAQPage schema).
+- [ ] The About page is DATA, not markup: `src/pages/about.astro` renders the
+      eight sections of `marketing/page-guidelines.md § 3` from two files and
+      needs no editing. Fill `src/data/facts.json → company` (the Key Facts
+      rows and the Organization node: `legalName`, `type`, `founded`,
+      `headquarters`, `coreOffering`, `pricing`, `contractTerms`, `services`,
+      `communication`, `notableClients`, `customersServed`,
+      `projectsDelivered`, `competitors`, `social` — each with its source) and
+      `src/data/about.json` (the prose: the ICP, the services' sentences, the
+      five differentiators with rivals named, the ICP segments, the founder
+      and origin story, how it works, and the six FAQs). **A value still
+      reading TODO is OMITTED from the page and from the schema, never
+      rendered** — so the page is honest from the first build and gets fuller
+      as you fill it. Keep `company.competitors` in step with
+      `intent.json → competitors` (check-parity rule 6). The founder is ONE
+      record, in `src/data/authors.json`. ACTIONS A-L13 wants the facts
+      approved in writing before launch; A-Q03 re-confirms them quarterly.
 - [ ] Sample content: the entries in `src/content/blog/` and
       `src/content/glossary/` carry `TODO Founder Name` authors. Replace
       them with your first real entries — or fix their frontmatter if you

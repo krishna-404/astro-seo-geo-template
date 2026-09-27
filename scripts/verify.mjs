@@ -34,12 +34,17 @@ function run(title, cmd) {
 }
 
 /** Browser/validator tooling is deliberately not in package.json (CHECKLIST
- *  §6) — install on demand, --no-save, same as CI does.
+ *  §6, the dependency policy) — install on demand, --no-save, same as CI does.
  *
- *  ONE install for everything missing, never one per package:
- *  `npm install --no-save X` reconciles against the lockfile and PRUNES
- *  previously --no-save-installed packages, so sequential installs remove
- *  each other's tools (this took down the first real CI run). */
+ *  ONE install of THE WHOLE LIST, whenever any of it is missing. `npm install
+ *  --no-save X` reconciles against the lockfile and PRUNES every package
+ *  previously installed with --no-save, so installing only what is missing
+ *  removes what is already there: the first real CI run died this way, and so
+ *  did a verify run on 27 Sep 2026 after a developer had installed playwright
+ *  by hand (html-validate's install pruned playwright, the retry pruned
+ *  html-validate, and the battery reported html-validate "unresolvable after
+ *  two installs"). Passing all three every time is the only spelling that
+ *  converges. */
 function ensureAll(pkgs) {
   const missing = (list) =>
     list.filter((p) => {
@@ -54,10 +59,9 @@ function ensureAll(pkgs) {
   // exit 0 from a --no-save batch with one package silently absent. Trust
   // the filesystem, not the exit code.
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    const need = missing(pkgs);
-    if (!need.length) return;
-    console.log(`   (installing ${need.join(' ')} --no-save${attempt ? ', retry' : ''})`);
-    execSync(`npm install --no-save ${need.join(' ')}`, { stdio: 'inherit' });
+    if (!missing(pkgs).length) return;
+    console.log(`   (installing ${pkgs.join(' ')} --no-save${attempt ? ', retry' : ''})`);
+    execSync(`npm install --no-save ${pkgs.join(' ')}`, { stdio: 'inherit' });
   }
   const still = missing(pkgs);
   if (still.length) {

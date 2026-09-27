@@ -78,7 +78,17 @@ const BUCKETS = [
 function audit(r, h) {
   const art = h.match(/<article\b[^>]*data-pagefind-body[^>]*>([\s\S]*?)<\/article>/)?.[1];
   if (!art) return null;
-  const kind = /class="post\b/.test(h) ? 'post' : /class="term\b/.test(h) ? 'term' : 'page';
+  // The page type, read from the template's own root class. It decides two
+  // things: the freshness bar, and whether the fan-out buckets apply.
+  const kind = /class="post\b/.test(h)
+    ? 'post'
+    : /class="term\b/.test(h)
+      ? 'term'
+      : /class="compare\b/.test(h)
+        ? 'comparison'
+        : /class="solution\b/.test(h)
+          ? 'solution'
+          : 'page';
   // The prose body only: strip the chrome (breadcrumbs, related, pager, CTA, sources).
   // Astro appends data-astro-cid-* to every scoped element, so match on the
   // class attribute and let the rest of the tag be anything.
@@ -136,7 +146,15 @@ function audit(r, h) {
   add('in-body links 2–8', inLinks >= 2 && inLinks <= 8, `${inLinks} in-body link(s); 2–8, anchored on the phrase a searcher types`);
   add('word count ≥300', words >= 300, `${words} words; a page this thin is not cited`);
   // 05 Freshness
-  add('updated within 90 days', ageDays != null && ageDays <= 90, ageDays == null ? 'no modified/published meta' : `last dated ${ageDays} days ago; refresh the facts, examples and data, bump \`updated\``);
+  // TWO FRESHNESS BARS, because the pages age at different speeds. A
+  // comparison page states a rival's prices and features, which move without
+  // telling us: 30 days. A money page states our own price and terms, which we
+  // change deliberately: 30 days too, since a wrong price is the most expensive
+  // error on the site. Everything else: 90. (marketing/playbook-intake.md
+  // refused "updated within 30 days" as a UNIVERSAL bar for exactly this
+  // reason — a date bump without a change is worse than an old date.)
+  const freshDays = kind === 'comparison' || kind === 'solution' ? 30 : 90;
+  add(`updated within ${freshDays} days`, ageDays != null && ageDays <= freshDays, ageDays == null ? 'no modified/published meta' : `last dated ${ageDays} days ago; re-read the sources, refresh the figures, bump \`updated\``);
   add('visible last-updated date', visibleDate, 'no visible date on the page');
   add('names the current year where a date matters', new RegExp(`\\b${year}\\b`).test(text) || ageDays <= 30, `no "${year}" on the page; state when the figures were checked`);
   // 06 Fan-out buckets

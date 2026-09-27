@@ -23,6 +23,35 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
 - ✅ **Content is files in git (MDX content collections), not a CMS.** Zod
   schemas make content rules enforceable rather than aspirational; an agent or
   colleague writes a file and opens a PR — review, diff, rollback for free.
+- ✅ **Four collections, two informational and two commercial** (27 Sep 2026),
+  declared in `src/data/collections.json` and schema'd in
+  `src/content.config.ts`:
+  - `blog` → `/blog/<slug>` and `glossary` → `/glossary/<slug>`, as before.
+  - `solutions` → `/solutions/<slug>`: MONEY PAGES. `primaryKeyword` is
+    REQUIRED here rather than optional, so every money page claims exactly one
+    query and `npm run insights` can hold it to that one
+    (`intent.json → claimFrom` names both commercial collections). The six
+    things a buyer needs each render from a schema field — `offering`,
+    `outcomes`, `process`, `pricing`, optional `compare`, one `cta` — so a page
+    cannot ship without its price or its process. `offers` appears in the
+    JSON-LD only when the price is `published` AND shown on the page.
+  - `comparison` → `/vs/<slug>`: the one page class that generates a letter
+    when it is wrong, so honesty is STRUCTURAL. Every row carries the URL it
+    was read from and the date it was read, and renders that date beside the
+    cell (a table with one date at the top claims every cell was read that day,
+    and none ever was); at least three rows; at least two `bestFor` entries, so
+    the page names a case where the rival wins; a written `verdict`.
+    `check-source-rules` fails a row read more than 90 days ago.
+  - **Both ship EMPTY, on purpose.** A money page and a /vs page are claims
+    about this company and its named rivals; a template that shipped examples
+    would ship fabrications (AGENTS rule 1). The route files ship with them, so
+    `getStaticPaths` over an empty collection simply builds nothing, and
+    `smoke-worker` asserts that `/solutions/<missing>` and `/vs/<missing>`
+    answer the styled 404 rather than a worker error.
+  - **Neither has an index page**, deliberately: they are linked from the nav,
+    the homepage and the About page's services section, each on the anchor a
+    searcher types. An index of links that exist elsewhere is thin by
+    construction, and `check-invariants` would then require an ItemList on it.
 - ✅ **`trailingSlash: 'never'` + `build.format: 'file'`** → URLs like
   `/about`, files like `about.html`. Must stay in agreement with
   `wrangler.jsonc → html_handling: "drop-trailing-slash"`. Changing one
@@ -249,6 +278,45 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   only when a gated vendor is actually configured.
 
 ## 6. SEO (classic)
+
+- ✅ **The About page is the entity source document, and it is DATA** (27 Sep
+  2026, `src/pages/about.astro`, `marketing/page-guidelines.md § 3`). Eight
+  sections in order: the entity sentence built from `facts.json → company.type`
+  and `coreOffering` plus `about.json → icp` (so it cannot drift from the Key
+  Facts table), what the company does, what makes it different with rivals
+  NAMED, who uses it, the team, how it works, Key Facts as a real HTML table in
+  a labelled scroll region, and six FAQs from the one `faq` array that also
+  feeds the FAQPage node. Values live in `src/data/facts.json → company` (each
+  with its source); prose lives in `src/data/about.json` (no source, because it
+  is the company describing itself). THE DECISION, since the handoff left it
+  open: **two files, split on whether the thing needs a source.** A number can
+  never be edited without its source, and a sentence never needs one.
+  - **A value still reading TODO is OMITTED**, from the table and from the
+    schema (`src/lib/companyFacts.ts` → `filled()`). WHY: a row reading "TODO"
+    is a claim that the company's legal name is TODO, and an engine reads it as
+    one; `legalName: "TODO"` or an empty string in `sameAs` is worse than an
+    absent key, which the entity-hygiene invariant already fails. The address is
+    all-or-nothing: a PostalAddress with a country and no city can place the
+    company wrongly, which is worse than not placing it. A named client renders
+    only when its `permission` flag is true.
+  - `BaseLayout`'s site-wide `Organization` node gains `legalName`,
+    `foundingDate`, `address` and `sameAs` from the same facts, on the same
+    rule. Those four were the Organization-completeness lever's missing fields.
+  - **No em dash anywhere on the page**, checked on the BUILT page's visible
+    text by `check-invariants` — not the source, because the text arrives from
+    three places at once and a code comment is not the page saying anything.
+  - ✅ **One founder record** (27 Sep 2026): `src/data/authors.json`.
+    `site.ts → FOUNDER` reads the entry named by `FOUNDER_SLUG`, and
+    `facts.json → company.founder` is now a pointer. WHY: the name and LinkedIn
+    were in both files, and the graph carried two identities for one human —
+    the author page emitted `#author-founder` while every other page pointed at
+    `#founder`. `jobTitle` comes from the registry too, so a founder who is also
+    the CTO is no longer published as "Founder".
+- ✅ **The homepage FAQ renders from the shared component** (27 Sep 2026):
+  `<Faq groupName="home" />` plus `faqPageNode()`, where it previously
+  hand-built both the `<details>` list and the FAQPage node. The
+  visible-answers-match-the-schema invariant and the measured FAQ toggle
+  (AGENTS rule 3) now hold on the homepage too.
 
 - ✅ **Canonical, full OG set (+ `og:image` 1200×630 with declared
   dimensions and `og:image:alt`), Twitter card, JSON-LD — all from

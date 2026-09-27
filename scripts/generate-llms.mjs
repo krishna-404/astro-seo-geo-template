@@ -28,8 +28,8 @@ import { fileURLToPath } from 'node:url';
 import { readCollection, bodyAsText, leadFigureLine } from './lib/content.mjs';
 import { collections } from './lib/routes.mjs';
 import { SITE_URL } from '../src/data/origin.mjs';
-import facts from '../src/data/facts.json' with { type: 'json' };
 import brand from '../src/data/brand.json' with { type: 'json' };
+import authorsRegistry from '../src/data/authors.json' with { type: 'json' };
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const url = (path) => `${SITE_URL}${path}`;
@@ -45,6 +45,10 @@ const url = (path) => `${SITE_URL}${path}`;
 // llms.txt cannot introduce a second name for the company. `brief` rather than
 // `description`: this paragraph is written to be lifted whole into an answer,
 // where the meta description is written to survive the SERP clamp.
+// The founder, from the author registry — the one record (src/data/site.ts §
+// FOUNDER_SLUG explains why it moved out of facts.json).
+const FOUNDER = authorsRegistry.authors.find((a) => a.slug === 'founder') ?? authorsRegistry.authors[0];
+
 const LLMS = {
   name: brand.name,
   tagline: brand.tagline,
@@ -137,8 +141,8 @@ ${collectionSections()}
 
 ## Contact
 
-${facts.company.founder.name}, founder
-LinkedIn: ${facts.company.founder.linkedin}
+${FOUNDER.name}, ${FOUNDER.title}
+LinkedIn: ${FOUNDER.sameAs[0]}
 
 ## Note
 

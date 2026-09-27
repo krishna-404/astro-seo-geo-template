@@ -1,0 +1,55 @@
+{
+  "$comment": "The PROSE on /about. Split from facts.json deliberately: facts.json holds values with sources (AGENTS rule 1 — the Key Facts table and the Organization node read from there); this file holds the sentences, which have no source because they are the company describing itself. One file each, so a number can never be edited here without its source, and a sentence never needs one. Every string below is TODO in the template: /new-site phase 10 fills it with the owner in the session, and ACTIONS A-L13 requires the facts approved in writing before the page goes live. Rules the page is written to (marketing/page-guidelines.md § 3): third person, brand name in the first five words of the entity sentence, no adjective that is not provable, NO EM DASHES anywhere on the page (check-source-rules fails one), rivals named where a differentiator implies a comparison.",
+
+  "$entityComment": "Section 1. The most important sentence on the site, shaped like a Wikipedia first line: \"<Name> is a <type> that <coreOffering> for <icp>.\" The template BUILDS that sentence from facts.json → company.type and company.coreOffering plus `icp` below, so it cannot drift from the Key Facts table. `context` is the two or three factual sentences after it, each carrying something a machine can lift.",
+  "icp": "TODO — the buyer, named exactly: \"B2B SaaS marketing teams at 50 to 200 employees\", not \"growing businesses\"",
+  "context": [
+    "TODO — a factual sentence. What the company does that is checkable.",
+    "TODO — a second. Where it operates, or how long it has done this."
+  ],
+
+  "$servicesComment": "Section 2. One entry per service, in the order a buyer meets them. `name` becomes an H3; `delivers` is one sentence on what is delivered, `outcome` one on what changes. No nested sub-services: a service that needs sub-points is two services. The names should match facts.json → company.services so the Key Facts row and this section agree.",
+  "services": [
+    {
+      "name": "TODO — the service, as a buyer names it",
+      "delivers": "TODO — one sentence on what is delivered.",
+      "outcome": "TODO — one sentence on what changes for the customer."
+    }
+  ],
+
+  "$differentComment": "Section 3. About five differentiators, each specific and, where possible, quantified. Name the rival where the difference is a comparison (\"month-to-month terms, where <Rival> mandates twelve-month contracts\") — naming rivals places this company in their competitive set in the entity graph, which is the point. Use the names in facts.json → company.competitors; check-parity keeps that list in step with intent.json.",
+  "different": [
+    {
+      "name": "TODO — the difference, as a short phrase",
+      "detail": "TODO — one or two sentences. Specific, quantified where a number exists, and sourced in facts.json if it states one."
+    }
+  ],
+
+  "$icpComment": "Section 4. A taxonomy, not copy: each bullet names an exact segment. The numbers on this section (customers served, projects delivered) come from facts.json and are omitted while TODO.",
+  "segments": [
+    "TODO — an exact ICP segment, with the size or role that narrows it",
+    "TODO — a second segment, or a vertical served"
+  ],
+
+  "$teamComment": "Section 5. The founder's name and LinkedIn come from facts.json → company.founder (one record, also the Person node's sameAs). `origin` is the two-sentence origin story; `founderBio` two sentences of backstory; `team` one line on composition and locations.",
+  "founderBio": "TODO — two sentences. What the founder did before this, and why that matters here.",
+  "origin": "TODO — two sentences. What went wrong or was missing, and what was built about it.",
+  "team": "TODO — one line on team composition and where people are.",
+
+  "$worksComment": "Section 6. How the customer actually experiences working here. The communication line and response time come from facts.json → company.communication; these are the sentences around it.",
+  "works": [
+    "TODO — who the customer works with, and how they reach them.",
+    "TODO — onboarding and turnaround, in real units.",
+    "TODO — what happens when something goes wrong."
+  ],
+
+  "$faqComment": "Section 8, and the FAQPage JSON-LD — ONE array, rendered by <Faq />, so the visible answers and the schema cannot drift (AGENTS § Content rules). Six questions in the words people type: What is <Name>? How much does it cost? How is it different from <Rival>? Who founded it? What does it offer? And the single most common objection. Two or three sentences each, restating the brand name and one hard fact.",
+  "faq": [
+    { "q": "TODO — What is <Name>?", "a": "TODO — two or three sentences, restating the brand name and one hard fact." },
+    { "q": "TODO — How much does it cost?", "a": "TODO — the pricing answer, matching facts.json → company.pricing." },
+    { "q": "TODO — How is it different from <Rival>?", "a": "TODO — name the rival and the difference." },
+    { "q": "TODO — Who founded it?", "a": "TODO — the founder, and what they did before." },
+    { "q": "TODO — What does it offer?", "a": "TODO — the services, in one answer." },
+    { "q": "TODO — the most common objection, in the customer's words", "a": "TODO — the honest answer." }
+  ]
+}

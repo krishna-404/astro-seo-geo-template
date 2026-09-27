@@ -1,0 +1,13 @@
+# The comparison collection ships EMPTY, and this one is not shyness.
+#
+# Every cell on a /vs page is a claim about a named competitor, carrying the
+# source it was read from and the date it was read. A template cannot ship an
+# example of that without inventing a competitor and a reading of their
+# pricing page, which is exactly the class of fabrication AGENTS forbids.
+#
+# To add the first: /landscape decides which rivals a buyer actually compares
+# this site with, .vscode/frontmatter.code-snippets has the `comparison`
+# snippet, and the schema in src/content.config.ts requires a source and a
+# retrieved date on every row. check-source-rules fails a row read more than
+# 90 days ago. The route (src/pages/vs/[...slug].astro) is already here —
+# getStaticPaths over an empty collection builds nothing.

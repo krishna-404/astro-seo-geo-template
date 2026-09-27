@@ -2,7 +2,7 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
-import { SITE } from '../../data/site';
+import { SITE, FOUNDER_SLUG } from '../../data/site';
 import { isPublished } from '../../data/publishing.mjs';
 import authorsData from '../../data/authors.json';
 
@@ -38,12 +38,21 @@ const descBase = `${author.name}, ${author.title}: ${author.bio} Profiles and ev
 const description =
   descBase.length <= 165 ? descBase : `${descBase.slice(0, 164).replace(/\s+\S*$/, '')}…`;
 
+/**
+ * ONE IDENTITY PER PERSON. The founder's page uses `#founder`, the same @id
+ * BaseLayout's site-wide Person node and every glossary Article point at.
+ * Emitting `#author-founder` here and `#founder` everywhere else described one
+ * human as two entities, which is exactly the corroboration an engine cannot
+ * make. Other authors keep their own `#author-<slug>`.
+ */
+const personId = author.slug === FOUNDER_SLUG ? `${SITE.url}/#founder` : `${SITE.url}/#author-${author.slug}`;
+
 const schema = [
   {
     '@type': 'ProfilePage',
     mainEntity: {
       '@type': 'Person',
-      '@id': `${SITE.url}/#author-${author.slug}`,
+      '@id': personId,
       name: author.name,
       jobTitle: author.title,
       description: author.bio,

@@ -78,7 +78,13 @@ being checked is not a reason to ignore it here; the prose carries the WHY.
     glues words together — use explicit `{' '}`; `<script>` in a component
     needs `is:inline` to stay inline; optional assets via `import.meta.glob`,
     never a plain import; build-time file checks resolve from
-    `process.cwd()`, never `import.meta.url`.
+    `process.cwd()`, never `import.meta.url`. **A DELETED content entry
+    survives in the content data store** (`node_modules/.astro/data-store.json`,
+    and `.astro/`): delete a file and the next local build still emits its
+    page, with no twin and no social card. `check-invariants` says so loudly
+    rather than letting it ship, and CI never sees it (a fresh `npm ci` has no
+    store), but locally the fix is `rm -rf node_modules/.astro .astro dist`
+    before rebuilding — not more debugging of a page whose source is gone.
 11. **URL format is locked**: extensionless, no trailing slash.
     `build.format: 'file'` (Astro) and `html_handling:
     "drop-trailing-slash"` (wrangler.jsonc) must change together or not at

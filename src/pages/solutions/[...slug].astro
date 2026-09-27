@@ -1,0 +1,353 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import Faq from '../../components/Faq.astro';
+import Toc from '../../components/Toc.astro';
+import RelatedLinks from '../../components/RelatedLinks.astro';
+import Figure from '../../components/Figure.astro';
+import BodyFigure from '../../components/BodyFigure.astro';
+import { SITE } from '../../data/site';
+import { isPublished } from '../../data/publishing.mjs';
+import { faqPageNode } from '../../lib/faqSchema';
+import { relatedFor, type RelatedCandidate } from '../../lib/related';
+import { setFigures } from '../../lib/figureContext';
+import { leadFigure, processStepsFigure } from '../../lib/figures';
+
+/**
+ * A money page: one offering, one primary query, one primary action.
+ *
+ * WHAT THE TEMPLATE GUARANTEES, so a page cannot omit it. The six things a
+ * buyer needs — what you get, what changes, how it is delivered, what it
+ * costs, what else they might pick, what to do next — each render from a
+ * schema field (src/content.config.ts → solutions), so the only way to ship a
+ * page without its process or its pricing is to leave the field out and fail
+ * the build. marketing/site-blueprint.md § 1 is where that list comes from.
+ *
+ * NO INDEX PAGE, deliberately. Money pages are linked from the nav, the
+ * homepage and the About page's services section, each with the anchor a
+ * searcher types. A /solutions index would be an indexable page whose only
+ * content is links that already exist elsewhere — thin by construction, and
+ * check-invariants would then demand an ItemList on it.
+ *
+ * The comparison table renders ONLY when the entry supplies `compare` rows.
+ * An empty table is worse than no table: it says the question was asked and
+ * not answered.
+ */
+export async function getStaticPaths() {
+  const [entries, glossary, blog] = await Promise.all([
+    getCollection('solutions', ({ data }) => isPublished(data)),
+    getCollection('glossary', ({ data }) => isPublished(data)),
+    getCollection('blog', ({ data }) => isPublished(data)),
+  ]);
+
+  const candidateOf = (e: (typeof entries)[number]): RelatedCandidate => ({
+    id: e.id,
+    collection: 'solutions',
+    title: e.data.title,
+    summary: e.data.offering,
+    topics: [e.data.primaryKeyword, ...e.data.secondaryKeywords],
+  });
+  const candidates: RelatedCandidate[] = [
+    ...entries.map(candidateOf),
+    ...glossary.map((e) => ({
+      id: e.id,
+      collection: 'glossary',
+      title: e.data.term,
+      summary: e.data.shortDefinition,
+      topics: [e.data.category, ...e.data.aliases],
+    })),
+    ...blog.map((e) => ({
+      id: e.id,
+      collection: 'blog',
+      title: e.data.title,
+      summary: e.data.description,
+      topics: e.data.tags,
+      published: e.data.published,
+    })),
+  ];
+
+  return entries.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry, related: relatedFor(candidateOf(entry), candidates) },
+  }));
+}
+
+const { entry, related } = Astro.props;
+const { data } = entry;
+const { Content, headings } = await render(entry);
+
+// The lead figure: declared in frontmatter, else the delivery process drawn as
+// steps — the thing a buyer most wants to see and the only structured list a
+// money page always has (AGENTS § Figures).
+const lead = leadFigure(data.figures, () => processStepsFigure(data.title, data.process));
+setFigures(data.figures, `/solutions/${entry.id}`);
+
+const url = new URL(`/solutions/${entry.id}`, SITE.url).href;
+
+const money = new Intl.NumberFormat('en', {
+  style: 'currency',
+  currency: data.pricing.currency,
+  maximumFractionDigits: 0,
+});
+
+/** The price as the page shows it. The JSON-LD `offers` node mirrors this
+ *  string's number, and only when the model is `published` — a price in the
+ *  markup that the page does not print is a claim nobody can check. */
+const priceLine =
+  data.pricing.model === 'free'
+    ? 'Free'
+    : data.pricing.model === 'published' && data.pricing.from !== undefined
+      ? `From ${money.format(data.pricing.from)}`
+      : 'On request';
+
+const schema = [
+  {
+    '@type': data.schemaType,
+    '@id': `${url}#offering`,
+    name: data.title,
+    description: data.offering,
+    url,
+    provider: { '@id': `${SITE.url}/#organization` },
+    ...(data.schemaType === 'Service' ? { serviceType: data.primaryKeyword, areaServed: SITE.locale === 'en' ? 'Worldwide' : undefined } : {}),
+    ...(data.pricing.model === 'published' && data.pricing.from !== undefined
+      ? {
+          offers: {
+            '@type': 'Offer',
+            price: data.pricing.from,
+            priceCurrency: data.pricing.currency,
+            url,
+            availability: 'https://schema.org/InStock',
+          },
+        }
+      : {}),
+  },
+  {
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Solutions', item: new URL('/solutions', SITE.url).href },
+      { '@type': 'ListItem', position: 2, name: data.title, item: url },
+    ],
+  },
+  ...(data.faq.length > 0 ? [faqPageNode(url, data.faq)] : []),
+];
+---
+
+<BaseLayout
+  title={data.title}
+  description={data.description}
+  ogType="website"
+  ogImage={data.ogImage}
+  canonical={data.canonical}
+  modifiedTime={data.updated}
+  schema={schema}
+>
+  <article class="solution" data-pagefind-body>
+    <Breadcrumbs items={[{ label: 'Solutions', href: '/solutions' }, { label: data.title }]} />
+
+    <h1>{data.title}</h1>
+
+    {/* The lift target. Front-loaded answer, first thing after the h1. */}
+    <p class="solution__tldr">{data.tldr}</p>
+
+    <p class="solution__offering">{data.offering}</p>
+
+    {lead && <Figure figure={lead} lead />}
+
+    {data.toc && <Toc headings={headings} />}
+
+    {
+      data.outcomes.length > 0 && (
+        <section class="solution__outcomes">
+          <h2>What changes</h2>
+          <ul>
+            {data.outcomes.map((o) => (
+              <li>{o}</li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+
+    {
+      data.process.length > 0 && (
+        <section class="solution__process">
+          <h2>How it works</h2>
+          <ol>
+            {data.process.map((p) => (
+              <li>
+                <strong>{p.step}.</strong> {p.detail}
+              </li>
+            ))}
+          </ol>
+        </section>
+      )
+    }
+
+    <section class="solution__pricing">
+      <h2>What it costs</h2>
+      <p class="solution__price">{priceLine}</p>
+      {data.pricing.note && <p class="solution__price-note">{data.pricing.note}</p>}
+    </section>
+
+    <div class="solution__body prose">
+      <Content components={{ Figure: BodyFigure }} />
+    </div>
+
+    {
+      data.compare && (
+        <section class="solution__compare">
+          <h2>Compared</h2>
+          <div
+            class="table-scroll"
+            tabindex="0"
+            role="region"
+            aria-label={`${data.compare.aLabel} compared with ${data.compare.bLabel}`}
+          >
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">&nbsp;</th>
+                  <th scope="col">{data.compare.aLabel}</th>
+                  <th scope="col">{data.compare.bLabel}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.compare.rows.map((row) => (
+                  <tr>
+                    <th scope="row">{row.label}</th>
+                    <td>{row.a}</td>
+                    <td>{row.b}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )
+    }
+
+    <RelatedLinks items={related} heading="Related" />
+
+    {data.faq.length > 0 && <Faq faq={data.faq} groupName={entry.id} place={`solutions:${entry.id}`} />}
+
+    {
+      data.sources.length > 0 && (
+        <section class="solution__sources">
+          <h2>Sources</h2>
+          <ol>
+            {data.sources.map((s) => (
+              <li>
+                {s.url ? (
+                  <a href={s.url} rel="nofollow noopener">
+                    {s.label}
+                  </a>
+                ) : (
+                  s.label
+                )}
+                {s.retrieved && (
+                  <span class="solution__retrieved"> · checked {s.retrieved.toISOString().slice(0, 10)}</span>
+                )}
+              </li>
+            ))}
+          </ol>
+        </section>
+      )
+    }
+
+    <aside class="solution__cta" data-pagefind-ignore>
+      <div class="btn-row">
+        <a
+          class="btn btn--primary"
+          href={data.cta.href}
+          data-umami-event={`cta-${entry.id}`}
+          data-umami-event-place="solution">{data.cta.label}</a
+        >
+      </div>
+    </aside>
+  </article>
+</BaseLayout>
+
+<style>
+  .solution {
+    max-width: 44rem;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 4rem;
+  }
+  .solution h1 {
+    font-size: 1.875rem;
+    line-height: 1.15;
+    margin: 0 0 1rem;
+  }
+  /* The lift target. Front-loaded answer, visually distinct, first after h1. */
+  .solution__tldr {
+    font-size: 1.125rem;
+    line-height: 1.6;
+    border-left: 3px solid var(--ink);
+    padding-left: 1rem;
+    margin: 0 0 1.5rem;
+  }
+  .solution__offering {
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    margin: 0 0 2rem;
+  }
+  .solution__outcomes,
+  .solution__process,
+  .solution__pricing,
+  .solution__compare {
+    margin-top: 2.5rem;
+  }
+  .solution__outcomes ul,
+  .solution__process ol {
+    padding-left: 1.25rem;
+  }
+  .solution__outcomes li,
+  .solution__process li {
+    margin-bottom: 0.625rem;
+    line-height: 1.6;
+  }
+  .solution__price {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    font-size: clamp(1.5rem, 5vw, 2rem);
+    line-height: 1.1;
+    color: var(--ink);
+    margin: 0;
+  }
+  .solution__price-note {
+    color: var(--ink-3);
+    line-height: 1.6;
+    margin: 0.5rem 0 0;
+  }
+  .solution__sources {
+    margin-top: 2.5rem;
+    font-size: 0.9375rem;
+  }
+  .solution__sources ol {
+    padding-left: 1.1rem;
+  }
+  .solution__sources li {
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+  }
+  .solution__retrieved {
+    color: var(--ink-3);
+  }
+  .solution__cta {
+    margin-top: 3rem;
+    padding: 1.5rem;
+    background: var(--blue-tint);
+    border-radius: var(--radius);
+  }
+
+  @media (min-width: 48rem) {
+    .solution {
+      padding: 3rem 1.5rem 5rem;
+    }
+    .solution h1 {
+      font-size: 2.25rem;
+    }
+  }
+</style>

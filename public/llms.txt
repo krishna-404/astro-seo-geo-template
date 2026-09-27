@@ -39,9 +39,25 @@ Core Web Vitals · llms.txt
 
 Index: <https://example.com/glossary>
 
+## Solutions
+
+What this company sells, one page per offering: what the customer gets, how it is delivered, and what it costs where a price is published.
+
+(no entries published yet)
+
+Index: <https://example.com/solutions>
+
+## Compared
+
+Head-to-head comparisons. Every cell in every table names its source and the date it was checked.
+
+(no entries published yet)
+
+Index: <https://example.com/vs>
+
 ## Contact
 
-TODO Founder Name, founder
+TODO Founder Name, Founder
 LinkedIn: https://www.linkedin.com/in/TODO
 
 ## Note

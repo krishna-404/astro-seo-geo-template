@@ -387,6 +387,57 @@ matching rows in `marketing/audit-2026-09-27.md § 4` and add a Log line.
 
 ## 4. Stream B — src: money pages, comparison pages, the About page
 
+> **✅ LANDED 27 Sep 2026**, same branch as stream A. B1–B3 are done and
+> `npm run verify` is green in 16 steps. Both new routes were proven against a
+> REAL entry before the entries were removed again (the collections ship empty):
+> the pages render, both auto-derived figures draw, the JSON-LD carries `offers`
+> and `about`, `check-invariants` holds, and `smoke-worker` asserts that an
+> empty collection's route answers the styled 404 rather than a worker error.
+> What changed against the plan, and why:
+>
+> - **The About page is DATA, and the split is by whether a thing needs a
+>   source.** The plan left "facts.json or a new about.json — pick one and say
+>   so in CHECKLIST" open. Decision: BOTH, split on that one rule.
+>   `facts.json → company` holds values with sources (the Key Facts rows and the
+>   Organization node read from there); `src/data/about.json` holds the prose,
+>   which has no source because it is the company describing itself. So a number
+>   can never be edited without its source and a sentence never needs one.
+>   Recorded in CHECKLIST § 6.
+> - **`src/lib/companyFacts.ts` is the omission rule, once.** `filled()` returns
+>   null for a TODO value, and every caller omits its row. The address is
+>   all-or-nothing and a named client needs `permission: true`. The page is
+>   therefore honest from the first build and gets fuller as the owner fills it,
+>   rather than rendering "TODO" as a claim.
+> - **The em-dash rule moved to `check-invariants`, not `check-source-rules`.**
+>   The plan put it at source level. A source grep flags the file's own code
+>   comments (it did) and misses `&mdash;` and anything arriving from
+>   `about.json`. The built page's visible text is the only text that is the page
+>   saying something, so the check reads `dist/about.html`.
+> - **The schema's `title` refine, not `max(60)`** — see stream A's note.
+> - **Three defects the plan did not know about, found and fixed:**
+>   `RelatedLinks.astro` built hrefs as `/{collection}/{id}`, which is a dead
+>   link for `comparison` (route `/vs`); the founder was TWO records
+>   (`facts.json` and `authors.json`) and two schema identities (`#founder` vs
+>   `#author-founder`), now one record in the registry with `FOUNDER_SLUG`
+>   naming it; and `verify`'s `ensureAll()` installed only the MISSING
+>   `--no-save` tools, so npm pruned the ones already present and the battery
+>   reported a tool "unresolvable after two installs" — it now passes the whole
+>   list every time, which is the only spelling that converges.
+> - **`/pricing` and `/for/<segment>` are deliberately NOT built** (audit M2
+>   named them). A site whose pricing belongs to one offering puts it on that
+>   solutions page rather than building a second page that has to agree with it;
+>   a segment page is a money page with a different `primaryKeyword`. Recorded
+>   in `marketing/page-guidelines.md § 2`.
+> - **Also landed:** the Astro content data store keeps a DELETED entry
+>   (`node_modules/.astro/data-store.json`), so a local build still emits its
+>   page with no twin and no card. `check-invariants` catches it loudly; the trap
+>   and its fix are now AGENTS rule 10.
+>
+> **Streams C and D (§ 5 and § 6) are NOT done** and are the next session's
+> work, in the order § 8 sets: C plus D pass 1 together, then D pass 2, then
+> D pass 3.
+
+
 ### B1. `solutions` collection (money pages)
 
 - `src/content.config.ts`: `solutions` with `...seo` plus

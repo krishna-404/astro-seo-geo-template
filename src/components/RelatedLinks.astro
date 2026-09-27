@@ -8,6 +8,17 @@
  * chrome, not article content — agents get the full index from llms.txt.
  */
 import type { RelatedCandidate } from '../lib/related';
+import collectionsConfig from '../data/collections.json';
+
+/**
+ * Collection → route directory, from src/data/collections.json. A collection's
+ * folder name and its route can differ (`comparison` renders under /vs), and
+ * this component used to build `/{collection}/{id}` directly — which was true
+ * for the two collections that existed and a dead link for the third.
+ */
+const ROUTE: Record<string, string> = Object.fromEntries(
+  Object.entries(collectionsConfig.collections).map(([name, cfg]) => [name, cfg.route])
+);
 
 interface Props {
   items: RelatedCandidate[];
@@ -24,7 +35,8 @@ const { items, heading = 'Related reading' } = Astro.props;
       <ul>
         {items.map((item) => (
           <li>
-            <a href={`/${item.collection}/${item.id}`}>{item.title}</a> — {item.summary}
+            <a href={`${ROUTE[item.collection] ?? `/${item.collection}`}/${item.id}`}>{item.title}</a> —{' '}
+            {item.summary}
           </li>
         ))}
       </ul>

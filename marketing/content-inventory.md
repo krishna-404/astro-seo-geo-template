@@ -9,6 +9,8 @@ build after its date, and a draft renders nowhere until it flips.
 |---|---|---|
 | blog | 2 | 689 |
 | glossary | 2 | 409 |
+| solutions | 0 | 0 |
+| comparison | 0 | 0 |
 | static pages | 11 | — |
 | **total** | **15** | **1,098** |
 
@@ -25,6 +27,16 @@ build after its date, and a draft renders nowhere until it flips.
 |---|---|---|---|---|---|---|---|
 | Core Web Vitals: the three metrics and the template's budget | https://example.com/glossary/core-web-vitals | `src/content/glossary/core-web-vitals.md` | published | — | 2026-08-11 | 204 | 0 |
 | llms.txt: what it is and whether to ship one | https://example.com/glossary/llms-txt | `src/content/glossary/llms-txt.md` | published | — | 2026-08-11 | 205 | 1 |
+
+## solutions
+
+| Title | Permalink | Source | Status | Published | Updated | Words | Out-links |
+|---|---|---|---|---|---|---|---|
+
+## comparison
+
+| Title | Permalink | Source | Status | Published | Updated | Words | Out-links |
+|---|---|---|---|---|---|---|---|
 
 ## Static pages
 

@@ -189,12 +189,21 @@ up only the decisions that actually depend on it.
     the trust pages the markets require (privacy policy, terms, an imprint
     or legal-identity page where the jurisdiction demands one, the about
     page with real people) written from `brief.md § Legal identity`, never
-    from a generic template. The About page is built to
-    `marketing/page-guidelines.md § 3`: the entity sentence in the first
-    five words, the eight sections in order, the Key Facts table as HTML
-    from `facts.json`, competitors named, six FAQs, the schema block, zero
-    em dashes; every fact confirmed by the owner in writing (ACTIONS
-    A-L13). *Examples:* the regulator's guidance for each
+    from a generic template. The About page NEEDS NO MARKUP: the template's
+    `src/pages/about.astro` already renders
+    `marketing/page-guidelines.md § 3` in full (the entity sentence built
+    from the facts, the eight sections in order, the Key Facts table as
+    HTML, six FAQs from one array, the AboutPage/FAQPage/BreadcrumbList
+    schema, and the `Organization` node's `legalName`, `foundingDate`,
+    `address` and `sameAs`). This phase FILLS TWO FILES instead:
+    `facts.json → company` (every value with its source) and `about.json`
+    (the prose). A value still reading TODO is omitted from the page and
+    from the schema, so ask the owner for them here with
+    `AskUserQuestion` rather than writing a placeholder; what they defer
+    goes to `marketing/DATA-SHEET.md`. Name the rivals in the
+    differentiators, keep `company.competitors` in step with
+    `intent.json → competitors`, and get every fact confirmed in writing
+    (ACTIONS A-L13). *Examples:* the regulator's guidance for each
     target market; what two competitor sites actually set (read their
     cookies); what the category's about pages show. *Exit:*
     `/privacy-policy` live and accurate; every required trust page live.

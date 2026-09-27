@@ -1,6 +1,8 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Faq from '../components/Faq.astro';
 import { SITE } from '../data/site';
+import { faqPageNode } from '../lib/faqSchema';
 
 /**
  * Homepage. The h1 comes from SITE.tagline and the lede from SITE.description,
@@ -49,14 +51,11 @@ const schema = [
       'query-input': 'required name=search_term_string',
     },
   },
-  {
-    '@type': 'FAQPage',
-    mainEntity: faq.map((f) => ({
-      '@type': 'Question',
-      name: f.q,
-      acceptedAnswer: { '@type': 'Answer', text: f.a },
-    })),
-  },
+  // One source for the visible accordion and the schema (src/lib/faqSchema.ts).
+  // The homepage built both by hand, which is the drift the shared helper
+  // exists to prevent: the visible-answers-match-the-schema invariant and the
+  // FAQ click event both hold here now because <Faq /> renders it.
+  faqPageNode(new URL('/', SITE.url).href, faq),
 ];
 ---
 
@@ -170,23 +169,15 @@ const schema = [
     </div>
   </section>
 
-  <!-- FAQ as <details> — no JS, and the same items feed the FAQPage node above. -->
+  <!-- FAQ from the shared component: no JS, exclusive-open from <details
+       name>, every toggle measured, and the same array feeds the FAQPage node
+       above. -->
   <section class="band band--tint">
     <div class="wrap">
       <div class="section-head">
         <p class="eyebrow">Questions</p>
-        <h2>About this template</h2>
       </div>
-      <div class="faq">
-        {
-          faq.map((f) => (
-            <details class="card">
-              <summary>{f.q}</summary>
-              <p>{f.a}</p>
-            </details>
-          ))
-        }
-      </div>
+      <Faq faq={faq} groupName="home" heading="About this template" place="home" />
     </div>
   </section>
 
@@ -233,19 +224,5 @@ const schema = [
   }
   .hero__panel .rail strong {
     color: var(--ink);
-  }
-  .faq {
-    display: grid;
-    gap: 0.75rem;
-    max-width: 46rem;
-    margin: 0 auto;
-  }
-  .faq summary {
-    font-weight: 700;
-    color: var(--ink);
-    cursor: pointer;
-  }
-  .faq details p {
-    margin: 0.75rem 0 0;
   }
 </style>

@@ -1,7 +1,9 @@
 {
-  "$comment": "The one list of content collections. Every script that needs the collection list, its route directory, whether a markdown twin is served, or the eyebrow on its social card reads THIS file; worker/index.ts derives TWIN_PREFIXES from it. Adding a collection: one entry here + the zod schema in src/content.config.ts + a route file (check-collection-routes fails without it). A folder under src/content/ with no entry here is a finding, not a collection.",
+  "$comment": "The one list of content collections. Every script that needs the collection list, its route directory, whether a markdown twin is served, or the eyebrow on its social card reads THIS file; worker/index.ts derives TWIN_PREFIXES from it. Adding a collection: one entry here + the zod schema in src/content.config.ts + a route file (check-collection-routes fails without it) + `<route>/*` in wrangler.jsonc run_worker_first when twins is true (check-parity rule 2). A folder under src/content/ with no entry here is a finding, not a collection. `solutions` and `comparison` ship with no entries: a money page and a /vs page are claims about this company and its named rivals, which a template cannot invent.",
   "collections": {
-    "blog": { "route": "/blog", "twins": true, "eyebrow": "Blog", "schema": "BlogPosting" },
-    "glossary": { "route": "/glossary", "twins": true, "eyebrow": "Glossary", "schema": "DefinedTerm" }
+    "blog":       { "route": "/blog",      "twins": true, "eyebrow": "Blog",      "schema": "BlogPosting" },
+    "glossary":   { "route": "/glossary",  "twins": true, "eyebrow": "Glossary",  "schema": "DefinedTerm" },
+    "solutions":  { "route": "/solutions", "twins": true, "eyebrow": "Solutions", "schema": "Service" },
+    "comparison": { "route": "/vs",        "twins": true, "eyebrow": "Compared",  "schema": "Article" }
   }
 }

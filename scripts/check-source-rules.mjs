@@ -187,6 +187,50 @@ for (const p of entryFiles()) {
 }
 if (!found) console.log('   ok');
 
+console.log('→ a `solutions` entry that states a number names a source (AGENTS rule 1)');
+// A money page is where a number is most load-bearing and most tempting to
+// estimate: a price, a turnaround, a saving. The schema cannot see this — it
+// has no idea whether the prose carries a digit — so it is checked here.
+// `pricing.from` counts as a stated number too: a published price is a claim.
+found = 0;
+for (const entry of readCollection('solutions', { include: ['published', 'scheduled'] })) {
+  const statesNumber =
+    /(?:^|[^\w$€£₹])[$€£₹]?\d[\d,.]*\s?(?:%|percent|days?|weeks?|months?|hours?|minutes?|x\b|×|per\b)/i.test(entry.body) ||
+    /[$€£₹]\s?\d/.test(entry.body) ||
+    entry.data.pricing?.from !== undefined;
+  if (!statesNumber) continue;
+  if (!Array.isArray(entry.data.sources) || entry.data.sources.length === 0) {
+    bad(`${entry.file} states a number (or a published price) and names no sources — every figure on this site traces to one (AGENTS rule 1)`);
+    found = 1;
+  }
+}
+if (!found) console.log('   ok');
+
+console.log('→ every `comparison` row was checked within 90 days');
+// A comparison cell is a claim about a named competitor, carrying the date it
+// was read. A date that has gone stale does not make the claim vaguer — it
+// makes it a false claim with a date on it, which is worse than no date. 90
+// days is the outer bound page-guidelines § 2 sets for a competitor's pricing
+// page; the page-audit scores comparison pages against 30.
+const NINETY_DAYS = 90 * 864e5;
+found = 0;
+for (const entry of readCollection('comparison', { include: ['published', 'scheduled'] })) {
+  for (const row of entry.data.rows ?? []) {
+    const t = new Date(row.retrieved).getTime();
+    if (Number.isNaN(t)) {
+      bad(`${entry.file} row "${row.criterion}" has an unparseable \`retrieved\` date`);
+      found = 1;
+      continue;
+    }
+    const age = Math.floor((Date.now() - t) / 864e5);
+    if (Date.now() - t > NINETY_DAYS) {
+      bad(`${entry.file} row "${row.criterion}" was checked ${age} days ago (${String(row.retrieved).slice(0, 10)}) — re-read ${row.source} and bump \`retrieved\`, or drop the row`);
+      found = 1;
+    }
+  }
+}
+if (!found) console.log('   ok');
+
 console.log('→ frontmatter titles survive the SERP clamp without a mid-phrase cut');
 // BaseLayout runs every title through src/lib/clampTitle.ts, which clamps to
 // 60 characters for the SERP. It sacrifices in order: a trailing " — clause",

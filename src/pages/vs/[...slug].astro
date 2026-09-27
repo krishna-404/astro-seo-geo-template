@@ -1,0 +1,360 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import Faq from '../../components/Faq.astro';
+import Toc from '../../components/Toc.astro';
+import RelatedLinks from '../../components/RelatedLinks.astro';
+import Figure from '../../components/Figure.astro';
+import BodyFigure from '../../components/BodyFigure.astro';
+import { SITE } from '../../data/site';
+import { isPublished } from '../../data/publishing.mjs';
+import { faqPageNode } from '../../lib/faqSchema';
+import { relatedFor, type RelatedCandidate } from '../../lib/related';
+import { setFigures } from '../../lib/figureContext';
+import { leadFigure, compareRowsFigure } from '../../lib/figures';
+
+/**
+ * A comparison page. `/vs/<rival>` and "alternatives" are the highest
+ * commercial intent a content page carries, and the one page class that
+ * generates a letter when it is wrong.
+ *
+ * SO THE TEMPLATE MAKES HONESTY STRUCTURAL. Every row renders its own
+ * "checked" date beside the cell it belongs to, because a comparison table
+ * with one date at the top says every cell was read on that day and no
+ * comparison table ever was. The schema requires a `source` and a `retrieved`
+ * date per row, at least three rows, at least two `bestFor` entries (so the
+ * page names a case where the rival wins), and a written `verdict`;
+ * check-source-rules fails any row read more than 90 days ago.
+ *
+ * NO INDEX PAGE, for the same reason as /solutions: the pages are reached from
+ * the money page they support and from the nav, and an index of links that
+ * exist elsewhere is thin by construction.
+ *
+ * The table is the reason this page exists, so it gets the wide treatment: a
+ * `.table-scroll` region with `tabindex="0"`, `role="region"` and an
+ * aria-label naming both sides (AGENTS rule 2 — CI checks every hand-authored
+ * wrapper for the trio).
+ */
+export async function getStaticPaths() {
+  const [entries, solutions, glossary, blog] = await Promise.all([
+    getCollection('comparison', ({ data }) => isPublished(data)),
+    getCollection('solutions', ({ data }) => isPublished(data)),
+    getCollection('glossary', ({ data }) => isPublished(data)),
+    getCollection('blog', ({ data }) => isPublished(data)),
+  ]);
+
+  const candidateOf = (e: (typeof entries)[number]): RelatedCandidate => ({
+    id: e.id,
+    collection: 'comparison',
+    title: e.data.title,
+    summary: e.data.description,
+    topics: [e.data.primaryKeyword, ...e.data.secondaryKeywords, ...e.data.rivals.map((r) => r.name)],
+  });
+  const candidates: RelatedCandidate[] = [
+    ...entries.map(candidateOf),
+    ...solutions.map((e) => ({
+      id: e.id,
+      collection: 'solutions',
+      title: e.data.title,
+      summary: e.data.offering,
+      topics: [e.data.primaryKeyword, ...e.data.secondaryKeywords],
+    })),
+    ...glossary.map((e) => ({
+      id: e.id,
+      collection: 'glossary',
+      title: e.data.term,
+      summary: e.data.shortDefinition,
+      topics: [e.data.category, ...e.data.aliases],
+    })),
+    ...blog.map((e) => ({
+      id: e.id,
+      collection: 'blog',
+      title: e.data.title,
+      summary: e.data.description,
+      topics: e.data.tags,
+      published: e.data.published,
+    })),
+  ];
+
+  return entries.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry, related: relatedFor(candidateOf(entry), candidates) },
+  }));
+}
+
+const { entry, related } = Astro.props;
+const { data } = entry;
+const { Content, headings } = await render(entry);
+
+const rivalNames = data.rivals.map((r) => r.name);
+const tableLabel = `${data.us} compared with ${rivalNames.join(', ')}`;
+
+// The lead figure: declared in frontmatter, else the table's first six rows
+// drawn as a two-column compare against the first rival (AGENTS § Figures).
+const lead = leadFigure(data.figures, () =>
+  compareRowsFigure(data.us, rivalNames[0] ?? 'the alternative', data.rows)
+);
+setFigures(data.figures, `/vs/${entry.id}`);
+
+const url = new URL(`/vs/${entry.id}`, SITE.url).href;
+
+const day = (d: Date) => d.toISOString().slice(0, 10);
+
+/** Every row's source, deduplicated, plus the entry's own `sources`. A reader
+ *  checking one cell should not have to scan the table for the link. */
+const rowSources = [...new Set(data.rows.map((r) => r.source))];
+
+const schema = [
+  {
+    '@type': 'Article',
+    '@id': `${url}#article`,
+    headline: data.title,
+    description: data.description,
+    mainEntityOfPage: url,
+    author: { '@id': `${SITE.url}/#founder` },
+    dateModified: data.updated.toISOString(),
+    /** Both entities named, so an engine knows what the page compares. */
+    about: [
+      { '@type': 'Thing', name: data.us },
+      ...data.rivals.map((r) => ({ '@type': 'Thing', name: r.name, sameAs: r.url })),
+    ],
+    citation: [
+      ...rowSources.map((u) => ({ '@type': 'CreativeWork', url: u })),
+      ...data.sources.map((s) => ({ '@type': 'CreativeWork', name: s.label, ...(s.url ? { url: s.url } : {}) })),
+    ],
+  },
+  {
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Compared', item: new URL('/vs', SITE.url).href },
+      { '@type': 'ListItem', position: 2, name: data.title, item: url },
+    ],
+  },
+  ...(data.faq.length > 0 ? [faqPageNode(url, data.faq)] : []),
+];
+---
+
+<BaseLayout
+  title={data.title}
+  description={data.description}
+  ogType="article"
+  ogImage={data.ogImage}
+  canonical={data.canonical}
+  modifiedTime={data.updated}
+  schema={schema}
+>
+  <article class="compare" data-pagefind-body>
+    <Breadcrumbs items={[{ label: 'Compared', href: '/vs' }, { label: data.title }]} />
+
+    <h1>{data.title}</h1>
+
+    <p class="compare__meta">
+      Updated <time datetime={data.updated.toISOString()}>{day(data.updated)}</time>
+    </p>
+
+    {/* The lift target. Front-loaded answer, first thing after the h1. */}
+    <p class="compare__tldr">{data.tldr}</p>
+
+    {lead && <Figure figure={lead} lead />}
+
+    {data.toc && <Toc headings={headings} />}
+
+    <section class="compare__table">
+      <h2>Side by side</h2>
+      <div class="table-scroll" tabindex="0" role="region" aria-label={tableLabel}>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Criterion</th>
+              <th scope="col">{data.us}</th>
+              {data.rivals.map((r) => (
+                <th scope="col">
+                  <a href={r.url} rel="nofollow noopener">{r.name}</a>
+                </th>
+              ))}
+              <th scope="col">Checked</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              data.rows.map((row) => (
+                <tr>
+                  <th scope="row">{row.criterion}</th>
+                  <td>{row.us}</td>
+                  {data.rivals.map((_, i) => (
+                    <td>{row.them[i] ?? '—'}</td>
+                  ))}
+                  <td class="compare__checked">
+                    <a href={row.source} rel="nofollow noopener">
+                      <time datetime={row.retrieved.toISOString()}>{day(row.retrieved)}</time>
+                    </a>
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="compare__fine">
+        Each row links the page it was read from, on the date it was read. A cell we could not
+        verify says so rather than guessing.
+      </p>
+    </section>
+
+    <section class="compare__best">
+      <h2>Which to pick</h2>
+      <dl>
+        {
+          data.bestFor.map((b) => (
+            <>
+              <dt>{b.option}</dt>
+              <dd>{b.audience}</dd>
+            </>
+          ))
+        }
+      </dl>
+    </section>
+
+    <section class="compare__verdict">
+      <h2>The verdict</h2>
+      <p>{data.verdict}</p>
+    </section>
+
+    <div class="compare__body prose">
+      <Content components={{ Figure: BodyFigure }} />
+    </div>
+
+    <RelatedLinks items={related} heading="Related" />
+
+    {data.faq.length > 0 && <Faq faq={data.faq} groupName={entry.id} place={`vs:${entry.id}`} />}
+
+    <section class="compare__sources">
+      <h2>Sources</h2>
+      <ol>
+        {
+          data.sources.map((s) => (
+            <li>
+              {s.url ? (
+                <a href={s.url} rel="nofollow noopener">
+                  {s.label}
+                </a>
+              ) : (
+                s.label
+              )}
+              {s.retrieved && (
+                <span class="compare__retrieved"> · checked {day(s.retrieved)}</span>
+              )}
+            </li>
+          ))
+        }
+        {
+          rowSources.map((u) => (
+            <li>
+              <a href={u} rel="nofollow noopener">{u.replace(/^https?:\/\//, '')}</a>
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+
+    <aside class="compare__cta" data-pagefind-ignore>
+      <p>Comparing these yourself? Tell us what we got wrong and we will check it again.</p>
+      <div class="btn-row">
+        <a
+          class="btn btn--primary"
+          href="/contact"
+          data-umami-event="cta-contact"
+          data-umami-event-place="comparison">Get in touch</a
+        >
+      </div>
+    </aside>
+  </article>
+</BaseLayout>
+
+<style>
+  .compare {
+    max-width: 52rem;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 4rem;
+  }
+  .compare h1 {
+    font-size: 1.875rem;
+    line-height: 1.15;
+    margin: 0 0 1rem;
+  }
+  .compare__meta {
+    font-size: 0.875rem;
+    color: var(--ink-3);
+    margin: -0.5rem 0 1rem;
+  }
+  /* The lift target. Front-loaded answer, visually distinct, first after h1. */
+  .compare__tldr {
+    font-size: 1.125rem;
+    line-height: 1.6;
+    border-left: 3px solid var(--ink);
+    padding-left: 1rem;
+    margin: 0 0 2rem;
+  }
+  .compare__table,
+  .compare__best,
+  .compare__verdict {
+    margin-top: 2.5rem;
+  }
+  .compare__checked {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .compare__fine {
+    font-size: 0.875rem;
+    color: var(--ink-3);
+    line-height: 1.6;
+    margin: 0.75rem 0 0;
+  }
+  .compare__best dt {
+    font-weight: 700;
+    margin-top: 0.875rem;
+  }
+  .compare__best dd {
+    margin: 0.25rem 0 0;
+    line-height: 1.6;
+  }
+  .compare__verdict p {
+    line-height: 1.7;
+    margin: 0;
+  }
+  .compare__sources {
+    margin-top: 2.5rem;
+    font-size: 0.9375rem;
+  }
+  .compare__sources ol {
+    padding-left: 1.1rem;
+  }
+  .compare__sources li {
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+  .compare__retrieved {
+    color: var(--ink-3);
+  }
+  .compare__cta {
+    margin-top: 3rem;
+    padding: 1.5rem;
+    background: var(--blue-tint);
+    border-radius: var(--radius);
+  }
+  .compare__cta p {
+    margin: 0 0 1rem;
+    line-height: 1.6;
+  }
+
+  @media (min-width: 48rem) {
+    .compare {
+      padding: 3rem 1.5rem 5rem;
+    }
+    .compare h1 {
+      font-size: 2.25rem;
+    }
+  }
+</style>

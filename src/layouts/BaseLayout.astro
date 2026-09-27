@@ -5,6 +5,7 @@ import Footer from '../components/Footer.astro';
 import JsonLd from '../components/JsonLd.astro';
 import ConsentBanner from '../components/ConsentBanner.astro';
 import { SITE, FOUNDER, CONTACT, ANALYTICS, VERIFICATION } from '../data/site';
+import { company, filled, filledList, address } from '../lib/companyFacts';
 import { ogCardFor } from '../lib/ogCard';
 import { FOUNDER_PHOTO } from '../lib/founderPhoto';
 import { clampTitle } from '../lib/clamp.mjs';
@@ -73,8 +74,10 @@ const founder = {
   '@type': 'Person',
   '@id': `${SITE.url}/#founder`,
   name: FOUNDER.name,
-  jobTitle: 'Founder',
-  sameAs: [FOUNDER.linkedin],
+  // From the registry, not a literal: a founder who is also the CTO was
+  // published as "Founder" because this line did not read src/data/authors.json.
+  jobTitle: FOUNDER.title,
+  sameAs: FOUNDER.sameAs,
   worksFor: { '@id': `${SITE.url}/#organization` },
   // Only when a photograph actually exists. An `image` pointing at nothing is
   // worse than no `image` — it is a broken claim in structured data.
@@ -85,13 +88,22 @@ const founder = {
  * The entity every other node hangs off. An engine resolves a brand to an
  * entity before it can recommend it, and it does so from corroboration: the
  * same name, logo, contact and profiles asserted here and on the profiles
- * `sameAs` points at. Every field below is one the site already shows —
- * nothing is asserted that a visitor cannot see. `legalName`, `address`,
- * `foundingDate` and the company's own profiles (`sameAs`) are the owner's
- * to supply through marketing/DATA-SHEET.md; leave them out until then —
- * an empty string in sameAs is invalid, and CI's entity-hygiene check fails
- * it. The founder's profile belongs on the Person node, not here.
+ * `sameAs` points at. Every field below is one the site already shows on
+ * /about — nothing is asserted that a visitor cannot see.
+ *
+ * `legalName`, `foundingDate`, `address` and the company's own profiles
+ * (`sameAs`) come from facts.json → company, and each is INCLUDED ONLY WHEN
+ * FILLED: while a value says TODO the key is absent, because an empty string in
+ * `sameAs` is invalid structured data and CI's entity-hygiene check fails it,
+ * and `legalName: "TODO"` is a false claim about the company's registered name.
+ * The address is all-or-nothing (src/lib/companyFacts.ts): a PostalAddress with
+ * a country and no city can place the company wrongly, which is worse than not
+ * placing it. The founder's own profile belongs on the Person node, not here.
  */
+const HQ = address();
+const socialProfiles = filledList(company.social);
+const legalName = filled(company.legalName);
+const foundingYear = filled(company.founded);
 const organization = {
   '@type': 'Organization',
   '@id': `${SITE.url}/#organization`,
@@ -115,6 +127,19 @@ const organization = {
       availableLanguage: [SITE.locale.split('-')[0]],
     },
   ],
+  ...(legalName ? { legalName } : {}),
+  ...(foundingYear ? { foundingDate: foundingYear } : {}),
+  ...(HQ
+    ? {
+        address: {
+          '@type': 'PostalAddress',
+          addressLocality: HQ.city,
+          addressRegion: HQ.region,
+          addressCountry: HQ.country,
+        },
+      }
+    : {}),
+  ...(socialProfiles.length > 0 ? { sameAs: socialProfiles } : {}),
 };
 
 const pageSchemas = schema ? (Array.isArray(schema) ? schema : [schema]) : [];

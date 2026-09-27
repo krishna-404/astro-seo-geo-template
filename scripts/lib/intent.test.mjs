@@ -8,6 +8,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { isHighIntent, bofuLabel, playbookBlocks, shownOnMap, claimedKeywords } from './intent.mjs';
 
 const row = (query, position, impressions = 10, clicks = 0) => ({ keys: [query], position, impressions, clicks });
@@ -119,8 +120,20 @@ test('shownOnMap strips the site prefix and normalises the query', () => {
   assert.equal(map['what s this'].page, '/x/y');
 });
 
-test('claimedKeywords reads the collections intent.json names, and no others', () => {
-  // claimFrom ships empty, so nothing claims anything yet: the report must say
-  // "unmapped" rather than guess a page.
-  assert.deepEqual(claimedKeywords(), []);
+test('claimedKeywords reads only the collections intent.json names', () => {
+  // Asserted as a RULE, not as a count: the template ships the two commercial
+  // collections empty, and a test that hard-coded `[]` went red the moment a
+  // site added its first money page — which is the test failing on correct
+  // behaviour. What must hold is that every claim comes from a claimFrom
+  // collection, carries a normalised primary keyword, and lists it among `all`.
+  const intent = JSON.parse(readFileSync('src/data/intent.json', 'utf8'));
+  const routes = (intent.claimFrom ?? []).map((c) => c.route.replace(/\/$/, ''));
+  for (const claim of claimedKeywords()) {
+    assert.ok(
+      routes.some((r) => claim.page.startsWith(`${r}/`)),
+      `${claim.page} is served under one of ${routes.join(', ')}`
+    );
+    assert.equal(claim.primary, claim.primary.toLowerCase(), 'the primary keyword is normalised');
+    assert.ok(claim.all.includes(claim.primary), 'the primary is among the page’s keywords');
+  }
 });

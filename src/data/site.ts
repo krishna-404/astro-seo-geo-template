@@ -1,3 +1,4 @@
+import authors from './authors.json';
 import brand from './brand.json';
 import facts from './facts.json';
 import sheetsConfig from './sheets.config.json';
@@ -88,12 +89,34 @@ export const VERIFICATION = {
   bing: '',
 } as const;
 
-/** Feeds the site-wide Person node and every blog post's author.sameAs.
- *  A named human author with a real, linkable profile is non-negotiable for
- *  E-E-A-T and for answer engines. */
+/**
+ * Feeds the site-wide Person node, the RSS managing editor, /for-llms and
+ * llms.txt. A named human author with a real, linkable profile is
+ * non-negotiable for E-E-A-T and for answer engines.
+ *
+ * ONE RECORD, in src/data/authors.json. The founder's name and LinkedIn were
+ * also in facts.json → company.founder, which meant two places to change a
+ * name and two identities in the graph: the author page emitted
+ * `#author-founder` while every other page pointed at `#founder`. The registry
+ * is the record now, because it is the one an author page already renders and
+ * the one check-source-rules already holds every byline to.
+ *
+ * FOUNDER_SLUG names which registry entry is the founder. A site whose founder
+ * is not the first author changes this one line.
+ */
+export const FOUNDER_SLUG = 'founder';
+
+const founderEntry = authors.authors.find((a) => a.slug === FOUNDER_SLUG) ?? authors.authors[0]!;
+
 export const FOUNDER = {
-  name: facts.company.founder.name,
-  linkedin: facts.company.founder.linkedin,
+  slug: founderEntry.slug,
+  name: founderEntry.name,
+  /** The Person node's jobTitle. Was hard-coded as 'Founder' in BaseLayout. */
+  title: founderEntry.title,
+  bio: founderEntry.bio,
+  sameAs: founderEntry.sameAs,
+  /** The first profile, for the places that print one link. */
+  linkedin: founderEntry.sameAs[0] ?? '',
 } as const;
 
 export const CONTACT = {
