@@ -43,8 +43,8 @@ costs a cycle; a wrong number costs the site's standing.
 2b. `npm run audit:pages -- --page <route>` after a build: the citation
    checklist, with the first fix named. New pieces clear 70.
 2c. The piece's social posts are in `marketing/social-queue.md`.
-3. Dates: never the same `published` date as another piece; batches are
-   spread forward across the coming weeks (check-source-rules enforces).
+3. `published` is the real day the piece goes live; several on one day
+   are fine, never backdated (no post caps since 20 Sep 2026).
 4. A human reads the PR before merge. Nothing auto-publishes.
 
 ## After publish

@@ -276,8 +276,8 @@ coverage-layer pages because that is usually where the backlog is.
 9. **Deliver.** One PR: snapshot, log, inventory, the step-0 actions update,
    the step-2/3 edits, any new data-sheet question, any social drafts for a
    piece that went live (`marketing/social-queue.md`, content-guidelines § 6). PR body: what changed, which query or number each
-   change targets, what was dropped and why. A human merges; the deploy is
-   CI's job (or /ship when someone wants to watch it land). Re-run the OG
+   change targets, what was dropped and why. A human merges and `/ship`
+   deploys (there is no automatic deploy — Actions are opt-in). Re-run the OG
    cards only if a title changed.
 
 ## Weekly-full (daily-lite, plus)

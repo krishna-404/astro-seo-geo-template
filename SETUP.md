@@ -256,16 +256,15 @@ origin breaks it.
       GitHub Actions are opt-in, CHECKLIST §3). Two worker secrets:
       `POSTS_API_TOKEN` (the caller's bearer) and `GITHUB_POSTS_TOKEN` (a
       fine-grained PAT, Contents + Pull requests read/write on this repo
-      only); `GITHUB_REPO` in `wrangler.jsonc`; the repository variable
-      `CLOUDFLARE_ZONE_ID` for the workflow's purge. Either secret unset =
+      only); `GITHUB_REPO` in `wrangler.jsonc`. Either secret unset =
       the route answers 503 and nothing else changes. `npm run smoke:worker`
       exercises every answer short of a GitHub write. The daily cadence's PR
       inbox does the judgement half on every post that lands (interlinks,
       glossary, keyword map) — see the content-cadence skill.
 - [ ] **Search engines**: GSC (domain property via DNS TXT), Bing Webmaster
       (`VERIFICATION.bing` in site.ts), submit the sitemap in both;
-      IndexNow key file `public/<key>.txt` (the workflow submits after each
-      green deploy).
+      IndexNow key file `public/<key>.txt` (`/ship` submits after each
+      deploy; `indexnow.yml` is manual dispatch only).
 - [ ] **Live data (optional)**: two-tab Sheet pattern (CHECKLIST §3 — the
       published tab physically cannot leak contact fields), tab URL into
       `src/data/sheets.config.json`, `<LiveData />` on the page.

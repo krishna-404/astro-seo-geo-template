@@ -198,7 +198,7 @@ Rules for building one (the ancestor site's calculator is the precedent):
   a PR, interlinked from the pages whose queries it serves, output framed
   per STRATEGY.md.
 
-## 5. Schedule — spread, never batch
+## 5. Schedule — real dates, never backdated
 
 `published` is the real day a piece goes live; several on one day are fine.
 A future-dated post publishes when a build runs on/after its date; the daily

@@ -16,8 +16,8 @@ import { SITE_URL } from './src/data/origin.mjs';
  * whatever overflows. The generic label is deliberate — a build plugin cannot
  * know a table's subject; authors who want better add a <caption> in the
  * markdown. Hand-authored .table-scroll wrappers in .astro files must carry
- * the same three attributes, with a SPECIFIC aria-label (CI checks all of
- * them — see ci.yml).
+ * the same three attributes, with a SPECIFIC aria-label (check-invariants
+ * checks all of them).
  */
 function rehypeWrapTables() {
   return (tree) => {

@@ -122,6 +122,8 @@ marketing/       human-run: favicon gen, OG cards, apps-script source ·
                  what is yours to do, first)
 .githooks/       pre-commit (fast tier) · pre-push (npm run verify) —
                  activated automatically by npm install
-.github/         ci.yml (checks + gated deploy + live smoke) · indexnow.yml ·
-                 linkrot.yml (monthly external-link check)
+.github/         ci.yml and indexnow.yml (manual dispatch only — the
+                 pre-push battery and /ship are the gate and the deploy) ·
+                 linkrot.yml (monthly external-link check, the one scheduled
+                 workflow)
 ```

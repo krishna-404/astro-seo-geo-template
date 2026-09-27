@@ -130,10 +130,9 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   rules the build would catch later (author registry, SERP clamp, description
   band, two in-body links, no second h1, no MDX imports), a branch and a PR
   through the GitHub API, a `202` with a status URL. A Worker cannot build or
-  deploy, so the workflow does: regenerate lastmod/inventory/OG card, verify,
-  squash-merge, then build the MERGED commit and deploy — deploying itself
-  because a merge made with GITHUB_TOKEN never triggers ci.yml. Both secrets
-  unset = 503 and nothing else changes. The judgement half (interlinks,
+  deploy, so the daily cadence run's PR inbox does: regenerate
+  lastmod/inventory/OG card, verify, merge under STRATEGY.md's merge model,
+  then `/ship`. Both secrets unset = 503 and nothing else changes. The judgement half (interlinks,
   glossary, keyword map, voice) is the daily cadence's PR inbox, never the API.
   Rejected: a runtime store the pages read from (breaks the static build, the
   zod gates, twins, llms.txt, cards and search) and a synchronous
@@ -506,8 +505,10 @@ disagree:
   (`core.hooksPath`).
 - **pre-push hook** → **`npm run verify`** (`scripts/verify.mjs`, ~1–3 min):
   the FULL battery below, locally, before anything leaves the machine.
-- **CI** (`.github/workflows/ci.yml`): the backstop — hooks are advisory
-  (`--no-verify` exists), CI is not.
+- **CI** (`.github/workflows/ci.yml`): opt-in, manual dispatch only (§2,
+  20 Sep 2026). Hooks are advisory (`--no-verify` exists), so an
+  organisation with Actions minutes restores the triggers to get a
+  non-advisory backstop; without them, the pre-push battery is the gate.
 
 The ladder is self-extending by AGENTS rule 18: any digression from the
 architecture that could RECUR gets fixed and then mechanized at the cheapest
@@ -515,7 +516,8 @@ rung that can see it, proven red once, and recorded here with its WHY.
 Single-page defects get fixed, not checked — a check that guards one page
 dilutes the battery.
 
-`.github/workflows/ci.yml`, in order:
+The battery (`scripts/verify.mjs` locally; `ci.yml` mirrors it when
+dispatched), in order:
 
 - ✅ Checkout with `fetch-depth: 0` (lastmod derives from `git log`; depth 1
   = every route dated HEAD).
@@ -648,9 +650,12 @@ dilutes the battery.
   Apps Script upstream (needs a live secret — stays a PLAYBOOK §8 launch
   step) and the rate limiter (asserting on the local simulator tests the
   simulator).
-- ✅ Deploy job runs only on green main (`needs: build`).
-- ✅ **Post-deploy live smoke** (`scripts/smoke-live.mjs`, runs after
-  `wrangler deploy`) — the automated subset of PLAYBOOK §8: zone redirects
+- ✅ When `ci.yml` is dispatched, its deploy job runs only on green
+  (`needs: build`); the normal deploy path is `/ship` after a green
+  pre-push battery.
+- ✅ **Post-deploy live smoke** (`scripts/smoke-live.mjs`, the last step of
+  `/ship` and of the dispatched workflow) — the automated subset of
+  PLAYBOOK §8: zone redirects
   (www→apex, http→https, trailing slash), real 404s, single HSTS emitter,
   live CSP with hashes, `/hi` + twin negotiation at the edge, machine
   surfaces all 200. Soft-skips green while `origin.mjs` is still
@@ -800,8 +805,8 @@ dilutes the battery.
   `prepare` script setting `core.hooksPath` on every install — no husky, no
   dependency). pre-commit = the fast source tier (~4s); pre-push =
   `npm run verify`, the full battery. `--no-verify` is the documented
-  escape hatch; CI remains the backstop precisely because hooks are
-  advisory.
+  escape hatch; with Actions opt-in (§2) the battery on push is the gate,
+  and a site that wants a non-advisory backstop restores the CI triggers.
 - ✅ Prettier (+ astro plugin) & `.editorconfig` committed.
 - ✅ **Verification tokens and analytics website IDs live in the repo**
   (public by design, next to their config so they can't drift); **API keys

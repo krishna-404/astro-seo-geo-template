@@ -367,7 +367,7 @@ export async function handlePosts(request: Request, env: PostsEnv, url: URL, hea
   const put = await gh(`/repos/${repo}/contents/${path}`, {
     method: 'PUT',
     json: {
-      message: `Post via API: ${post.title}\n\nSubmitted through POST /api/posts. The publish workflow regenerates lastmod, inventory and the OG card, runs the verify battery, and squash-merges on green.`,
+      message: `Post via API: ${post.title}\n\nSubmitted through POST /api/posts. The daily cadence run's PR inbox regenerates lastmod, inventory and the OG card, runs the verify battery, and merges on green under the site's merge model.`,
       content: b64(toMdx(post)),
       branch,
     },
