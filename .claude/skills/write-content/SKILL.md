@@ -244,9 +244,11 @@ the piece's sources.
    fan-out bucket), and leave a one-line reason in the PR body for any it
    cannot. `--min 70` is the bar for a new piece.
 2. `npm run verify` (full battery) before pushing.
-3. One PR: drafts, page updates, news-log and field-notes changes, the
-   social-queue entries, regenerated inventory. PR body: what ran, what was dropped and why, which
-   queries each piece targets. **A human merges. Nothing auto-publishes.**
+3. One changeset: drafts, page updates, news-log and field-notes changes, the
+   social-queue entries, regenerated inventory. The body says what ran, what
+   was dropped and why, and which queries each piece targets. **The merge
+   model in `marketing/STRATEGY.md § 9` decides who merges and who deploys;
+   the default deploys on a green battery.**
 4. After merge reaches production: OG cards if titles changed; IndexNow is
    submitted by `/ship`; the GSC request-indexing shortlist goes in the
    cadence report.

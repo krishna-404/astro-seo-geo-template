@@ -18,12 +18,11 @@ number it targets. A run that only measured has to say so and why.
 
 **Discipline for a scheduled run.** No human is watching. Anything that
 needs a decision only the owner can make goes in the report as a question,
-never guessed at. All changes land as PRs; nothing merges or publishes
-itself. `npm run verify` green on the exact tree is the bar for opening the
-PR at all. (A site that later decides its cadence should commit to `main`
-and deploy itself makes that decision in STRATEGY.md and rewrites step 9
-here — the battery is then the only gate, so the scope rule below becomes
-load-bearing.)
+never guessed at. `npm run verify` green on the exact tree is the bar for
+delivering anything at all. Who merges and who deploys is the merge model in
+`marketing/STRATEGY.md § 9`: the default commits to `main` and runs the ship
+steps itself (step 9), so the battery is the only gate and the scope rule
+below is load-bearing — small, evidence-backed, in scope.
 
 **High-intent first.** Search Console's transactional rows — "<category>
 software", "<category> tracking system", "<x> vs <y>" — are a handful of
@@ -126,10 +125,12 @@ coverage-layer pages because that is usually where the backlog is.
      row in `marketing/keyword-map.md`, a title and description in the
      searcher's words when Search Console already shows the phrasing. Push
      those to the branch and run `npm run verify`. Whether the run then
-     **merges** is the site's decision in STRATEGY.md: a site whose cadence
-     commits to `main` merges green posts that clear the bar and deploys
-     them with its ship step; a PR-review site leaves them ready-for-review
-     with the updates pushed and says so in the report.
+     **merges** is `marketing/STRATEGY.md § 9`: on the default it merges a
+     green post that clears the bar, and step 9's deploy publishes it the
+     same day; on PR review it leaves the post ready for review with the
+     updates pushed. A post it will not merge is named in the report with
+     the reason — that is the one row that still needs the owner (ACTIONS
+     A-D02).
    - **Every other open PR** (a previous run's, a human's, a fix branch):
      the same rule — merge when the site allows it, the PR is the site's own
      work, verify is green and the change is confident, small and in scope;
@@ -269,17 +270,41 @@ coverage-layer pages because that is usually where the backlog is.
    write pieces on a daily run; the weekly run works them. Exception: a
    candidate that is clearly time-critical for the site's readers goes in
    the report as a flagged Decision.
-7. **Release.** If a future-dated post's date has arrived, today's build
-   includes it and the next `/ship` publishes it — say so in **Do this
-   today**, because nothing deploys by itself.
-8. **Housekeeping.** `npm run inventory`; then `npm run verify` — green, or
-   the PR is not opened and the report's first line says why.
-9. **Deliver.** One PR: snapshot, log, inventory, the step-0 actions update,
-   the step-2/3 edits, any new data-sheet question, any social drafts for a
-   piece that went live (`marketing/social-queue.md`, content-guidelines § 6). PR body: what changed, which query or number each
-   change targets, what was dropped and why. A human merges and `/ship`
-   deploys (there is no automatic deploy — Actions are opt-in). Re-run the OG
-   cards only if a title changed.
+7. **Release.** A future-dated post whose date has arrived enters today's
+   build and goes live on this run's deploy (step 9) — name it in **What
+   changed**. On a PR-review site it waits for a human `/ship`, and then it
+   belongs in **Do this today** instead.
+8. **Housekeeping.** In this order, because each step reads what the one
+   before it wrote: `npm run lastmod` · `npm run inventory` · `npm run build`
+   · re-render the OG cards **if any title or description changed**
+   (`git diff --name-only` over `src/content` and `src/pages`, then
+   `npm i --no-save playwright && node marketing/og/render-pages.mjs`) ·
+   a second build to pick the cards up · `npm run verify`. Green, or nothing
+   is delivered and the report's first line says why. Regenerating before the
+   build is what keeps the committed `lastmod` map from lagging a site that
+   deploys the same day.
+9. **Deliver — and, on the default merge model, deploy.** One changeset:
+   snapshot, log, inventory, lastmod, the step-0 actions update, the step-2/3
+   edits, any new data-sheet question, any social drafts for a piece that went
+   live (`marketing/social-queue.md`, content-guidelines § 6). The message says
+   what changed, which query or number each change targets, and what was
+   dropped and why.
+
+   `marketing/STRATEGY.md § 9` decides what happens next.
+
+   - **commit-to-main (the default):** commit to `main`, push, then run the
+     ship steps — `/ship` steps 3–7, with the build already done by step 8:
+     `CLOUDFLARE_API_TOKEN="$CLOUDFLARE_DEPLOY_TOKEN" npm run deploy`, purge
+     with `CLOUDFLARE_ZONE_ID`, `npm run indexnow` (IndexNow plus the Bing URL
+     submission), `node scripts/smoke-live.mjs`.
+   - **PR review:** open the PR and stop; the report says it is waiting.
+
+   **Guards — any one of these and the run opens a PR instead and names the
+   reason in the report's first line:** `src/data/origin.mjs` still says
+   `example.com` (nothing to deploy to); the battery is red; or
+   `CLOUDFLARE_DEPLOY_TOKEN` is unset (ACTIONS A-K06 asks for it by name).
+   A missing `CLOUDFLARE_ZONE_ID` is not a guard — skip the purge, say so, and
+   note that pages self-refresh within five minutes.
 
 ## Weekly-full (daily-lite, plus)
 
@@ -421,8 +446,10 @@ report is probably not a change to the engine.
 Written for the owner, who is not an SEO and should not need to be. Plain
 words, the action first, the tables last. Compose markdown in this order:
 
-1. **`# <Mode> run <YYYY-MM-DD>`**, then one line: the PR link, or why
-   there is none.
+1. **`# <Mode> run <YYYY-MM-DD>`**, then one line for the delivery: on the
+   default merge model, the deployed version id, the number of URLs submitted
+   to IndexNow and Bing, and the live-smoke result — or, if a guard fired or
+   the site is on PR review, the pull request link and which it was.
 2. **In plain words** — five lines at most, no jargon: how many people
    visited and the change; how many pages Google has indexed and the change;
    clicks from search (and, while it is zero, say so plainly); how many
@@ -481,9 +508,10 @@ words, the action first, the tables last. Compose markdown in this order:
    fix) for pages under 70, the page refreshed this run and what changed.
 5. **Do this today** — a numbered list. First the 10 request-indexing URLs
    as bare URLs, one per list item (`scripts/report-html.mjs` turns each into
-   an "Inspect in Search Console" button); then the PRs awaiting merge; then
-   the unposted entries in `marketing/social-queue.md`; then anything else
-   that needs the owner's hands.
+   an "Inspect in Search Console" button); then the unposted entries in
+   `marketing/social-queue.md`; then any pull request the run **declined**,
+   with the reason; then anything else that needs the owner's hands. A run
+   that deployed itself does not ask for a merge.
 5b. **Actions** — the output of `node scripts/actions.mjs --markdown`: how many
    done, the keys the scripts are missing (each with where it comes from and
    what stays dark without it), and the open items by phase with the how-to.

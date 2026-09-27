@@ -30,10 +30,19 @@ regulator's page for consent, the ranking pages for each money query), and
 writes every answer into the file that owns it. This file remains the list of
 where each value lives; the skill is how a new site gets through it well.
 
-Sibling docs: `README.md` quickstart · `CHECKLIST.md` every baked-in decision
-and why · `PLAYBOOK.md` operating knowledge and traps · `AGENTS.md` standing
-editing rules. This file tells you WHERE to go; those tell you WHY it's built
-that way.
+**Six documents, six jobs.** `README.md` — the quickstart, and the glossary of
+this repo's terms. `SETUP.md` — the ordered walkthrough a NEW site starts
+with: every per-site value, in dependency order, before any content work.
+`AGENTS.md` — the standing rules for anyone, human or agent, editing the repo.
+`CHECKLIST.md` — every architectural decision already made, with its reason.
+`PLAYBOOK.md` — the order of work, the operating knowledge and the traps.
+`marketing/` — the operating layer the content engine runs on;
+`marketing/README.md` indexes it. **Update the document that owns a rule in the
+same commit as the change** — a setting nobody wrote down is indistinguishable
+from a setting nobody made.
+
+This file tells you WHERE each value goes; the others tell you WHY it is
+built that way.
 
 ---
 
@@ -348,12 +357,18 @@ voice) that everything below is an instance of.
    do. Weekly runs additionally refresh the anti-AI rules from their public
    sources (sweeping the latest posts for newly landed tells), do the
    writing run and the tools sweep, and maintain the keyword map, data
-   sheet and link targets. Everything lands as PRs; **you merge — nothing
-   auto-publishes.** Give the Routine's environment the insights
-   credentials and `CADENCE_REPORT_TOKEN` (both above). Schedule exactly
-   one firing a day: a second scheduled firing on the same date stands
-   down by design, and a Routine recreated while the old one still exists
-   is the usual cause.
+   sheet and link targets. **Who merges and who deploys is
+   `marketing/STRATEGY.md § 9`; the default commits to `main` on a green
+   battery and runs the ship steps itself.** Give the Routine's environment
+   the insights credentials and `CADENCE_REPORT_TOKEN` (both above), plus
+   `CLOUDFLARE_DEPLOY_TOKEN` and `CLOUDFLARE_ZONE_ID` so it can deploy and
+   purge, and `BING_WEBMASTER_API_KEY` so it can tell Bing on the way out.
+   Without the deploy token the run opens a pull request instead and says so;
+   without the zone id it deploys and skips the purge (pages self-refresh in
+   five minutes); without the Bing key IndexNow still reaches Bing through the
+   shared endpoint. Schedule exactly one firing a day: a second scheduled
+   firing on the same date stands down by design, and a Routine recreated
+   while the old one still exists is the usual cause.
 3b. **Give the run its keys, and know your half.** `npm run actions`
    prints every human action the engine depends on — the keys the scripts
    need (Search Console, Cloudflare, Umami, Bing, the report token, the

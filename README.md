@@ -15,12 +15,18 @@ and CI battery of a site that learned everything the hard way.
 - **Hosting**: Cloudflare Workers with static assets — static requests are
   free and *unlimited*, the worker's 100k free invocations/day cover the few
   dynamic routes. No servers, no Docker, nothing to patch at 3am.
-- **Docs**: `SETUP.md` — **start here for a new site**: every per-site value
-  in dependency order, so the hygiene items get done before content work
-  buries them. `CHECKLIST.md` — every decision already baked in, with
-  reasons. `PLAYBOOK.md` — build & operate, phase by phase, plus the trap
-  archive. `AGENTS.md` — standing rules for anyone (human or AI) editing
-  the repo.
+- **Docs**: see **The document map** below.
+
+**Six documents, six jobs.** `README.md` — the quickstart, and the glossary of
+this repo's terms. `SETUP.md` — the ordered walkthrough a NEW site starts
+with: every per-site value, in dependency order, before any content work.
+`AGENTS.md` — the standing rules for anyone, human or agent, editing the repo.
+`CHECKLIST.md` — every architectural decision already made, with its reason.
+`PLAYBOOK.md` — the order of work, the operating knowledge and the traps.
+`marketing/` — the operating layer the content engine runs on;
+`marketing/README.md` indexes it. **Update the document that owns a rule in the
+same commit as the change** — a setting nobody wrote down is indistinguishable
+from a setting nobody made.
 
 ## Quickstart
 

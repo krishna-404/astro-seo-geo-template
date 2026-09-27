@@ -11,6 +11,11 @@ the template ships no automatic GitHub Actions (CHECKLIST §2 — metered
 minutes), so nothing deploys a merge except this sequence run from a session
 that holds the Cloudflare token.
 
+**The daily cadence run calls steps 2b–7 itself**, unattended, on the default
+merge model (`marketing/STRATEGY.md § 9`) — it has already committed to `main`,
+so it starts at 2b. Keep the steps below runnable without a human: no prompt,
+no "check the dashboard", every failure reported with what it was.
+
 ## Preconditions — check, don't assume
 
 1. The working tree is clean and pushed; `npm run verify` has passed on the
@@ -31,6 +36,14 @@ that holds the Cloudflare token.
    with `merge_method: "squash"`, title styled like the repo's history:
    `<PR title> (#<n>)`).
 2. **Sync main**: `git fetch origin main && git checkout main && git pull origin main`.
+2b. **Regenerate what the build reads, and commit it**: `npm run lastmod`
+   (the sitemap's `<lastmod>` map) · `npm run inventory` · re-render the OG
+   cards if any title or description changed since the last deploy
+   (`npm i --no-save playwright && node marketing/og/render-pages.mjs` after a
+   build, then build again — PLAYBOOK §2's two-build rule). Commit anything
+   that changed before step 3. Skipping this is how the committed map ends up
+   behind a site that deploys the same day it is written; regenerating here
+   is why date drift stays a note rather than a failure (CHECKLIST §9).
 3. **Build**: `npm run build` — the full build (astro check, sheets, llms.txt,
    markdown twins, pagefind, CSP). A failure here means stop.
 4. **Deploy**: `CLOUDFLARE_API_TOKEN="$CLOUDFLARE_DEPLOY_TOKEN" npm run deploy`.
@@ -42,8 +55,12 @@ that holds the Cloudflare token.
    PLAYBOOK §6 the first time). If purge 401s, say so and note pages
    self-refresh in ≤5 min (`max-age=300`) — do not treat it as a deploy
    failure.
-6. **IndexNow**: `npm run indexnow` — submits the live sitemap to Bing,
-   Yandex and Seznam; nothing else pings them (the workflow is manual-only).
+6. **IndexNow**: `npm run indexnow` — submits the live sitemap to the shared
+   IndexNow endpoint (Bing, Yandex, Seznam, Naver) and, when
+   `BING_WEBMASTER_API_KEY` is set, the URLs changed in the last two days to
+   Bing's URL Submission API directly. Nothing else pings them (the workflow is
+   manual-only). Report the count each half took; a missing Bing key is a named
+   skip, not a failure (ACTIONS A-K04).
 7. **Verify live**: `curl -sI <origin>/ | grep -i cf-cache-status` twice —
    expect MISS then HIT — and spot-check one piece of content this deploy
    actually changed (grep the live HTML for it). Then

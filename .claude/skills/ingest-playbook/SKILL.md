@@ -112,9 +112,10 @@ source.
 - Any new check: break the thing once, watch it go red, restore.
 - `npm run check:voice` on any content touched; `npm run verify` before
   the PR.
-- One PR: the routed changes, the intake entry, the CHECKLIST line for any
-  new check. PR body: the source, the count in each bin, the refusals with
-  reasons. A human merges.
+- One changeset: the routed changes, the intake entry, the CHECKLIST line for
+  any new check. The body names the source, the count in each bin, and the
+  refusals with reasons. Delivery follows the merge model in
+  `marketing/STRATEGY.md § 9`.
 
 ## What this skill never does
 

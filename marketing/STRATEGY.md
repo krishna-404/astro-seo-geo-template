@@ -93,12 +93,32 @@ worth nothing; every cycle's work is ordered bottom-up:
 
 ## 9. Merge model
 
-<!-- TODO: decided at /new-site phase 13. Default: **PR review** — every run
-     opens a PR, a human merges, `/ship` deploys; the daily run's PR inbox
-     pushes its updates to an API post's branch and leaves it ready for
-     review. Alternative: **commit to main** — the run merges green PRs that
-     clear the bar and ships them, with `npm run verify` as the only gate;
-     choosing it rewrites content-cadence step 9. Write the choice and the
-     date here; the cadence reads this section. -->
+**This is the one full statement of who merges and who deploys.** Every other
+file cites this section rather than repeating it.
 
-Merge model: PR review (default). Decided: <!-- YYYY-MM-DD -->
+**Merge model: commit-to-main (default) · decided 2026-09-27.** A
+`/content-cadence` run commits its work to `main` once `npm run verify` is
+green on the exact tree, then runs the ship steps itself: regenerate
+`lastmod`, the inventory and the OG cards, build, `wrangler deploy`, purge,
+`npm run indexnow` (IndexNow plus the Bing URL submission), live smoke. The
+battery is the gate; a green tree ships the same day it is written. The
+report's first line carries the deployed version id, the URLs submitted and
+the live-smoke result.
+
+Guards, in the run: never when `src/data/origin.mjs` still says
+`example.com`, never on a red battery, never without `CLOUDFLARE_DEPLOY_TOKEN`
+— any of those and the run falls back to opening a pull request and says so in
+the report (ACTIONS A-K06 names the missing key).
+
+**Alternative: PR review.** Every run opens a pull request, a human merges,
+`/ship` deploys. Choose it for a site whose owner wants to read before
+publish; write the choice and the date on the line above, and the cadence
+follows it. A site on this model releases a future-dated post only when a
+human ships on or after its date.
+
+**Why the default deploys itself.** The owner's instruction, 27 Sep 2026:
+"when a daily routine runs here on claude, it should automatically deploy and
+also update indexnow & bing with the recent changes." The battery is the
+quality gate under either model; a run that waits for a human to merge leaves
+scheduled posts unreleased and the committed `lastmod` map behind the live
+site.

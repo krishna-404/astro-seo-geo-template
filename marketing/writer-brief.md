@@ -45,7 +45,8 @@ costs a cycle; a wrong number costs the site's standing.
 2c. The piece's social posts are in `marketing/social-queue.md`.
 3. `published` is the real day the piece goes live; several on one day
    are fine, never backdated (no post caps since 20 Sep 2026).
-4. A human reads the PR before merge. Nothing auto-publishes.
+4. Who merges and who deploys is the merge model in `marketing/STRATEGY.md
+   § 9`; the default commits to `main` and deploys on a green battery.
 
 ## After publish
 

@@ -228,9 +228,10 @@ up only the decisions that actually depend on it.
     ACTIONS A-L14 dated with the KPI.
 
 13. **Cadence and the posts API** (SETUP Phase 5; STRATEGY.md § 9).
-    Schedule /content-cadence as a Routine, one firing a day; decide the
-    merge model (PR review, or commit-to-main with verify as the gate) and
-    record it in STRATEGY.md; set the report channel; if external automation
+    Schedule /content-cadence as a Routine, one firing a day; confirm or
+    change the merge model in STRATEGY.md § 9 (the default commits to `main`
+    and deploys on a green battery — ask the owner whether they want to read
+    before publish instead); set the report channel; if external automation
     will submit posts, set `POSTS_API_TOKEN` and `GITHUB_POSTS_TOKEN` and run
     the worker smoke. Every key in `marketing/ACTIONS.md § Keys` set in the
     Routine's environment (`npm run actions` names the missing ones); the

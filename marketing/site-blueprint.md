@@ -306,8 +306,9 @@ questions — it never silently "fixes" architecture.
   only churns the freshness signal)?
 
 The audit's output is the same shape as everything else the engine produces: a
-prioritised list in the cadence report's **What I need from you** and **Decisions**, and PRs for the parts that
-are confident, small and in scope. A human merges; nothing auto-publishes.
+prioritised list in the cadence report's **What I need from you** and **Decisions**, and changes for the parts that
+are confident, small and in scope, delivered under the merge model in
+`marketing/STRATEGY.md § 9`.
 
 ---
 

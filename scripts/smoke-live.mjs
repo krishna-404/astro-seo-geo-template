@@ -70,13 +70,15 @@ check('trailing slash normalises (307 — CHECKLIST §2)', [301, 307, 308].inclu
 r = await req(`${origin}/definitely-not-a-page-${Date.now()}`);
 check('unknown route → real 404', r?.status === 404, `got ${r?.status}`);
 
-// Worker PERMANENT_REDIRECTS, parsed from the source so the live check cannot
-// drift from the map; an empty map asserts nothing.
-const redirectMap = readFileSync('worker/index.ts', 'utf8')
-  .match(/PERMANENT_REDIRECTS:\s*Record<string,\s*string>\s*=\s*\{([\s\S]*?)\}/)?.[1] ?? '';
-for (const [, from, to] of redirectMap.matchAll(/'(\/[^']*)':\s*'([^']+)'/g)) {
+// Permanent redirects, read from src/data/redirects.json — the one place they
+// live, so the live check cannot drift from the map. An empty map asserts
+// nothing. (This used to regex-parse worker/index.ts; when the map moved to
+// JSON the regex stopped matching and the assertions silently stopped running,
+// which is why it reads the data file the worker itself imports.)
+const { redirects } = JSON.parse(readFileSync('src/data/redirects.json', 'utf8'));
+for (const [from, row] of Object.entries(redirects)) {
   r = await req(`${origin}${from}`);
-  check(`${from} → 301 ${to}`, r?.status === 301 && new URL(r.headers.get('location'), origin).pathname === to, `got ${r?.status} → ${r?.headers.get('location')}`);
+  check(`${from} → 301 ${row.to}`, r?.status === 301 && new URL(r.headers.get('location'), origin).pathname === row.to, `got ${r?.status} → ${r?.headers.get('location')}`);
 }
 
 // ── headers (PLAYBOOK §8 "Headers") ────────────────────────────────────────

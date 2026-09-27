@@ -1,20 +1,15 @@
 # AGENTS.md — standing rules for working in a site built from this template
 
-This file is the source of truth for anyone — human or agent — editing this
-repo. `SETUP.md` is where a NEW site starts: the ordered walkthrough of every
-per-site value, before any content work. `CHECKLIST.md` records every
-architectural decision already made and why; `PLAYBOOK.md` is the
-phase-by-phase build/operate runbook; `README.md` is the quickstart. The
-operating layer lives in `marketing/`: `runbook.md` (the daily, weekly,
-monthly and quarterly checklists the cadence works), `launch-playbook.md`
-(what happens when a site goes live), `page-guidelines.md` (what each page
-type contains), `content-guidelines.md` (how every piece is written),
-`ACTIONS.md` (every human action, verified by `npm run actions` on every
-run) and `playbook-intake.md` (every outside playbook ingested, what was
-taken and what was refused).
-**Update the relevant document in the same commit as any change to
-structure, config, or a third-party dashboard** — a setting nobody wrote down
-is indistinguishable from a setting nobody made.
+**Six documents, six jobs.** `README.md` — the quickstart, and the glossary of
+this repo's terms. `SETUP.md` — the ordered walkthrough a NEW site starts
+with: every per-site value, in dependency order, before any content work.
+`AGENTS.md` — the standing rules for anyone, human or agent, editing the repo.
+`CHECKLIST.md` — every architectural decision already made, with its reason.
+`PLAYBOOK.md` — the order of work, the operating knowledge and the traps.
+`marketing/` — the operating layer the content engine runs on;
+`marketing/README.md` indexes it. **Update the document that owns a rule in the
+same commit as the change** — a setting nobody wrote down is indistinguishable
+from a setting nobody made.
 
 **Before you push: `npm run verify`** — the full CI battery locally (the
 pre-push hook runs it for you; hooks install automatically via `npm install`).
@@ -149,212 +144,120 @@ being checked is not a reason to ignore it here; the prose carries the WHY.
 
 ## Content rules
 
-- **Every prompt that writes content ends with "Remove all mannered
-  prose."** The line and its definition live in `src/data/voice.json →
-  prompt`; `marketing/content-guidelines.md § 0` explains it. A skill that
-  drafts, rewrites, retitles, summarises or answers without it is a bug.
-  `marketing/content-guidelines.md` is how every piece is written (answer
-  first, every H2 an island, extractable passages, write for objections,
-  a number with a source every 150–200 words); `marketing/page-guidelines.md`
-  is what each page type contains (the citation checklist, the About page's
-  entity spec, the programmatic patterns, the internal link plan), and
-  `npm run audit:pages` scores that checklist on every built page and
-  names the first fix. New pieces clear 70.
-- **What a human has to do is an ACTIONS item, checked every run.**
-  `marketing/ACTIONS.md` holds every human action (launch, the keys the
-  scripts need, daily, weekly, monthly, quarterly, annual); `npm run
-  actions` verifies each one that can be verified and `--update` rewrites
-  the marks; the cadence runs it first and the report carries the block.
-  Where no API exists the item says so and hands the owner the how-to;
-  where a key would unlock it the item asks for the key by name. A run
-  never ticks a manual item and never works around a missing key by
-  estimating. A human action discovered for the first time is added in
-  the same PR.
-- **Every new piece ships with its social posts** in
-  `marketing/social-queue.md` (`status: unposted`, the owner posts and
-  flips it; the actions check counts what is unposted), an inbound link
-  from an indexed page, its glossary entries and its keyword-map row.
-- **An outside playbook goes through /ingest-playbook**, never straight
-  into a file, and **nothing is adopted blindly**: every move passes the
-  evidence, policy, fit and works tests (a mechanical move proven on this
-  repo; a judgement move run as a dated trial on one page before it is a
-  rule), is sorted into adopted / trial / refused, routed to the file that
-  owns it, and recorded in `marketing/playbook-intake.md` with the verdict
-  and the reason. A trick that reportedly worked for its author is not
-  evidence; a mechanism and a measurement are. A launch is run from
-  `marketing/launch-playbook.md` (/launch) after every launch action in
-  ACTIONS.md is verified.
-
-The shape of the whole site — page-type taxonomy, keyword-research→content
-mapping, interlinking doctrine, conversion, and the AEO/GEO levers — is in
+Each rule below is **stated in full in the file that owns it**; the line here
+is the rule and where it lives. Where the two differ, the owner wins. The
+shape of the whole site — page taxonomy, keyword-research→content mapping,
+interlinking doctrine, conversion, the AEO/GEO levers — is
 `marketing/site-blueprint.md`; `STRATEGY.md` is this site's instance of it and
-wins any conflict. The rules below are the enforced subset.
+wins any conflict.
+
+| Rule | Stated in full in |
+|---|---|
+| **Every prompt that writes content ends with "Remove all mannered prose."** A skill that drafts, rewrites, retitles, summarises or answers without it is a bug | `src/data/voice.json → prompt`; `marketing/content-guidelines.md § 0` explains it |
+| How a piece is written | `marketing/content-guidelines.md` |
+| What each page type contains; `npm run audit:pages` scores it, new pieces clear 70 | `marketing/page-guidelines.md` |
+| The fuel rule — field notes are an add-on, never a gate | `marketing/content-guidelines.md § 2` |
+| The funnel ladder | `marketing/STRATEGY.md § 5` |
+| High-intent first; keep `intent.json → watch` and `keyword-map.md § High-intent` in step, same commit | `src/data/intent.json` `$comment` + `scripts/lib/intent.mjs` header |
+| Who merges and who deploys | `marketing/STRATEGY.md § 9` |
+| A question, never an estimate — asked in the session with `AskUserQuestion`, four at a time, concrete options | `marketing/DATA-SHEET.md` header; listings in `marketing/link-targets.md`; `npm run ask` prints both |
+| Every human action and its check | `marketing/ACTIONS.md` |
+| The AEO/GEO funnel; work the stage it names, not the lowest number | `scripts/lib/aeo.mjs` header; agents in `scripts/lib/crawlers.mjs` |
+| The Generative AI export — a cited page is strengthened and linked, never rewritten | `marketing/insights/genai/README.md`; the panel is `marketing/ai-panel.md`, never fabricated |
+| The request-indexing shortlist — no API exists, so it is always a human's hands | `scripts/insights.mjs` + ACTIONS A-D01 |
+| Daily, weekly, monthly and quarterly items | `marketing/runbook.md` |
+
+Three more that own themselves:
+
+- **Decisions are made against current references, never from memory.**
+  Before a decision on positioning, design, voice, schema, consent or
+  infrastructure reaches the owner, fetch what the best sites and the current
+  guidance do today and show three to five concrete examples with a reading of
+  each (`/new-site` § The three rules). The category is read first by
+  `/landscape` into `marketing/landscape.md`. Record the examples with the
+  decision, in the file that owns it.
+- **An outside playbook goes through /ingest-playbook**, never straight into a
+  file: evidence, policy, fit and works; sorted into adopted / trial /
+  refused; routed to the file that owns it; recorded in
+  `marketing/playbook-intake.md` with the verdict and the reason. A trick that
+  reportedly worked for its author is not evidence; a mechanism and a
+  measurement are.
+- **A launch runs from `marketing/launch-playbook.md`** (/launch), after every
+  launch action in ACTIONS.md verifies.
+
+**The enforced subset** — these fail a check, so they are stated here too:
 
 - Every page traces to a query in `marketing/keyword-map.md` (one page = one
-  primary query = one intent), and every priority query traces to a page there,
-  live or planned. /keyword-map maintains the map; /write-content picks targets
-  from it. A money page declares the query it claims in frontmatter
+  primary query = one intent), and every priority query to a page there, live
+  or planned. A money page declares its query in frontmatter
   (`primaryKeyword`, `secondaryKeywords`) and its collection is listed in
   `src/data/intent.json → claimFrom`.
-- **High-intent first.** Search Console's transactional rows ("<category>
-  software", "<x> vs <y>", "… pricing") are a handful of impressions under
-  hundreds of informational ones, and they are the words a buyer with budget
-  types. `npm run insights` prints them as its first block
-  (`src/data/intent.json` signal words + watch list, `scripts/lib/intent.mjs`)
-  with the page Google shows against the page that claims the query; every
-  cadence run works that block before anything else and the report carries a
-  High-intent section. Keep `intent.json → watch` and `marketing/keyword-map.md
-  § High-intent` in step, same commit.
 - **A claim the site may not make is a regex, not a reminder.** `voice.json →
-  site.bannedClaims` lists the assertions of fact this site must never make (a
-  measurement nobody took, a customer that does not exist, a result the product
-  has not produced); `check-source-rules` fails any page that says one. State a
-  figure flat and unattributed; omit what cannot be asserted — omitting is fine,
-  asserting is not. Match the CLAIM, not the verb the last edit used.
-- **Generative AI is measured, not assumed.** Search Console's Generative AI
-  report (impressions inside AI Overviews and AI Mode) has no API; the owner
-  exports it into `marketing/insights/genai/` and `npm run insights` reads the
-  newest zip (`scripts/lib/genai.mjs`), joins AI vs web impressions per page
-  and adds two proxies — prompt-shaped queries and referrals from AI
-  assistants. Every cadence run works that block (content-cadence step 2e):
-  a cited page is strengthened and linked, never rewritten; an uncited page
-  gets an answer-shaped `tldr`, a FAQ block in the searcher's words and named
-  sources. The monthly AI prompt panel lives in `marketing/ai-panel.md` and is
-  never fabricated. The off-funnel discovery levers are scored beside the
-  funnel by `npm run aeo`.
-- **AEO and GEO have one number, and it says what it does not know.**
-  `npm run aeo` (also the first section of `npm run insights`) scores the
-  funnel that getting cited actually is — reachable → ingested → indexed →
-  shown → followed — and names the HIGHEST stage under its bar, because a
-  stage is capped by the one above it: an engine the edge is refusing will
-  never index the page, however well it is written. `scripts/lib/crawlers.mjs`
-  is the one registry of answer-engine user-agents, split by what the agent
-  does with the page (`index` builds the index an assistant answers from,
-  `live` fetched it mid-answer, `train` affects no answer today and is never
-  scored); the Cloudflare pull classifies the edge against it and counts
-  401/403/429 apart from 404, because a refused crawler is a rule we wrote and
-  a 404 is link rot. Every stage declares `auto`, `partial` (naming the
-  missing credential) or `manual` — an unmeasured stage scores `null`, never
-  zero, and never enters the mean. Stage 4 is the honest hole: no API carries
-  Google's AI-feature data and no assistant sells a "were we named" endpoint,
-  so it scores from a proxy capped at 60 and says so rather than passing a
-  guess off as a measurement.
-- **Posts may arrive through the API, and the daily run owns the PR inbox.**
-  `POST /api/posts` (`worker/posts.ts`, SETUP Phase 4) validates a post and
-  opens a PR. The API does only what is mechanical; there is no publish
-  workflow (GitHub Actions are opt-in — CHECKLIST §2). The daily cadence run lists open PRs,
-  reviews every API post (tldr, sources, proprietary claim, voice), does the
-  judgement half — an in-body link from an indexed page, glossary entries,
-  the keyword-map row, the snippet check — and merges where STRATEGY.md's
-  merge model allows; a PR it will not merge is named in the report with the
-  reason.
-- **Decisions are made against current references, never from memory.**
-  Positioning, design, voice, schema, consent, infrastructure: before a
-  decision is put to the owner, fetch what the best sites and the current
-  guidance do today and show three to five concrete examples with a reading
-  of each (`/new-site` § The three rules; `/design-direction` § 1;
-  `/onboard-marketing` step 8 for voice). The category itself is looked at
-  before any of it: `/landscape` tears down the sites the buyer compares
-  this one with and records the owner's verdict on each in
-  `marketing/landscape.md`. Record the examples shown with the decision in
-  the file that owns it.
+  site.bannedClaims` lists the assertions of fact this site must never make;
+  `check-source-rules` fails any page that says one. State a figure flat and
+  unattributed; omit what cannot be asserted. Match the CLAIM, not the verb
+  the last edit used.
+- Blog posts carry a named human author from `src/data/authors.json` (the
+  byline links to `/author/<slug>`, the verifiable credential behind the name;
+  a guest gets their own entry with a real profile, never a borrowed one), a
+  `proprietary` field naming what an LLM could not have produced, `sources` on
+  anything factual, and a `tldr` that front-loads the answer — the GEO lever
+  with evidence behind it, alongside citations, quotes and statistics. Keyword
+  stuffing measurably hurts.
+- Interlinking: every post carries at least 2 contextual in-body internal
+  links anchored on the phrase a searcher types ("goes to demurrage", not
+  "click here"); a generated related-posts footer does not count. Site-wide,
+  `check-link-graph` also fails an orphan content page, a dead internal link,
+  a junk anchor, and identical anchor text pointing at two pages (it splits
+  the ranking signal). The half no static check can see — that the inbound
+  link comes from an *already-indexed* page — is worked at cadence time from
+  Search Console.
 - **Every content page carries a figure, and its social card shows it.** A
   page with no picture reads as text a machine produced. `figures:` in
-  frontmatter (`src/data/figureSchema.ts`: timeline, flow, steps, bars, tiles,
-  compare, web, outline) is drawn at build time as inline SVG by
-  `Figure.astro` — zero JS, the `--viz-*` tokens, text in the ink tokens, a
-  `<title>`/`<desc>` and a visible caption. One lead figure follows the TL;DR
-  and is lifted verbatim onto the page's social card (`render-pages.mjs`
-  renders one card per built page with the brand row, title, description and
-  figure); body figures are placed with `<Figure id="…" />`. A `bars` figure
-  takes numbers only from `facts.json` (`fact:`) or inline with a `source`
-  that is one of the entry's `sources` labels (rule 1, in a picture). A page
-  that declares none gets its collection's automatic figure — the floor, not
-  the target. `check-invariants` fails a content page without exactly one
-  lead figure, and any indexable page without its own card. CHECKLIST §8,
-  /write-content § Every piece carries a figure.
-- **What the engine cannot find out becomes a question, never an estimate —
-  and with the owner in the session, it is asked there first.** A run that
-  has the owner's attention puts its questions to them with
-  `AskUserQuestion`, in batches of up to four, each with concrete options
-  drawn from what it just researched (`/new-site` § The three rules).
-  `marketing/DATA-SHEET.md` holds what they deferred — the open questions
-  only the owner can answer, in their words — and
-  `marketing/link-targets.md` the listings a human has to claim; `npm run ask`
-  prints both (and runs at session start). An unattended run that hits a
-  blocker adds the question in the same commit; no run answers one by
-  guessing or claims a listing.
-- Every blog author lives in `src/data/authors.json` (enforced): the byline
-  links to `/author/<slug>` — the verifiable credential behind the name — and
-  a guest author gets their own entry with a real profile and bio, never a
-  borrowed one.
-- Blog posts: named human author with a real `sameAs` profile; a required
-  `proprietary` field naming what an LLM could not have produced; `sources`
-  on anything factual; `tldr` front-loads the answer (that's the GEO lever
-  with actual evidence behind it — alongside citations, quotes and
-  statistics; keyword stuffing measurably hurts).
-- Interlinking (enforced by `check-source-rules`): every post carries at
-  least 2 contextual in-body internal links, anchored on the
-  phrase a searcher types ("goes to demurrage", not "click here"); a
-  generated related-posts footer does not count. Site-wide, the link graph
-  is also checked (`check-link-graph`): no orphan content pages (an
-  intentional inbound link from another page — the auto-scorer does not
-  count), no dead internal links, no junk anchors, and no identical anchor text
-  pointing at two different pages (it splits the ranking signal). The half a
-  static check cannot see — that a new page's inbound link comes from an
-  *already-indexed* page, anchored on its target keyword — is worked at cadence
-  time from Search Console (site-blueprint § 3; /write-content § Interlink).
+  frontmatter is drawn at build time as inline SVG, and the lead figure is
+  lifted verbatim onto the page's social card. `check-invariants` fails a
+  content page without exactly one lead figure, and any indexable page without
+  its own card. The eight kinds and the rule that a `bars` figure takes its
+  numbers only from `facts.json` or a declared `source` — rule 1, in a picture
+  — are `src/data/figureSchema.ts`; how to choose one is /write-content § 7.
+- **Posts may arrive through the API, and the daily run owns the PR inbox.**
+  `POST /api/posts` (`worker/posts.ts`, SETUP Phase 4) validates a post and
+  opens a PR; the run does the judgement half the API cannot and merges under
+  STRATEGY.md § 9, naming in the report any PR it will not merge.
 - No volume cap on posts. `published` is the real date a piece went live;
-  several posts on one day are fine when each carries its own fuel. What
-  reads as generated content is a thin post, not a dated one, so the gates
-  are the schema, the sources, the `proprietary` field, the voice check and
-  the in-body links — never a count. (The ancestor site enforced one post
-  per date and five per ISO week until 20 Sep 2026 and removed both.)
+  several on one day are fine when each carries its own fuel. What reads as
+  generated content is a thin post, not a dated one, so the gates are the
+  schema, the sources, `proprietary`, the voice check and the in-body links —
+  never a count.
 - The voice standard has two halves. Mechanical: `npm run check:voice`
-  enforces `src/data/voice.json` (banned AI-tell vocabulary and shapes,
-  em-dash density, stacked bold lead-ins, Title Case headings) at all three
-  rungs; the base layer is refreshed from its published sources by the
-  /refresh-anti-ai-rules skill, via PR, never silently. Judgement:
-  `marketing/VOICE-GUIDE.md` § ship checklist, run by hand on every piece —
-  a green script run is not a pass.
-- **The fuel rule.** A new post exists only when its `proprietary`
-  frontmatter names something real: a `marketing/field-notes.md` entry, a
-  `marketing/news-log.md` event with primary sources, a verified
-  ICP social-sweep finding (a pain-point or keyword the ICP posted), or an
-  insights finding. Field notes are an add-on,
-  never a gate — the engine keeps writing from the internet-derived
-  channels without them; only when every channel is dry does that cycle do
-  updates and interlinking instead. The
-  content engine (skills: /new-site, /discover, /landscape,
-  /onboard-marketing, /design-direction, /keyword-map, /interview,
-  /write-content, /refresh-anti-ai-rules, /insights-review,
-  /content-cadence, /launch, /ingest-playbook, /ship) delivers everything
-  as PRs; a human merges, nothing auto-publishes.
-- `marketing/content-inventory.md` is generated (`npm run inventory`) —
-  never hand-edit it; regenerate.
-- **Glossary upkeep rides every content change.** A post that introduces a
-  term adds its glossary entry in the same PR; an update that changes a
-  fact a glossary entry states corrects the entry in the same PR (`updated`
-  bumped, source added). Interactive tools/calculators are built only on
-  converging demand signals and the owner's go-ahead: deterministic code
-  over a sourced data file, prefill via query params, the /search JS
-  pattern — a model never generates a number a reader can check.
+  enforces `src/data/voice.json` at all three rungs, and /refresh-anti-ai-rules
+  refreshes the base layer from its published sources, never silently.
+  Judgement: `marketing/VOICE-GUIDE.md § ship checklist`, by hand on every
+  piece — a green script run is not a pass.
+- **Every new piece ships with its social posts** in
+  `marketing/social-queue.md` (`status: unposted`; the actions check counts
+  what is unposted), an inbound link from an indexed page, its glossary
+  entries and its keyword-map row. A post that introduces a term adds that
+  entry in the same commit; an update that changes a fact an entry states
+  corrects the entry in the same commit (`updated` bumped, source added).
 - Programmatic pages (glossary etc.) publish without the blog's author and
-  `proprietary` gates but must be built from real
-  data — `sources` min 1 is schema-enforced. A programmatic page with no
-  unique data is what scaled-content policies penalise.
-- Every content collection needs a route (CI-enforced): entries with no
+  `proprietary` gates but must be built from real data — `sources` min 1 is
+  schema-enforced. A programmatic page with no unique data is what
+  scaled-content policies penalise.
+- Every content collection needs a route: entries with no
   `src/pages/<collection>/[...slug].astro` render nowhere, silently.
-- Long entries (4+ `##` headings) set `toc: true` — an "On this page" anchor
-  list renders between the tldr and the body. Short entries don't need a map
-  of themselves; leave it off.
-- FAQ answers live ONLY in the `faq` frontmatter array — the accordion and
-  the FAQPage JSON-LD both render from it. Never write FAQ markup in the
-  body; that recreates the drift the single source exists to prevent.
-- Glossary `related` frontmatter is curation, and curation outranks the
-  scorer: ids listed there render first in listed order; the build-time
-  scorer only fills the remaining related-link slots. Curate the 1–2 links
-  that genuinely teach the next concept; let the scorer do the rest.
+- FAQ answers live ONLY in the `faq` frontmatter array — the accordion and the
+  FAQPage JSON-LD both render from it. Never write FAQ markup in the body;
+  that recreates the drift the single source exists to prevent.
+- Long entries (4+ `##` headings) set `toc: true`. Glossary `related`
+  frontmatter is curation and outranks the scorer: ids listed there render
+  first, in order, and the build-time scorer fills the remaining slots.
+  `marketing/content-inventory.md` is generated (`npm run inventory`) — never
+  hand-edit it.
+- Interactive tools are built only on converging demand signals and the
+  owner's go-ahead: deterministic code over a sourced data file, prefill via
+  query params, the /search JS pattern — a model never generates a number a
+  reader can check.
 
 ## Forms & data
 
@@ -374,7 +277,7 @@ wins any conflict. The rules below are the enforced subset.
 | Change | Also do |
 |---|---|
 | A page title | Re-run OG cards (`marketing/og/render-pages.mjs`); keep it ≤60 characters or put the sacrificial half after " — " (`check-source-rules` fails a title the SERP clamp would hard-cut) |
-| A URL that must keep working (page moved, folded, or visitors keep typing it) | One row in `worker/index.ts → PERMANENT_REDIRECTS` with a one-line reason, AND the exact path in `wrangler.jsonc → run_worker_first` (`check-parity` fails one without the other; `smoke-worker` asserts the 301) |
+| A URL that must keep working (page moved, folded, or visitors keep typing it) | One row in `src/data/redirects.json` with a one-line reason, AND the exact path in `wrangler.jsonc → run_worker_first` (`check-parity` fails one without the other; `smoke-worker` and `smoke-live` assert the 301) |
 | A blocker only the owner can resolve | Ask them in the session with `AskUserQuestion` if they are here; what they defer goes to `marketing/DATA-SHEET.md` in the documented format, same commit — `npm run ask` will surface it |
 | An action only a human can do (a key, a dashboard, an export, a listing) | One item in `marketing/ACTIONS.md` with a mechanical `Check` where one exists; `npm run actions` verifies it every run and the report carries it |
 | A new step in a run, or a new report section | The `marketing/runbook.md` row AND the content-cadence step AND the report section, same commit |

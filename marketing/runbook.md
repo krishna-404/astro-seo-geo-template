@@ -36,6 +36,8 @@ that delivered less is visible (ingested from a published monthly scope,
 - A watch on competitors: what they publish, which searches they gain
 - Directory submissions surfaced and tracked; outreach pitches proposed
 - A weekly report on what changed and what moved
+- Everything it writes deployed the same day, on a green battery
+  (STRATEGY.md § 9)
 
 ## Daily run (weekdays)
 
@@ -53,9 +55,9 @@ that delivered less is visible (ingested from a published monthly scope,
 | D10 | Open questions and next listings | machine surfaces, human answers | `npm run ask` (step 5); ACTIONS A-W03/A-W04 | What I need from you · Where to list next |
 | D11 | News and ICP-social scan, candidates logged, nothing written | machine | step 6 | Decisions (time-critical only) |
 | D12 | Competitor watch: rows naming a rival; new pages a rival published (from the landscape's sitemap or feed) | machine | `searchConsole.competitorQueries` (step 2h) | Competitors |
-| D13 | Build (a future-dated post whose day has come enters this build); regenerate inventory; `npm run verify`; one PR — the next human `/ship` releases it | machine builds, human ships | steps 7–9 | first line · Do this today |
+| D13 | Regenerate lastmod, inventory and OG cards; build (a future-dated post whose day has come enters this build); `npm run verify`; commit to `main`; deploy; IndexNow + Bing; live smoke | machine | steps 7–9; STRATEGY § 9 | first line |
 | D14 | Social queue: post the unposted drafts | human | ACTIONS A-D03 | Do this today |
-| D15 | Merge and ship | human | ACTIONS A-D02; `/ship` | Do this today |
+| D15 | Read the deploy line; act only on a pull request the run declined | human | ACTIONS A-D02 | first line · Do this today |
 | D16 | Deliver the report | machine | § The report; Apps Script channel, else the Gmail connector if attached, else committed | — |
 
 ## Weekly run (Monday, adds to the daily)

@@ -5,10 +5,16 @@ reason. If a setting is not on this list, it was not decided — treat it as an
 open question, decide it, and add it here. **A setting nobody wrote down is
 indistinguishable from a setting nobody made.**
 
-Sibling documents: `SETUP.md` is the ordered walkthrough for turning this into
-a real site (start there). `README.md` is the quickstart. `PLAYBOOK.md` is how
-to build/operate it phase by phase, and the traps. `AGENTS.md` is the standing
-rules for anyone (human or agent) editing a site built from this.
+**Six documents, six jobs.** `README.md` — the quickstart, and the glossary of
+this repo's terms. `SETUP.md` — the ordered walkthrough a NEW site starts
+with: every per-site value, in dependency order, before any content work.
+`AGENTS.md` — the standing rules for anyone, human or agent, editing the repo.
+`CHECKLIST.md` — every architectural decision already made, with its reason.
+`PLAYBOOK.md` — the order of work, the operating knowledge and the traps.
+`marketing/` — the operating layer the content engine runs on;
+`marketing/README.md` indexes it. **Update the document that owns a rule in the
+same commit as the change** — a setting nobody wrote down is indistinguishable
+from a setting nobody made.
 
 Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site value ·
 ⬜ deliberately NOT decided (per-site choice, notes given).
@@ -141,10 +147,22 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   `indexnow.yml` run on manual dispatch only; `publish-post.yml` is gone. The
   ancestor site burned the free Actions minutes on a second copy of the
   battery the hooks already run, and every run then died at job start with
-  no runner. So `.githooks/pre-push` → `npm run verify` is the gate, `/ship`
-  deploys and pings IndexNow, the daily run's PR inbox publishes API posts,
-  and `linkrot.yml` (monthly, minutes, never a gate) is the one scheduled
-  workflow. An organisation with the minutes restores the commented triggers.
+  no runner. So `.githooks/pre-push` → `npm run verify` is the gate, the ship
+  steps deploy and ping IndexNow, the daily run's PR inbox publishes API
+  posts, and `linkrot.yml` (monthly, minutes, never a gate) is the one
+  scheduled workflow. An organisation with the minutes restores the commented
+  triggers.
+- ✅ **The cadence run deploys itself** (27 Sep 2026, the owner's
+  instruction). On the default merge model (`marketing/STRATEGY.md § 9` — the
+  one full statement) a `/content-cadence` run commits to `main` on a green
+  battery and runs `/ship` steps 2b–7 unattended: regenerate, build, deploy,
+  purge, IndexNow + Bing, live smoke. WHY: the battery is the gate under
+  either model, so waiting for a human adds no quality — it only leaves
+  scheduled posts unreleased and the committed `lastmod` map behind the live
+  site. Guards: never on `example.com`, never on a red battery, never without
+  `CLOUDFLARE_DEPLOY_TOKEN` — each falls back to a pull request and is named
+  in the report. PR review stays documented for a site that wants to read
+  before publish.
 - 🔧 **If you do enable CI: deploy from it gated on the build** (`needs: build`), not
   Cloudflare's git-connected builds — those deploy on push in parallel with
   CI, so a commit that fails an invariant would ship anyway.
@@ -161,8 +179,8 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   band, two in-body links, no second h1, no MDX imports), a branch and a PR
   through the GitHub API, a `202` with a status URL. A Worker cannot build or
   deploy, so the daily cadence run's PR inbox does: regenerate
-  lastmod/inventory/OG card, verify, merge under STRATEGY.md's merge model,
-  then `/ship`. Both secrets unset = 503 and nothing else changes. The judgement half (interlinks,
+  lastmod/inventory/OG card, verify, merge under STRATEGY.md § 9's merge
+  model, then the ship steps. Both secrets unset = 503 and nothing else changes. The judgement half (interlinks,
   glossary, keyword map, voice) is the daily cadence's PR inbox, never the API.
   Rejected: a runtime store the pages read from (breaks the static build, the
   zod gates, twins, llms.txt, cards and search) and a synchronous

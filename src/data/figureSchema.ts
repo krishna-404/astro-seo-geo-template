@@ -12,7 +12,7 @@ import { z } from 'zod';
  * the built page, so a link preview shows the thing the page explains.
  *
  * Numbers. A `bars` figure states figures, and figures on this site come from
- * `facts.json` (AGENTS.md § Verified numbers). So `bars` takes either `fact`
+ * `facts.json` (AGENTS.md rule 1). So `bars` takes either `fact`
  * (a path into facts.json, resolved by src/lib/figures.ts, refusing anything
  * marked verified:false) or inline `items` PLUS a `source` label — and
  * check-source-rules fails an inline figure whose source label is not one of
