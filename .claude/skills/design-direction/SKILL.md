@@ -80,7 +80,13 @@ write "self-authored under explicit delegation" and decide.
 `marketing/design-refs.md` — generated, never hand-edited — with the
 category's current awwwards entries and the latest Sites of the Day, each
 with its live URL and the tags awwwards applied, the tags counted in two
-families, and the galleries' reachability. **Register tags** (typography,
+families, **one table per band from awwwards Elements** (hero, header,
+menu, about, pricing, FAQ, stats, team, CTA, contact, footer, blog — the
+same award-tier work cut at the grain a band is designed at; `--elements
+a,b,c` overrides the list, `--elements none` skips it), and the galleries'
+reachability. A band the sheet marks **text search** is a word awwwards has
+no category for (`services` is one): its rows matched the word and are read
+as such, never as the category's verdict. **Register tags** (typography,
 minimal, clean, scrolling, grid, storytelling, header design) are what the
 category is doing and what this template can borrow at zero JS; **tech
 tags** (GSAP, Three.js, WebGL, Webflow, React) are the warning signal — a
@@ -99,6 +105,18 @@ it *refuses* to do. Open the live sites, not the thumbnails.
   chaptered layout (`.rail` as the folio), a typographic poster hero (no
   panel, type as the image), a split stage (`.hero__grid` with the proof
   right), a gallery (the bento as objects with labels).
+- **awwwards Elements, from the sweep — read per band, when that band is
+  decided.** Whole-site entries give the register; the element tables give
+  the composition of one band at a time, which is how § 3 decides. Before
+  the hero, the About page, the pricing table, the FAQ, the stats strip,
+  the team, the CTA band, the contact form or the footer is designed, open
+  that band's table, read three or four live pages, and write one line in
+  the brief: the one thing worth borrowing and the template mechanism that
+  holds it (a services panel as `.bento` objects with labels; a pricing
+  table as `.table-scroll` with the "us" column lifted; an FAQ as native
+  `<details>` with the `::details-content` transition; a stats strip as
+  `.display` numerals from `facts.json`). A pattern that needs the tech tag
+  next to it is admired and left.
 - **The standing list — sites that are designed AND ship fast pages.** Read
   three or four that are closest to this site's job: Stripe, Linear, Vercel,
   Apple, Notion, 37signals/Basecamp, Ramp, Mercury, Raycast, Arc, Resend,
@@ -240,7 +258,10 @@ interview:
 ## 3. Decide — write `marketing/design-brief.md`
 
 Fill the skeleton, one decision per heading, each with the reference that
-informed it and the constraint that bounds it:
+informed it and the constraint that bounds it. A decision about one band
+(the hero, the About page, pricing, FAQ, stats, team, CTA, contact, the
+footer) is made with that band's element table from the sweep open — the
+reference is named in the brief line, source `elements:<band>`:
 
 1. **Three words.** The register the site should read as (e.g. "precise,
    warm, unhurried"). Everything below has to agree with them.

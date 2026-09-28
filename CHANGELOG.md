@@ -10,6 +10,18 @@ does. Decisions with reasons are `CHECKLIST.md`.
 
 ## Unreleased
 
+- **The sweep reads awwwards Elements, one table per band** (28 Sep 2026).
+  `npm run design:refs` now also fetches the awwwards Elements gallery for
+  the bands a site from this template has (hero, header, menu, about,
+  pricing, FAQ, stats, team, CTA, contact, footer, blog; `--elements`
+  overrides, `--elements none` skips) and writes one table per band —
+  element, maker, the live page it was cut from, the awwwards page, tags —
+  into `marketing/design-refs.md`; `/design-direction` § 3 reads a band's
+  table before that band is decided. A slug awwwards has no category for is
+  a text search there, and the sheet says so per band rather than filing
+  it as a category (`scripts/lib/awwwards.mjs`, tested). A site that
+  already adopted the template: nothing to do; the next `design:refs` run
+  carries the tables.
 - **The design pass gets an interview, a live sweep, a journey, a signature
   move and a measured proof** — the design intake of 27 Sep (the owner's
   playbook, scroll-craft, taste-skill, the component libraries and galleries,

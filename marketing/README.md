@@ -64,7 +64,7 @@ and cited everywhere else; `AGENTS.md § Content rules` is the index of which.
 | `brief.md` | The discovery brief and the asset register: why now, the one job, what exists, what is off-limits | `/discover` |
 | `landscape.md` | The category torn down site by site, with the owner's verdict on each | `/landscape` |
 | `design-brief.md` | The site's own look: the journey and its peak, type, colour, motif, motion, the design language, one signature move, the fingerprint, what it refuses | `/design-direction` |
-| `design-refs.md` | GENERATED — the category's awwwards entries and the Sites of the Day on the date of each sweep, tags split into register vs tech; the readings go in the brief | `npm run design:refs` |
+| `design-refs.md` | GENERATED — the category's awwwards entries, the Sites of the Day and one awwwards Elements table per band on the date of each sweep, tags split into register vs tech; the readings go in the brief | `npm run design:refs` |
 | `VOICE-GUIDE.md` | The voice: reader, stance, house rules (§ 3), integrity rails, the ship checklist (§ 6) | `/onboard-marketing` |
 | `writer-brief.md` | The one-page brief a writer works from: piece types, the pre-flight, the review gates | `/onboard-marketing` |
 | `content-guidelines.md` | How every piece is written — and § 2 is the fuel rule | Fixed |

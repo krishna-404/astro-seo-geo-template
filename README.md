@@ -173,7 +173,7 @@ place they are told apart.
 | **Decisions** | A named section of the cadence report: each item a question with one line of evidence and a recommendation. The owner answers by replying. |
 | **daily-lite / weekly-full** | The two cadence modes. Weekly is daily plus the rules refresh, the writing run, the sweeps and the map maintenance. |
 | **The standing line** | "Remove all mannered prose." — the last line of every prompt that writes for this site. `src/data/voice.json → prompt.standing`. |
-| **The sweep** | `npm run design:refs` — the category's current awwwards entries and the Sites of the Day, read on a date into `marketing/design-refs.md` (generated). Register tags are what to borrow; tech tags (GSAP, WebGL) are what this template refuses. Re-run quarterly (ACTIONS A-Q04). |
+| **The sweep** | `npm run design:refs` — the category's current awwwards entries, the Sites of the Day and one awwwards Elements table per band (hero, about, pricing, FAQ, stats, team, CTA, contact, footer…), read on a date into `marketing/design-refs.md` (generated). Register tags are what to borrow; tech tags (GSAP, WebGL) are what this template refuses. Re-run quarterly (ACTIONS A-Q04). |
 | **The journey** | `design-brief.md § 0`: four to seven beats a visitor walks, each with the feeling it should produce, ONE peak, an ending that resolves — written before any band is. |
 | **Signature move** | One bespoke, CSS-only interaction a site has and no other does (`design-brief.md § 11`); the test is that someone who knows the template could tell the site by it. |
 | **The fingerprint** | Six dimensions (motif, hero, band sequence, close, type, signature move) on which a site must differ from the template default on at least four, or it is the template in a new colour. |

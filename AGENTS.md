@@ -61,7 +61,7 @@ being checked is not a reason to ignore it here; the prose carries the WHY.
    `.band--ink`, `.bento`, `.rail`, `.reveal`) is how a site gets its own look
    inside those constraints; `/design-direction` decides it — after an
    interview on the visitor's journey and a live sweep of the category's
-   awwwards entries (`npm run design:refs` → `marketing/design-refs.md`,
+   awwwards entries and its Elements by band (`npm run design:refs` → `marketing/design-refs.md`,
    generated) — and `marketing/design-brief.md` records it: the journey
    and its one peak, one signature move, a fingerprint that differs from
    the template default on ≥4 of 6. Borrow composition, type and rhythm

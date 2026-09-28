@@ -636,7 +636,15 @@ Legend: ✅ decided & implemented here · 🔧 decided, needs your per-site valu
   category's current awwwards entries and the Sites of the Day are read on
   a date (`marketing/design-refs.md`, generated; tags split into register
   vs tech, because a look that needs GSAP is a look this template cannot
-  hold), writes the journey — beats, a feeling curve, ONE peak, an ending
+  hold; since 28 Sep 2026 also one awwwards Elements table per band —
+  hero, header, menu, about, pricing, FAQ, stats, team, CTA, contact,
+  footer, blog — because a band is designed one band at a time and the
+  whole-site lists never show a pricing table or an About page on its
+  own; `scripts/lib/awwwards.mjs` reads each band's mode from the page's
+  own filter links, because `/elements/<word>/` for a word awwwards has no
+  category for answers 200 with a full grid that is a text search, and a
+  sheet that trusted the status would file a search as the category's
+  verdict — `services` is exactly such a word), writes the journey — beats, a feeling curve, ONE peak, an ending
   that resolves — before any band (§ 2), decides one signature move and a
   six-dimension fingerprint against the template default (§ 3.10–11), and
   proves the result on contact sheets (`npm run design:shoot`, six frames

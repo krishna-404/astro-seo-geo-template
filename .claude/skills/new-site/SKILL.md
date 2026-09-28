@@ -144,7 +144,8 @@ up only the decisions that actually depend on it.
 7. **Design direction and design language** (/design-direction). The
    interview first (the journey, the one moment, calm and intense, the
    signature-move seed, the proof that exists), then the sweep (`npm run
-   design:refs -- --category <slug>` → `marketing/design-refs.md`), then
+   design:refs -- --category <slug>` → `marketing/design-refs.md`: the
+   category, the Sites of the Day and one Elements table per band), then
    the decisions: three words, type, colour, layout motif, motion,
    texture, imagery, refusals, the design language — what a button, a
    card, a band, the rail, a table, the form, the phone menu and each

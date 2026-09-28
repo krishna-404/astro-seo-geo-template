@@ -103,9 +103,10 @@ Work top to bottom; later files read earlier ones.
       journey (what they meet first, what they must believe, the one moment
       they will remember), then **looks before deciding**: `npm run
       design:refs -- --category <slug>` writes `marketing/design-refs.md`
-      with the category's current awwwards entries and the latest Sites of
-      the Day, live URLs and tags (register tags to borrow, tech tags to
-      refuse), plus the galleries and a standing list of the best-designed
+      with the category's current awwwards entries, the latest Sites of
+      the Day and one awwwards Elements table per band (hero, about,
+      pricing, FAQ, stats, team, CTA, contact, footer), live URLs and tags
+      (register tags to borrow, tech tags to refuse), plus the galleries and a standing list of the best-designed
       product sites. It decides type, colour, layout motif, motion, states,
       one signature move and the fingerprint inside the template's
       constraints (AA measured, CSS-only motion, no client JS, LCP), writes

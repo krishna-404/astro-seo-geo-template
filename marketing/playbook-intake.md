@@ -40,6 +40,19 @@ Open: <a question for the owner, added to DATA-SHEET as Q-…>
 
 ---
 
+## 2026-09-28 — awwwards Elements ("Are we picking up inspirations from these websites?" — the owner's screenshots of awwwards.com/sites/mind-robotics and two /elements/ pages: a membership-benefits panel, a services panel)
+
+Kind: screenshot (three) + the awwwards Elements gallery fetched and read on 2026-09-28 (`/elements/`, `/elements/hero_image/`, `/elements/services/`, twelve band pages).
+One line: awwwards Elements is the same award-tier work cut by band — hero, header, about, pricing, FAQ, stats, team, CTA, contact, footer — which is the grain a site from this template is designed at, and the sweep was reading only whole sites.
+Evidence: 47 categories published as the page's own filter links; each card carries its maker, the live page it was cut from and an `/inspiration/<slug>` page — no second request, no login, a plain fetch answers 200. One trap measured: `/elements/<word>/` for a word awwwards has no category for (`services` is one) answers 200 with a full grid that is a TEXT SEARCH — the filter links carry `text=<word>` instead of `category=<word>`.
+Policy: the public listing only, nothing stored but titles, tags and URLs; the live pages are opened and read, never scraped or copied (AGENTS rule 6: composition, type and rhythm are borrowed, never the code).
+Fit: the whole-site tables give the register; a band table gives the composition of one band — the About page, the pricing table, the FAQ — on its own, which the whole-site lists never show. Zero JS to borrow from: every element is re-expressed in the template's mechanisms or left.
+Works: `npm run design:refs -- --category business-corporate` on 2026-09-28 read 120 elements across 12/12 bands, every one recognised as a category; the same run with `--elements services,definitely-not-a-band` printed the text-search line for both and labelled both tables **text search** in the sheet.
+Transfers (adopted, mechanised) → `scripts/design-refs.mjs` (one Elements table per band, default bands `hero_image,header,menu,about_us,pricing_page,FAQ,stats,team,CTA,contact,footer,blog`; `--elements a,b,c` overrides, `--elements none` skips; the mode per band read from the page's filter links) · `scripts/lib/awwwards.mjs` + its test (the parsers, the category list, the text-search guard) · `.claude/skills/design-direction` § 1 (the bullet: read per band, when that band is decided) and § 3 (a band decision is made with its table open, source `elements:<band>`) · `marketing/design-brief.md` § 1 source list · README glossary, `marketing/README.md`, SETUP Phase 1, `/new-site` phase 7, AGENTS rule 6, ACTIONS A-Q04, CHECKLIST §8, CHANGELOG.
+Already covered: the whole-site entries and the Sites of the Day (the sweep of 2026-09-27); the "highlights" carousel on a `/sites/<slug>` page — the skill already says open the live site, not the thumbnails.
+Refused: `services` as a default band — awwwards has no such category, so a default that named it would file a text search under a category name every quarter; a session that wants it passes `--elements` and reads the label. Reading the element videos — a `.mp4` per card is what the live page shows better.
+Open: none — the band list is the template's bands; a site with a band not in it (a product grid, a gallery) adds the slug to its own `--elements`.
+
 ## 2026-09-27 — The design intake: a playbook, two agent skills, five component libraries, eleven resources (pasted by the owner)
 
 Kind: checklist (the pasted design playbook) + two repos read from source (scroll-craft, taste-skill) + a list of component libraries and design resources, each fetched and read on 2026-09-27.

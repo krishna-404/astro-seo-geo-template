@@ -369,7 +369,7 @@ between a green battery and the live site (`marketing/STRATEGY.md § 9`). Add
 **Phase:** quarterly
 **Check:** entries:marketing/design-refs.md:92
 **Why:** A design direction decided against last year's awwwards page is next year's template look. The sweep is dated and machine-read, so "what the category is doing now" is a diff between two sweeps, not a memory.
-**How:** `npm run design:refs -- --category <slug>`, then `/design-direction` § 5 (Revisit): diff the register and tech tag counts against the previous sweep, re-read three or four sites, and either date a decision in `marketing/design-brief.md` or write down why the direction stands.
+**How:** `npm run design:refs -- --category <slug>`, then `/design-direction` § 5 (Revisit): diff the register and tech tag counts against the previous sweep, re-read three or four sites and the element table of any band the site is about to change, and either date a decision in `marketing/design-brief.md` or write down why the direction stands.
 **Done:**
 
 ## Annual
