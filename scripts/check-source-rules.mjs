@@ -76,7 +76,9 @@ for (const f of files) {
   if (!/\.(astro|css)$/.test(f)) continue;
   // Comments are stripped first: a comment that SAYS "never transition: all"
   // is not a use of it (bit the first run).
-  const text = readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, ' '));
+  const text = readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, (c) =>
+    c.replace(/[^\n]/g, ' '),
+  );
   for (const m of text.matchAll(/transition\s*:\s*all\b/g)) {
     const line = text.slice(0, m.index).split('\n').length;
     bad(`${f}:${line} uses \`transition: all\` — name the properties (transform, opacity, colour)`);
@@ -85,8 +87,11 @@ for (const f of files) {
   for (const block of text.split('}')) {
     if (!/\b(min-|max-)?height\s*:[^;]*\b\d+(\.\d+)?vh\b/.test(block)) continue;
     if (/\d+dvh\b/.test(block)) continue;
-    const line = text.indexOf(block) > -1 ? text.slice(0, text.indexOf(block)).split('\n').length : '?';
-    bad(`${f}:${line} sizes a height in plain vh — stack svh/vh fallbacks before a dvh value (AGENTS rule 13)`);
+    const line =
+      text.indexOf(block) > -1 ? text.slice(0, text.indexOf(block)).split('\n').length : '?';
+    bad(
+      `${f}:${line} sizes a height in plain vh — stack svh/vh fallbacks before a dvh value (AGENTS rule 13)`,
+    );
     found = 1;
   }
 }
@@ -103,7 +108,9 @@ for (const f of files) {
     const before = text.slice(Math.max(0, m.index - 20), m.index);
     if (/(href="|url\(|&|id=)$/.test(before)) continue;
     const line = text.slice(0, m.index).split('\n').length;
-    bad(`${f}:${line} has colour literal ${m[0]} — use a token from global.css (colour is measured, not eyeballed)`);
+    bad(
+      `${f}:${line} has colour literal ${m[0]} — use a token from global.css (colour is measured, not eyeballed)`,
+    );
     found = 1;
   }
 }
@@ -123,7 +130,9 @@ for (const entry of readCollection('blog', { include: ['published', 'scheduled']
   const sameAs = entry.data.author?.sameAs ?? [];
   const hit = REG.find((a) => a.sameAs.some((s) => sameAs.includes(s)) || a.name === name);
   if (!hit) {
-    bad(`${entry.file} author "${name ?? '(unparsed)'}" matches no entry in src/data/authors.json — add the author (real profile, real bio) so the byline links to /author/<slug>`);
+    bad(
+      `${entry.file} author "${name ?? '(unparsed)'}" matches no entry in src/data/authors.json — add the author (real profile, real bio) so the byline links to /author/<slug>`,
+    );
     found = 1;
   }
 }
@@ -147,13 +156,17 @@ for (const entry of readCollection('blog', { include: ['published', 'scheduled']
   }
   const links = [...entry.body.matchAll(/\]\(\/[a-z]/g)].length;
   if (links < 2) {
-    bad(`${entry.file} has ${links} in-body internal link(s) — minimum 2, anchored on the phrase a searcher types (AGENTS § Content rules)`);
+    bad(
+      `${entry.file} has ${links} in-body internal link(s) — minimum 2, anchored on the phrase a searcher types (AGENTS § Content rules)`,
+    );
     found = 1;
   }
 }
 if (!found) console.log('   ok');
 
-console.log('→ no banned claims in content (voice.json → site.bannedClaims: a model is not a measurement)');
+console.log(
+  '→ no banned claims in content (voice.json → site.bannedClaims: a model is not a measurement)',
+);
 // Assertions of fact the site may not make — a measurement nobody took, a
 // customer that does not exist, a result the product has not produced. The
 // ancestor site claimed a design partner it never had; 106 places across 33
@@ -177,18 +190,31 @@ const VOICE_SITE = JSON.parse(readFileSync('src/data/voice.json', 'utf8')).site 
 const CLAIM_PATTERNS = (VOICE_SITE.bannedClaims ?? []).map((src) => new RegExp(src, 'gi'));
 found = 0;
 if (CLAIM_PATTERNS.length) {
-  for (const f of [...walkContent('src/content'), ...walkContent('src/pages'), ...walkContent('src/layouts'), ...walkContent('src/components'), 'src/data/facts.json']) {
+  for (const f of [
+    ...walkContent('src/content'),
+    ...walkContent('src/pages'),
+    ...walkContent('src/layouts'),
+    ...walkContent('src/components'),
+    'src/data/facts.json',
+  ]) {
     const text = readFileSync(f, 'utf8');
     for (const re of CLAIM_PATTERNS) {
       for (const m of text.matchAll(re)) {
         const line = text.slice(0, m.index).split('\n').length;
-        bad(`${f}:${line} says "${m[0]}" — a claim the site may not make (voice.json → site.bannedClaims); state the figure flat and unattributed`);
+        bad(
+          `${f}:${line} says "${m[0]}" — a claim the site may not make (voice.json → site.bannedClaims); state the figure flat and unattributed`,
+        );
         found = 1;
       }
     }
   }
 }
-if (!found) console.log(CLAIM_PATTERNS.length ? '   ok' : '   ok (no patterns configured — fill voice.json → site.bannedClaims)');
+if (!found)
+  console.log(
+    CLAIM_PATTERNS.length
+      ? '   ok'
+      : '   ok (no patterns configured — fill voice.json → site.bannedClaims)',
+  );
 
 console.log('→ an inline `bars` figure cites one of the entry’s own sources (AGENTS § Figures)');
 // A `bars` figure states numbers. It may take them from facts.json (`fact:`,
@@ -201,7 +227,9 @@ for (const p of entryFiles()) {
   const text = readFileSync(p, 'utf8');
   const fm = text.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? '';
   if (!/^figures:/m.test(fm)) continue;
-  const sourceLabels = [...fm.matchAll(/^\s+- label:\s*"((?:[^"\\]|\\.)*)"\s*$/gm)].map((m) => m[1]);
+  const sourceLabels = [...fm.matchAll(/^\s+- label:\s*"((?:[^"\\]|\\.)*)"\s*$/gm)].map(
+    (m) => m[1],
+  );
   const blocks = fm.split(/\n(?=  - kind:)/).filter((b) => /^\s*- kind:\s*"?bars"?/m.test(b));
   for (const b of blocks) {
     if (!/^\s+items:/m.test(b)) continue;
@@ -210,7 +238,9 @@ for (const p of entryFiles()) {
       bad(`${p}: an inline bars figure has items but no source`);
       found = 1;
     } else if (!sourceLabels.includes(source)) {
-      bad(`${p}: bars figure source "${source.slice(0, 60)}…" is not one of the entry's sources labels`);
+      bad(
+        `${p}: bars figure source "${source.slice(0, 60)}…" is not one of the entry's sources labels`,
+      );
       found = 1;
     }
   }
@@ -225,12 +255,16 @@ console.log('→ a `solutions` entry that states a number names a source (AGENTS
 found = 0;
 for (const entry of readCollection('solutions', { include: ['published', 'scheduled'] })) {
   const statesNumber =
-    /(?:^|[^\w$€£₹])[$€£₹]?\d[\d,.]*\s?(?:%|percent|days?|weeks?|months?|hours?|minutes?|x\b|×|per\b)/i.test(entry.body) ||
+    /(?:^|[^\w$€£₹])[$€£₹]?\d[\d,.]*\s?(?:%|percent|days?|weeks?|months?|hours?|minutes?|x\b|×|per\b)/i.test(
+      entry.body,
+    ) ||
     /[$€£₹]\s?\d/.test(entry.body) ||
     entry.data.pricing?.from !== undefined;
   if (!statesNumber) continue;
   if (!Array.isArray(entry.data.sources) || entry.data.sources.length === 0) {
-    bad(`${entry.file} states a number (or a published price) and names no sources — every figure on this site traces to one (AGENTS rule 1)`);
+    bad(
+      `${entry.file} states a number (or a published price) and names no sources — every figure on this site traces to one (AGENTS rule 1)`,
+    );
     found = 1;
   }
 }
@@ -254,12 +288,50 @@ for (const entry of readCollection('comparison', { include: ['published', 'sched
     }
     const age = Math.floor((Date.now() - t) / 864e5);
     if (Date.now() - t > NINETY_DAYS) {
-      bad(`${entry.file} row "${row.criterion}" was checked ${age} days ago (${String(row.retrieved).slice(0, 10)}) — re-read ${row.source} and bump \`retrieved\`, or drop the row`);
+      bad(
+        `${entry.file} row "${row.criterion}" was checked ${age} days ago (${String(row.retrieved).slice(0, 10)}) — re-read ${row.source} and bump \`retrieved\`, or drop the row`,
+      );
       found = 1;
     }
   }
 }
 if (!found) console.log('   ok');
+
+console.log('→ every playbook-intake entry carries a Source: line (marketing/playbook-intake.md)');
+// The intake ledger is the only record of where a rule came from. Sources
+// arrive as links, pastes, screenshots and PDFs; the files are never
+// committed (a third party's document), so the Source: line is the one way
+// back — and on 28 Sep 2026 five entries had none (a doc
+// named but not linked, a PDF and three screenshots with no note that they
+// were files). An entry is a `### ` heading, or a dated `## ` heading with
+// no `### ` children; the format block at the top of the file is skipped.
+{
+  const text = readFileSync('marketing/playbook-intake.md', 'utf8').replace(/```[\s\S]*?```/g, '');
+  const lines = text.split('\n');
+  const entries = [];
+  for (let i = 0; i < lines.length; i++) {
+    const m = /^(##|###) (.+)$/.exec(lines[i]);
+    if (!m) continue;
+    if (m[1] === '##' && !/^\d{4}-\d{2}-\d{2}/.test(m[2])) continue;
+    entries.push({ level: m[1], title: m[2], line: i + 1, body: [] });
+  }
+  for (let k = 0; k < entries.length; k++) {
+    const end = k + 1 < entries.length ? entries[k + 1].line - 1 : lines.length;
+    entries[k].body = lines.slice(entries[k].line, end);
+    entries[k].hasChildren =
+      entries[k].level === '##' && k + 1 < entries.length && entries[k + 1].level === '###';
+  }
+  found = 0;
+  for (const e of entries) {
+    if (e.hasChildren) continue;
+    if (e.body.some((l) => /^Source: \S/.test(l))) continue;
+    bad(
+      `marketing/playbook-intake.md:${e.line} "${e.title.slice(0, 60)}" has no Source: line — the URL, or the paste/screenshot/file, from whom, when, and that it is not committed`,
+    );
+    found = 1;
+  }
+  if (!found) console.log(`   ok (${entries.filter((e) => !e.hasChildren).length} entries)`);
+}
 
 console.log('→ frontmatter titles survive the SERP clamp without a mid-phrase cut');
 // BaseLayout runs every title through src/lib/clampTitle.ts, which clamps to
@@ -285,7 +357,7 @@ for (const entry of readAll({ include: ['published', 'scheduled'] })) {
   const cut = title.slice(0, CLAMP_MAX);
   bad(
     `${entry.file} title is ${title.length} chars and would be hard-cut to "${cut.slice(0, cut.lastIndexOf(' '))}" — ` +
-      `keep it to ${CLAMP_MAX}, or put the sacrificial half after " — " (src/lib/clamp.mjs)`
+      `keep it to ${CLAMP_MAX}, or put the sacrificial half after " — " (src/lib/clamp.mjs)`,
   );
   found = 1;
 }

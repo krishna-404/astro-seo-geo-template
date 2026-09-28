@@ -804,6 +804,15 @@ dispatched), in order:
 - ✅ WCAG AA contrast sweep of every built page (browser installed in-job),
   with all `<details>` force-opened first — closed FAQ answers are
   display:none and would otherwise never be measured.
+- ✅ **Every playbook-intake entry carries a `Source:` line**
+  (`check-source-rules`, pre-commit, 28 Sep 2026). WHY: the intake ledger is
+  the only record of where a rule came from, and the sources arrive as
+  links, pastes, screenshots and PDFs whose files are never committed — so
+  the line is the one way back when a source changes or a rule is
+  re-argued. Found by the owner asking whether every link shared so far was
+  kept: five entries had no way back (a doc named but not
+  linked, a PDF and three screenshots with no note that they were files).
+  Proven red by deleting one entry's line.
 - ✅ **Design-smell sweep** (`scripts/check-design-smells.mjs`, `npm run
   check:design`, 27 Sep 2026; in verify and CI after axe). WHY: the smell
   pass was a prose list read by eye on two screenshots, and every item on

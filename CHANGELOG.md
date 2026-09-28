@@ -10,6 +10,12 @@ does. Decisions with reasons are `CHECKLIST.md`.
 
 ## Unreleased
 
+- **Every playbook-intake entry names its source, and a check enforces it**
+  (28 Sep 2026). `marketing/playbook-intake.md` entries carry a `Source:`
+  line — the URL, or the paste, screenshot or file, from whom and when, and
+  that it is not committed; `check-source-rules` (pre-commit) fails an entry
+  without one. Every existing entry was back-filled. A site that already
+  adopted the template: add the line to any entry of its own.
 - **The sweep reads awwwards Elements, one table per band** (28 Sep 2026).
   `npm run design:refs` now also fetches the awwwards Elements gallery for
   the bands a site from this template has (hero, header, menu, about,
