@@ -116,5 +116,6 @@ run('built HTML validates', 'npx html-validate "dist/**/*.html"');
 execSync('npx playwright install chromium', { stdio: 'ignore' }); // no-op when cached
 run('WCAG AA contrast sweep', 'npm run check:contrast');
 run('axe-core accessibility scan', 'npm run check:a11y');
+run('design-smell sweep (375 + 1440, measured)', 'npm run check:design');
 
 console.log(`\nverify: all ${step} steps green in ${Math.round((Date.now() - t0) / 1000)}s.`);

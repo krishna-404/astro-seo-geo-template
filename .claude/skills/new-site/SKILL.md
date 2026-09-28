@@ -141,17 +141,27 @@ up only the decisions that actually depend on it.
    landscape confirmed. *Exit:* `marketing/keyword-map.md` with a ranked
    build backlog and `intent.json → watch` seeded.
 
-7. **Design direction and design language** (/design-direction). Three
-   words, type, colour, layout motif, motion, texture, imagery, refusals,
-   and the design language — what a button, a card, a band, the rail, a
-   table and each state mean on this site — inside the constraints and
-   serving the landscape's register decision and the brief's fixed assets.
-   *Examples:* awwwards for the category and the Sites of the Day; the
-   galleries that curate other registers; the standing list; the writing
-   that explains why it works; this year's reality check — three to five
-   put to the owner before deciding. *Exit:* `marketing/design-brief.md`
-   filled through § 9, tokens set, fonts self-hosted, contrast sweep green,
-   homepage screenshot at 375 and 1440 signed off by the owner.
+7. **Design direction and design language** (/design-direction). The
+   interview first (the journey, the one moment, calm and intense, the
+   signature-move seed, the proof that exists), then the sweep (`npm run
+   design:refs -- --category <slug>` → `marketing/design-refs.md`: the
+   category, the Sites of the Day and one Elements table per band), then
+   the decisions: three words, type, colour, layout motif, motion,
+   texture, imagery, refusals, the design language — what a button, a
+   card, a band, the rail, a table, the form, the phone menu and each
+   state mean on this site — one signature move, and the fingerprint
+   (differs from the template default on ≥4 of 6), inside the constraints
+   and serving the landscape's register decision and the brief's fixed
+   assets. *Examples:* the sweep's awwwards entries for the category and
+   the Sites of the Day (register tags, not tech tags); the galleries
+   that curate other registers; the component libraries as composition
+   sources; the standing list; the writing that explains why it works;
+   this year's reality check — three to five put to the owner before
+   deciding. *Exit:* `marketing/design-brief.md` filled through § 12,
+   tokens set, fonts self-hosted, `npm run check:contrast` and `npm run
+   check:design` green, the contact sheets from `npm run design:shoot`
+   read against the feeling curve and signed off by the owner on a real
+   phone.
 
 8. **Infrastructure and migration** (SETUP Phases 2–3; PLAYBOOK §3, §6).
    Cloudflare zone and worker, `wrangler.jsonc` name, generated surfaces

@@ -18,6 +18,13 @@
  * broken. The same-origin proxy keeps the browser on your domain and keeps the
  * script URL, which is write-capable, out of the page source.
  *
+ * STATES: submitting is a navigation, success is /contact/thanks (a real
+ * page, a free conversion event), and a field error is shown inline by CSS
+ * alone — `:user-invalid`, so it appears after the visitor has touched the
+ * field, never on first paint (see the .cf__err rule). Delivery failure is
+ * logged at the edge (worker/index.ts): the visitor is already on the thanks
+ * page and is not the audience for it.
+ *
  * SPAM: a honeypot here plus rate limiting at the edge. There is deliberately
  * no "submitted too fast" timestamp check — this is a static build, so any
  * timestamp rendered into the page is the BUILD time, not the visitor's page
@@ -82,11 +89,13 @@ const { source, heading = 'Send us a message' } = Astro.props;
     <label class="cf__f">
       <span>Your name</span>
       <input type="text" name="name" autocomplete="name" required maxlength="120" />
+      <small class="cf__err">Please add your name.</small>
     </label>
 
     <label class="cf__f">
       <span>Work email</span>
       <input type="email" name="email" autocomplete="email" required maxlength="180" />
+      <small class="cf__err">That doesn't look like an email address.</small>
     </label>
 
     <label class="cf__f cf__f--wide">
@@ -98,6 +107,7 @@ const { source, heading = 'Send us a message' } = Astro.props;
   <label class="cf__f cf__f--wide">
     <span>How can we help?</span>
     <textarea name="message" rows="4" required maxlength="4000"></textarea>
+    <small class="cf__err">Tell us what you need, in a line or two.</small>
   </label>
 
   {/*
@@ -230,7 +240,24 @@ const { source, heading = 'Send us a message' } = Astro.props;
     color: var(--ink);
     background: var(--white);
     border: 1px solid var(--line-2);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Errors where they happen, with no JavaScript: :user-invalid matches only
+     after the visitor has interacted with the field, so a blank form never
+     opens covered in red, and the browser's own bubble still fires on
+     submit. The message sits inside the label, so a screen reader hears it
+     with the field's name. */
+  .cf__err {
+    display: none;
+    font-size: 0.8125rem;
+    color: var(--red);
+  }
+  .cf :is(input, textarea):user-invalid {
+    border-color: var(--red);
+  }
+  .cf :is(input, textarea):user-invalid + .cf__err {
+    display: block;
   }
 
   .cf textarea {

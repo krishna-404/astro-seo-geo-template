@@ -126,9 +126,10 @@ marketing/       human-run: favicon gen, OG cards, apps-script source ·
                  discover (the brief and the asset intake, first) ·
                  landscape (the category, torn down and put to the owner) ·
                  onboard-marketing (strategy and voice, against published
-                 voice guides) · design-direction (the site's own look and
-                 design language, from awwwards-class galleries and the
-                 writing that explains them, inside the constraints) ·
+                 voice guides) · design-direction (the site's own look:
+                 the visitor's journey interviewed, the category's awwwards
+                 entries swept live, one signature move, proven on contact
+                 sheets and a measured smell sweep, inside the constraints) ·
                  keyword-map · interview · write-content ·
                  refresh-anti-ai-rules · insights-review · content-cadence
                  (see SETUP Phase 5 — schedule it as a Routine) · launch (the
@@ -159,7 +160,7 @@ place they are told apart.
 | **The answer-engine funnel** | A different funnel, about being CITED rather than ranked: reachable → ingested → indexed → shown → followed, each stage capped by the one above. `scripts/lib/aeo.mjs`, printed by `npm run aeo`. |
 | **Focus stage** | The highest stage of that funnel currently under its bar — the one thing to work. Never the lowest number on the report. |
 | **The enforcement ladder** | The three rungs a rule can be mechanized at: pre-commit (source), pre-push `npm run verify` (built output), the live smoke (the edge). `CHECKLIST.md § 9`. |
-| **The battery** | `npm run verify` — all sixteen steps. "A green battery" means it passed; it is a floor, not a pass. |
+| **The battery** | `npm run verify` — all seventeen steps. "A green battery" means it passed; it is a floor, not a pass. |
 | **BOFU** | Bottom-of-funnel queries: the buyer's shapes (alternatives, vs, review, best X for Y, pricing) at position 4–20. Worked one page at a time, four weeks each. |
 | **Quick wins** | A page already ranking at ≤5 for a phrase its source does not contain. Add the phrase; the cheapest move on the board. |
 | **Watch list** | The curated high-intent terms in `src/data/intent.json → watch`, each tied to the page that claims it. A watch term with no impressions reports as "not showing yet" rather than vanishing. |
@@ -172,4 +173,9 @@ place they are told apart.
 | **Decisions** | A named section of the cadence report: each item a question with one line of evidence and a recommendation. The owner answers by replying. |
 | **daily-lite / weekly-full** | The two cadence modes. Weekly is daily plus the rules refresh, the writing run, the sweeps and the map maintenance. |
 | **The standing line** | "Remove all mannered prose." — the last line of every prompt that writes for this site. `src/data/voice.json → prompt.standing`. |
+| **The sweep** | `npm run design:refs` — the category's current awwwards entries, the Sites of the Day and one awwwards Elements table per band (hero, about, pricing, FAQ, stats, team, CTA, contact, footer…), read on a date into `marketing/design-refs.md` (generated). Register tags are what to borrow; tech tags (GSAP, WebGL) are what this template refuses. Re-run quarterly (ACTIONS A-Q04). |
+| **The journey** | `design-brief.md § 0`: four to seven beats a visitor walks, each with the feeling it should produce, ONE peak, an ending that resolves — written before any band is. |
+| **Signature move** | One bespoke, CSS-only interaction a site has and no other does (`design-brief.md § 11`); the test is that someone who knows the template could tell the site by it. |
+| **The fingerprint** | Six dimensions (motif, hero, band sequence, close, type, signature move) on which a site must differ from the template default on at least four, or it is the template in a new colour. |
+| **The smell sweep** | `npm run check:design` — the machine-checkable half of the design smell list, measured on the rendered page at 375 and 1440, in the battery and CI. The judgement half is read by eye on the **contact sheets** from `npm run design:shoot`. |
 | **The ancestor site** | The production site this template was extracted from. Its traps are why several checks exist; it is not a site you have access to, and nothing here depends on it. |

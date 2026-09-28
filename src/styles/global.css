@@ -91,11 +91,20 @@
   --on-ink-3: #aab3c1;
   --on-ink-accent: #8fb8e6;
 
-  /* Rhythm */
+  /* Rhythm. One radius scale for the whole site (controls, cards, panels):
+     a page whose corners disagree reads as assembled, not designed. */
   --gutter: 1.25rem;
   --measure: 68rem;
+  --radius-sm: 8px;
   --radius: 12px;
   --radius-lg: 16px;
+
+  /* Motion. One ease for every UI transition; ease-out reads faster than
+     ease-in at the same duration and is never wrong for a control. Hover
+     120–180ms, press 100–160ms — under 300ms, always. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --dur-hover: 150ms;
+  --dur-press: 120ms;
 
   --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
   --shadow: 0 1px 3px rgba(16, 24, 40, 0.08), 0 8px 24px rgba(16, 24, 40, 0.04);
@@ -134,6 +143,17 @@ html {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* The browser surfaces a design forgets: the selection colour and the form
+   accent are painted by the UA in its own blue unless told otherwise, and
+   they are the two places a visitor sees "not this site" mid-read. */
+::selection {
+  background: var(--brand-soft);
+  color: var(--ink);
+}
+:root {
+  accent-color: var(--brand);
 }
 
 body {
@@ -302,7 +322,7 @@ p {
   gap: 0.5rem;
   min-height: 44px; /* touch target */
   padding: 0.625rem 1.125rem;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--line);
   background: var(--white);
   color: var(--ink);
@@ -311,10 +331,26 @@ p {
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  /* Named properties, never `transition: all` — that animates layout too. */
+  transition:
+    background-color var(--dur-hover) var(--ease-out),
+    border-color var(--dur-hover) var(--ease-out),
+    color var(--dur-hover) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
 }
 .btn:hover { border-color: var(--ink-4); }
 .btn:active { transform: translateY(1px); }
+/* Every button has all four states (design-brief § 10). Disabled is a real
+   colour pair, not opacity — --ink-3 on --line-2 measures 5.3:1, so a
+   disabled label still reads; the cursor says why it does nothing. */
+.btn:disabled,
+.btn[aria-disabled='true'] {
+  background: var(--line-2);
+  border-color: var(--line-2);
+  color: var(--ink-3);
+  cursor: not-allowed;
+  transform: none;
+}
 
 .btn--primary {
   background: var(--brand);
@@ -687,6 +723,10 @@ table.cmp tr.is-self td {
       to { opacity: 1; translate: 0 0; }
     }
   }
-  .card--feature { transition: translate 200ms ease, box-shadow 200ms ease; }
-  .card--feature:hover { translate: 0 -2px; box-shadow: var(--shadow); }
+  /* The lift is gated to a real pointer: on touch, :hover sticks after a tap
+     and the card stays raised until the next tap somewhere else. */
+  @media (hover: hover) and (pointer: fine) {
+    .card--feature { transition: translate 200ms var(--ease-out), box-shadow 200ms var(--ease-out); }
+    .card--feature:hover { translate: 0 -2px; box-shadow: var(--shadow); }
+  }
 }

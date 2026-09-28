@@ -173,6 +173,16 @@ jobs:
           npm install --no-save playwright axe-core
           npm run check:a11y
 
+      # The design-smell sweep: the machine-checkable half of the design
+      # pass, measured on the rendered page at 375 and 1440 — sideways
+      # scroll, spill, 200% text, touch targets, the hero fold, gradient
+      # text, glass, `transition: all`, emoji, eyebrow density, identical
+      # card rows, repeated bands, pure black. Same reinstall note as above.
+      - name: Design-smell sweep
+        run: |
+          npm install --no-save playwright
+          npm run check:design
+
   # DORMANT while the workflow is dispatch-only: this job's `if` requires a
   # `push` event, and a manual dispatch is never one — so dispatching runs the
   # battery above and skips this entirely. That is deliberate (a dispatched run

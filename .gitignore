@@ -26,3 +26,7 @@ pnpm-debug.log*
 # wrangler
 .wrangler/
 .dev.vars
+
+# design review surface — screenshots from `npm run design:shoot`, regenerated
+# every run; the readings go in marketing/design-brief.md, not the pixels
+marketing/design/shots/

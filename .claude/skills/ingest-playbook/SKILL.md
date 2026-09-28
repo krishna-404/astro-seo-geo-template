@@ -101,9 +101,13 @@ Where a move needs an API the repo has no credential for, it becomes an
 
 ## 5. Record the sort
 
-Append the entry to `marketing/playbook-intake.md` in its format: source,
-kind, one line, transfers with their destinations, already-covered with
-where, refused with why, open questions with their Q-ids. The entry is
+Append the entry to `marketing/playbook-intake.md` in its format: a
+`Source:` line (the URL; or a paste, screenshot or file, from whom and
+when, and that it is not committed — `check-source-rules` fails an entry
+without one, because a reading with no way back to its source cannot be
+re-read when the source changes), kind, one line, transfers with their
+destinations, already-covered with where, refused with why, open questions
+with their Q-ids. The entry is
 the reason a rule exists; write it so a reader in a year can weigh the
 source.
 

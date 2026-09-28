@@ -159,6 +159,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     /* A results page that grows/shrinks under the fold reads as jumpy —
        reserve most of a viewport so typing doesn't bounce the footer. */
     min-height: 70vh;
+    min-height: 70svh;
+    min-height: 70dvh; /* stacked per AGENTS rule 13: a collapsing URL bar never leaves a gap */
   }
   .search h1 {
     font-size: 1.875rem;
